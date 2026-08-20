@@ -9,10 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "run": {
-          "serviceId": "fichas-tecnicas-easycencosud",
-          "region": "us-central1"
-        }
+        "destination": "https://fichas-tecnicas-easycencosud-621245810832.us-central1.run.app/api/**"
       },
       {
         "source": "**",
