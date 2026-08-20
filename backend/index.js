@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
 import productosRouter from './routes/productos.js';
 import impresionRouter from './routes/impresion.js';
 import catalogosRouter from './routes/catalogos.js';
-import { supabase } from './lib/supabase.js';
+import { supabase, supabaseDb } from './lib/supabase.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -138,13 +138,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Crear usuarios por defecto (Administrador y Operador) en el arranque si no existen
+// Crear usuarios por defecto (Administrador, Coordinador y Operador) en el arranque si no existen
 const createDefaultUsers = async () => {
   const usersToCreate = [
     {
       email: 'admin@easy.com.ar',
       password: process.env.ADMIN_PASSWORD || 'EasyIT2026!',
       label: 'administrador'
+    },
+    {
+      email: 'coordinador@easy.com.ar',
+      password: 'CoordinadorIT2026!',
+      label: 'coordinador de carteleria'
     },
     {
       email: 'usuario@easy.com.ar',
@@ -178,11 +183,45 @@ const createDefaultUsers = async () => {
   }
 };
 
+// Asegurar que el bucket publico 'fichas-pdf' existe en Supabase Storage
+const initializeStorageBucket = async () => {
+  try {
+    console.log('[Startup] Verificando existencia de bucket de almacenamiento "fichas-pdf"...');
+    const { data: buckets, error: listError } = await supabaseDb.storage.listBuckets();
+    
+    if (listError) {
+      console.warn('[Startup] ⚠️ No se pudo listar los buckets de Supabase:', listError.message);
+      return;
+    }
+
+    const bucketExists = buckets.some(b => b.name === 'fichas-pdf');
+    if (!bucketExists) {
+      console.log('[Startup] El bucket "fichas-pdf" no existe. Creándolo...');
+      const { error: createError } = await supabaseDb.storage.createBucket('fichas-pdf', {
+        public: true,
+        fileSizeLimit: 1024 * 1024 * 5, // Límite de 5MB
+        allowedMimeTypes: ['application/pdf']
+      });
+
+      if (createError) {
+        console.error('[Startup] ❌ Error al crear el bucket "fichas-pdf":', createError.message);
+      } else {
+        console.log('[Startup] ★ Bucket "fichas-pdf" creado con éxito en Supabase.');
+      }
+    } else {
+      console.log('[Startup] ✓ Bucket "fichas-pdf" verificado en Supabase.');
+    }
+  } catch (err) {
+    console.error('[Startup] ❌ Error al inicializar almacenamiento:', err.message);
+  }
+};
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor de Fichas Técnicas corriendo en http://localhost:${PORT}`);
   console.log(`- Health Check: http://localhost:${PORT}/health`);
   
-  // Ejecutar verificación de administrador y operador
+  // Ejecutar verificación de administrador, operador y almacenamiento
   createDefaultUsers();
+  initializeStorageBucket();
 });

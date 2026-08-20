@@ -2,7 +2,8 @@ import { Router } from 'express';
 import XLSX from 'xlsx';
 import { requireAdmin } from '../middlewares/authMiddleware.js';
 import { dataService } from '../services/dataService.js';
-import { supabase } from '../lib/supabase.js';
+import { supabase, supabaseDb } from '../lib/supabase.js';
+import { taskManager } from '../lib/taskManager.js';
 
 const router = Router();
 
@@ -138,30 +139,81 @@ router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
 
     console.log(`[Catalogos] Limpios a importar: ${uniqueProducts.length} productos y ${uniqueEans.length} códigos EAN.`);
 
-    // 5. Cargar en Supabase en lotes de 100 registros (para alto rendimiento)
-    const BATCH_SIZE = 100;
+    // 5. Registrar tarea asíncrona y responder inmediatamente (Status 202)
+    const totalItems = uniqueProducts.length + uniqueEans.length;
+    const taskId = taskManager.createTask(totalItems);
 
-    // Inyectar productos
-    for (let i = 0; i < uniqueProducts.length; i += BATCH_SIZE) {
-      const batch = uniqueProducts.slice(i, i + BATCH_SIZE);
-      await dataService.upsertProductosBatch(batch);
-    }
+    console.log(`[Catalogos] Creando tarea asíncrona ${taskId}. Total items a procesar: ${totalItems}`);
 
-    // Inyectar EANs (si el Excel los provee)
-    for (let i = 0; i < uniqueEans.length; i += BATCH_SIZE) {
-      const batch = uniqueEans.slice(i, i + BATCH_SIZE);
-      await dataService.upsertEansBatch(batch);
-    }
+    // Lanzar el procesamiento en segundo plano
+    setImmediate(async () => {
+      try {
+        const BATCH_SIZE = 100;
+        let processedCount = 0;
+        let nuevosCargados = 0;
+        let eansCargados = 0;
 
-    return res.json({
+        // Inyectar productos en lotes
+        for (let i = 0; i < uniqueProducts.length; i += BATCH_SIZE) {
+          const batch = uniqueProducts.slice(i, i + BATCH_SIZE);
+          await dataService.upsertProductosBatch(batch);
+          processedCount += batch.length;
+          
+          // Estimar los nuevos cargados de este lote
+          const newInBatch = batch.filter(p => newSkusImported.includes(p.sku)).length;
+          nuevosCargados += newInBatch;
+
+          taskManager.updateProgress(taskId, processedCount, {
+            totalProcesados: processedCount,
+            nuevosCargados,
+            actualizados: processedCount - nuevosCargados,
+            eansCargados
+          });
+        }
+
+        // Inyectar EANs en lotes
+        for (let i = 0; i < uniqueEans.length; i += BATCH_SIZE) {
+          const batch = uniqueEans.slice(i, i + BATCH_SIZE);
+          await dataService.upsertEansBatch(batch);
+          processedCount += batch.length;
+          eansCargados += batch.length;
+
+          taskManager.updateProgress(taskId, processedCount, {
+            totalProcesados: processedCount - eansCargados,
+            nuevosCargados,
+            actualizados: (processedCount - eansCargados) - nuevosCargados,
+            eansCargados
+          });
+        }
+
+        // Invalidar el PDF en caché de Supabase Storage para todos los SKUs importados/actualizados
+        const skusToClear = uniqueProducts.map(p => p.sku);
+        const filesToClear = [];
+        skusToClear.forEach(sku => {
+          filesToClear.push(`${sku}_a4.pdf`, `${sku}_fleje3.pdf`, `${sku}_fleje2.pdf`);
+        });
+
+        if (filesToClear.length > 0) {
+          const BATCH_CLEAR_SIZE = 100;
+          for (let i = 0; i < filesToClear.length; i += BATCH_CLEAR_SIZE) {
+            const batch = filesToClear.slice(i, i + BATCH_CLEAR_SIZE);
+            await supabaseDb.storage.from('fichas-pdf').remove(batch);
+          }
+        }
+
+        console.log(`[Catalogos] ✓ Tarea asíncrona ${taskId} finalizada con éxito.`);
+
+      } catch (bgError) {
+        console.error(`[Catalogos] ❌ Error en segundo plano en tarea ${taskId}:`, bgError);
+        taskManager.failTask(taskId, bgError.message || 'Error durante el procesamiento del lote.');
+      }
+    });
+
+    // Retornar la respuesta HTTP de aceptación de inmediato
+    return res.status(202).json({
       success: true,
-      estadisticas: {
-        totalProcesados: uniqueProducts.length,
-        nuevosCargados: newSkusImported.length,
-        actualizados: uniqueProducts.length - newSkusImported.length,
-        eansCargados: uniqueEans.length
-      },
-      nuevosSkus: newSkusImported.slice(0, 50) // Enviar primeros 50 SKUs nuevos para el reporte visual
+      taskId,
+      message: 'El catálogo SAP ha sido recibido y se procesará en segundo plano.'
     });
 
   } catch (error) {
@@ -319,6 +371,19 @@ router.post('/auth/login', async (req, res, next) => {
     console.error('[Auth] Error al iniciar sesión:', err.message);
     next(err);
   }
+});
+
+/**
+ * @route   GET /api/catalogos/tareas/:id
+ * @desc    Obtiene el estado de progreso de una tarea de procesamiento de Excel en segundo plano.
+ * @access  Privado (requiere privilegios de Administrador)
+ */
+router.get('/catalogos/tareas/:id', requireAdmin, (req, res) => {
+  const task = taskManager.getTask(req.params.id);
+  if (!task) {
+    return res.status(404).json({ error: 'Tarea no encontrada' });
+  }
+  return res.json(task);
 });
 
 export default router;

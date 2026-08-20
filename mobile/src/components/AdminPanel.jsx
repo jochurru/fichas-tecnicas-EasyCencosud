@@ -15,6 +15,7 @@ export default function AdminPanel({ token, onClose }) {
 
   const [stats, setStats] = useState(null);
   const [newSkus, setNewSkus] = useState([]);
+  const [taskProgress, setTaskProgress] = useState(null);
 
   // Drag and Drop Helpers
   const handleDrag = (e) => {
@@ -88,16 +89,62 @@ export default function AdminPanel({ token, onClose }) {
           throw new Error(data.message || 'Error en la importación.');
         }
 
-        setStats(data.estadisticas);
-        if (activeTab === 'catalog') {
-          setNewSkus(data.nuevosSkus || []);
-          setSuccessMsg('¡Catálogo SAP importado y sincronizado correctamente!');
+        if (data.taskId) {
+          // Iniciar polling para consultar el progreso en segundo plano
+          setTaskProgress({ percentage: 0, processed: 0, total: 0 });
+          
+          const interval = setInterval(async () => {
+            try {
+              const progressRes = await fetch(`${API_BASE_URL}/catalogos/tareas/${data.taskId}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (progressRes.status === 401 || progressRes.status === 403) {
+                clearInterval(interval);
+                setErrorMsg('Sesión expirada durante el procesamiento.');
+                setLoading(false);
+                setTaskProgress(null);
+                return;
+              }
+
+              if (!progressRes.ok) {
+                clearInterval(interval);
+                setErrorMsg('No se pudo recuperar el progreso de la carga SAP.');
+                setLoading(false);
+                setTaskProgress(null);
+                return;
+              }
+
+              const task = await progressRes.json();
+              setTaskProgress(task);
+
+              if (task.status === 'completed') {
+                clearInterval(interval);
+                setStats(task.estadisticas);
+                setNewSkus(task.estadisticas.nuevosSkus || []);
+                setSuccessMsg('¡Catálogo SAP importado y sincronizado correctamente en segundo plano!');
+                setLoading(false);
+                setTaskProgress(null);
+              } else if (task.status === 'failed') {
+                clearInterval(interval);
+                setErrorMsg(task.error || 'Ocurrió un error en segundo plano al cargar el Excel.');
+                setLoading(false);
+                setTaskProgress(null);
+              }
+            } catch (pollErr) {
+              console.error('[AdminPanel] Error al consultar progreso:', pollErr);
+            }
+          }, 1500);
         } else {
+          // Fallback síncrono (ej. importar EANs)
+          setStats(data.estadisticas);
           setSuccessMsg('¡Mapeo de códigos de barras EAN cargado con éxito!');
+          setLoading(false);
         }
       } catch (err) {
         setErrorMsg(err.message);
-      } finally {
         setLoading(false);
       }
     };
@@ -204,14 +251,29 @@ export default function AdminPanel({ token, onClose }) {
               </div>
             )}
 
-            {/* Spinner de Carga */}
+            {/* Spinner de Carga y Barra de Progreso */}
             {loading && (
-              <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+              <div className="py-8 flex flex-col items-center justify-center text-center gap-4">
                 <RefreshCw className="w-10 h-10 text-easy-red animate-spin" />
                 <div>
-                  <p className="font-bold text-sm text-gray-700">Procesando planilla Excel...</p>
-                  <p className="text-xs text-gray-400 mt-1">Sincronizando registros con la base de datos de Supabase</p>
+                  <p className="font-bold text-sm text-gray-700 font-mono">
+                    {taskProgress ? `Procesando: ${taskProgress.percentage}%` : 'Procesando planilla Excel...'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {taskProgress 
+                      ? `Sincronizando ${taskProgress.processed} de ${taskProgress.total} registros` 
+                      : 'Subiendo archivo y preparando base de datos Supabase...'}
+                  </p>
                 </div>
+
+                {taskProgress && (
+                  <div className="w-full max-w-xs bg-gray-100 rounded-full h-2.5 overflow-hidden mt-1 border border-gray-200">
+                    <div 
+                      className="bg-easy-red h-2.5 rounded-full transition-all duration-300" 
+                      style={{ width: `${taskProgress.percentage}%` }}
+                    ></div>
+                  </div>
+                )}
               </div>
             )}
 

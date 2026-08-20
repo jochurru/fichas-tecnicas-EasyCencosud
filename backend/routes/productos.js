@@ -3,6 +3,7 @@ import { dataService } from '../services/dataService.js';
 import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
+import { supabaseDb } from '../lib/supabase.js';
 
 const router = Router();
 
@@ -161,6 +162,17 @@ router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
       aprobado_por,
       ean
     });
+
+    // Invalidar caché de PDFs para este SKU en Supabase Storage (las 3 plantillas posibles)
+    const cacheFiles = [`${sku}_a4.pdf`, `${sku}_fleje3.pdf`, `${sku}_fleje2.pdf`];
+    supabaseDb.storage.from('fichas-pdf').remove(cacheFiles)
+      .then(({ error }) => {
+        if (error) console.error(`[PDF Storage] Error al invalidar caché para SKU ${sku}:`, error.message);
+        else console.log(`[PDF Storage] Caché de PDF invalidada para SKU ${sku}.`);
+      })
+      .catch(err => console.error(`[PDF Storage] Error al limpiar caché de PDF:`, err));
+
+    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${aprobado_por} a las ${new Date().toISOString()}`);
 
     return res.json({
       message: 'Ficha técnica aprobada y consolidada exitosamente.',

@@ -5,6 +5,11 @@ import { API_BASE_URL } from '../config';
 export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
+  const isOffline = data?.origen === 'local_offline';
+  
+  // Roles de permisos: Solo administradores y coordinadores de cartelería pueden editar/aprobar fichas
+  const canEdit = userEmail && (userEmail.includes('admin') || userEmail.includes('coord'));
+  const isReadOnly = !canEdit;
 
   // Estados locales del formulario
   const [marca, setMarca] = useState('');
@@ -36,8 +41,8 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
     setTemplatePreferido(ficha_tecnica?.template_preferido || 1);
     setEan(producto.eans && producto.eans.length > 0 ? producto.eans[0] : '');
     
-    // Si ya tiene un aprobador registrado, usarlo; de lo contrario, por defecto es el email del usuario logueado
-    setAprobadoPor(ficha_tecnica?.aprobado_por || userEmail || 'OPERADOR_LOCAL');
+    // El aprobador por defecto es siempre el usuario activo de esta sesión, para registrar su firma en caso de guardar
+    setAprobadoPor(userEmail || 'OPERADOR_LOCAL');
   }, [data, userEmail]);
 
   // Manejo de cambios en las especificaciones dinámicas
@@ -223,10 +228,11 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
               <input
                 type="text"
                 required
+                disabled={loading || isReadOnly || isOffline}
                 value={marca}
                 onChange={(e) => setMarca(e.target.value)}
                 placeholder="Ej. Stanley, Bosch"
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
               />
             </div>
             <div>
@@ -234,10 +240,11 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
               <input
                 type="text"
                 required
+                disabled={loading || isReadOnly || isOffline}
                 value={tipoHerramienta}
                 onChange={(e) => setTipoHerramienta(e.target.value)}
                 placeholder="Ej. Taladro, Caja Grapas"
-                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+                className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
               />
             </div>
           </div>
@@ -246,10 +253,11 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
             <label className="block text-xs font-bold text-gray-600 mb-1">Código de Barras / EAN</label>
             <input
               type="text"
+              disabled={loading || isReadOnly || isOffline}
               value={ean}
               onChange={(e) => setEan(e.target.value)}
               placeholder="Ej. 7791234567890 (opcional)"
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
             />
           </div>
 
@@ -259,10 +267,11 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
             </label>
             <input
               type="url"
+              disabled={loading || isReadOnly || isOffline}
               value={fotoUrl}
               onChange={(e) => setFotoUrl(e.target.value)}
               placeholder="https://ejemplo.com/foto.jpg"
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
             />
             {fotoUrl && (
               <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden w-28 h-28 bg-gray-50 flex items-center justify-center">
@@ -295,8 +304,9 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
             <h3 className="text-xs font-semibold uppercase text-gray-400">Especificaciones Técnicas</h3>
             <button
               type="button"
+              disabled={isReadOnly || isOffline}
               onClick={addSpecification}
-              className="flex items-center gap-1 text-xs font-bold text-easy-red bg-red-50 hover:bg-red-100 active:scale-95 px-2.5 py-1.5 rounded-lg transition-all"
+              className="flex items-center gap-1 text-xs font-bold text-easy-red bg-red-50 hover:bg-red-100 active:scale-95 px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50 disabled:pointer-events-none"
             >
               <Plus className="w-3.5 h-3.5" /> Agregar campo
             </button>
@@ -307,22 +317,25 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
               <div key={index} className="flex gap-2 items-center">
                 <input
                   type="text"
+                  disabled={isReadOnly || isOffline}
                   value={spec.clave}
                   onChange={(e) => handleSpecChange(index, 'clave', e.target.value)}
                   placeholder="Atributo (ej. Potencia)"
-                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red"
+                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red disabled:opacity-60 disabled:bg-gray-50"
                 />
                 <input
                   type="text"
+                  disabled={isReadOnly || isOffline}
                   value={spec.valor}
                   onChange={(e) => handleSpecChange(index, 'valor', e.target.value)}
                   placeholder="Valor (ej. 750W)"
-                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red"
+                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red disabled:opacity-60 disabled:bg-gray-50"
                 />
                 <button
                   type="button"
+                  disabled={isReadOnly || isOffline}
                   onClick={() => removeSpecification(index)}
-                  className="p-2 text-gray-400 hover:text-easy-red hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-easy-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -371,9 +384,10 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
           <input
             type="text"
             required
+            disabled={isReadOnly || isOffline}
             value={aprobadoPor}
             onChange={(e) => setAprobadoPor(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
           />
         </div>
 
@@ -393,20 +407,22 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
         )}
 
         {/* Botón de Guardado */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-easy-red hover:bg-red-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-md shadow-easy-red/25 hover:shadow-lg transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
-        >
-          <Save className="w-4 h-4" />
-          {loading ? 'Guardando...' : 'Aprobar y Guardar Ficha'}
-        </button>
+        {canEdit && (
+          <button
+            type="submit"
+            disabled={loading || isOffline}
+            className="w-full bg-easy-red hover:bg-red-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-md shadow-easy-red/25 hover:shadow-lg transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Guardando...' : 'Aprobar y Guardar Ficha'}
+          </button>
+        )}
 
         {/* Botones de Impresión y Vista Previa */}
         <div className="grid grid-cols-2 gap-3 mt-3">
           <button
             type="button"
-            disabled={pdfLoadingState !== 'idle' || loading}
+            disabled={pdfLoadingState !== 'idle' || loading || isOffline}
             onClick={() => handlePrintAction('preview')}
             className="bg-gray-100 hover:bg-gray-200 active:scale-[0.98] text-gray-700 font-bold py-3 rounded-xl border border-gray-200 transition-all flex justify-center items-center gap-1.5 text-xs disabled:opacity-50 disabled:pointer-events-none"
           >
@@ -419,7 +435,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
           </button>
           <button
             type="button"
-            disabled={pdfLoadingState !== 'idle' || loading}
+            disabled={pdfLoadingState !== 'idle' || loading || isOffline}
             onClick={() => handlePrintAction('print')}
             className="bg-easy-yellow hover:bg-yellow-400 active:scale-[0.98] text-easy-dark font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm shadow-yellow-400/10 disabled:opacity-50 disabled:pointer-events-none"
           >

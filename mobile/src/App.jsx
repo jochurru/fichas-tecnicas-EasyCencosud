@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings, LogOut } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
 import WelcomeLogin from './components/WelcomeLogin';
 import { API_BASE_URL } from './config';
+import { saveProduct, getProduct } from './lib/indexedDb';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('userToken') || null);
@@ -16,8 +17,19 @@ export default function App() {
   const [productData, setProductData] = useState(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   
-  // Conexión simulada activa
-  const [isOnline, setIsOnline] = useState(true);
+  // Conexión activa real (basada en el estado del navegador)
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('userToken');
@@ -37,6 +49,29 @@ export default function App() {
     setError('');
     setProductData(null);
 
+    // 1. Si no hay conexión a internet, intentar buscar localmente en IndexedDB
+    if (!isOnline) {
+      console.log('[App] Buscando en caché local (Offline)...');
+      try {
+        const localData = await getProduct(identificador.trim());
+        if (localData) {
+          setProductData({
+            ...localData,
+            origen: 'local_offline' // Marcamos procedencia local offline
+          });
+          setSearchTerm(localData.producto.sku);
+        } else {
+          setError('Estás sin conexión y este producto no está en la caché local. Conéctate a internet para buscarlo.');
+        }
+      } catch (err) {
+        setError('Error al leer de la caché local offline.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 2. Si hay conexión, buscar en el backend
     try {
       const response = await fetch(`${API_BASE_URL}/producto/${encodeURIComponent(identificador.trim())}`, {
         headers: {
@@ -62,8 +97,29 @@ export default function App() {
       setProductData(data);
       setSearchTerm(data.producto.sku); // Actualizar el input con el SKU final limpio
 
+      // Guardar copia local asíncronamente en IndexedDB para uso offline
+      saveProduct(data);
+
     } catch (err) {
-      console.error(err);
+      console.error('[App] Error de red:', err);
+      
+      // Fallback: Si el backend está caído o la red falló en el medio, intentar buscar en caché local
+      try {
+        console.log('[App] Fallback a caché local por fallo de red...');
+        const localData = await getProduct(identificador.trim());
+        if (localData) {
+          setProductData({
+            ...localData,
+            origen: 'local_offline'
+          });
+          setSearchTerm(localData.producto.sku);
+          setError(''); // Limpiar el error de red
+          return;
+        }
+      } catch (dbErr) {
+        console.error('[App] Error en fallback de IndexedDB:', dbErr);
+      }
+
       setError(err.message || 'Error de conexión con el servidor backend.');
     } finally {
       setLoading(false);
@@ -229,6 +285,20 @@ export default function App() {
                     <strong className="font-bold block text-sm">Enriquecido por Gemini AI</strong>
                     <p className="text-blue-100 mt-0.5">
                       Este producto no tenía ficha en la base de datos. El modelo extrajo y estructuró las especificaciones técnicas en tiempo real.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {productData.origen === 'local_offline' && (
+                <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-3.5 shadow-sm text-xs flex items-start gap-2.5">
+                  <div className="bg-white/20 p-1.5 rounded-lg shrink-0">
+                    📶
+                  </div>
+                  <div>
+                    <strong className="font-bold block text-sm">Modo Offline (Caché Local)</strong>
+                    <p className="text-amber-100 mt-0.5">
+                      Estás visualizando una copia de caché guardada localmente en este dispositivo debido a fallas de red. Las funciones de guardado o regeneración del PDF se deshabilitarán hasta volver a tener señal.
                     </p>
                   </div>
                 </div>
