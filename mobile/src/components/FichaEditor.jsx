@@ -13,6 +13,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
   const [fotoUrl, setFotoUrl] = useState('');
   const [templatePreferido, setTemplatePreferido] = useState(1);
   const [aprobadoPor, setAprobadoPor] = useState('OPERADOR_LOCAL');
+  const [ean, setEan] = useState('');
   
   // Feedback
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
     setSugerenciaImagen(specData.sugerencia_busqueda_imagen || '');
     setFotoUrl(ficha_tecnica?.foto_url || '');
     setTemplatePreferido(ficha_tecnica?.template_preferido || 1);
+    setEan(producto.eans && producto.eans.length > 0 ? producto.eans[0] : '');
   }, [data]);
 
   // Manejo de cambios en las especificaciones dinámicas
@@ -121,7 +123,8 @@ export default function FichaEditor({ data, onSaveSuccess }) {
       },
       foto_url: fotoUrl.trim() || null,
       template_preferido: templatePreferido,
-      aprobado_por: aprobadoPor
+      aprobado_por: aprobadoPor,
+      ean: ean.trim() || null
     };
 
     try {
@@ -141,7 +144,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
 
       setSuccessMsg('Ficha técnica aprobada y guardada con éxito.');
       setTimeout(() => {
-        onSaveSuccess(result.ficha_tecnica);
+        onSaveSuccess(result.ficha_tecnica, ean.trim() || null);
       }, 1500);
 
     } catch (err) {
@@ -210,6 +213,17 @@ export default function FichaEditor({ data, onSaveSuccess }) {
                 className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Código de Barras / EAN</label>
+            <input
+              type="text"
+              value={ean}
+              onChange={(e) => setEan(e.target.value)}
+              placeholder="Ej. 7791234567890 (opcional)"
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+            />
           </div>
 
           <div>

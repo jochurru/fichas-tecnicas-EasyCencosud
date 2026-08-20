@@ -107,11 +107,12 @@ export class SupabaseProvider {
 
   /**
    * Consolida y aprueba una ficha técnica editada por un operador.
-   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por }
+   * Asocia opcionalmente un código EAN al SKU en la tabla codigos_ean.
+   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean }
    * @returns {Promise<Object>} Ficha técnica aprobada
    */
   async saveFichaAprobada(data) {
-    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por } = data;
+    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = data;
     const existing = await this.getFichaBySku(sku);
     let queryResult;
 
@@ -146,7 +147,39 @@ export class SupabaseProvider {
       console.error(`[SupabaseProvider] Error en saveFichaAprobada:`, queryResult.error);
       throw queryResult.error;
     }
+
+    // Asociar EAN de forma dinámica si se provee
+    if (ean && ean.trim()) {
+      const { error: eanError } = await supabase
+        .from('codigos_ean')
+        .upsert({ ean: ean.trim(), sku }, { onConflict: 'ean' });
+
+      if (eanError) {
+        console.error(`[SupabaseProvider] Error al asociar EAN ${ean} a SKU ${sku}:`, eanError);
+      } else {
+        console.log(`[SupabaseProvider] EAN ${ean} asociado exitosamente a SKU ${sku}`);
+      }
+    }
+
     return queryResult.data;
+  }
+
+  /**
+   * Obtiene todos los códigos EAN registrados para un SKU.
+   * @param {string} sku - SKU del producto
+   * @returns {Promise<string[]>} Lista de códigos EAN
+   */
+  async getEansBySku(sku) {
+    const { data, error } = await supabase
+      .from('codigos_ean')
+      .select('ean')
+      .eq('sku', sku);
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en getEansBySku:`, error);
+      throw error;
+    }
+    return data ? data.map(r => r.ean) : [];
   }
 
   /**

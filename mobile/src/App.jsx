@@ -186,10 +186,14 @@ export default function App() {
 
               <FichaEditor 
                 data={productData} 
-                onSaveSuccess={(updatedFicha) => {
-                  // Actualizar estado local con la nueva ficha aprobada
+                onSaveSuccess={(updatedFicha, newEan) => {
+                  // Actualizar estado local con la nueva ficha aprobada e EAN
                   setProductData({
                     ...productData,
+                    producto: {
+                      ...productData.producto,
+                      eans: newEan ? [newEan] : productData.producto.eans
+                    },
                     ficha_tecnica: updatedFicha,
                     origen: 'base_datos' // Cambiar origen a base de datos tras guardado
                   });

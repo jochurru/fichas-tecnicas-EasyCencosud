@@ -104,6 +104,9 @@ router.get('/producto/:identificador', async (req, res, next) => {
       }
     }
 
+    // Obtener los códigos EAN asociados al producto
+    const eans = await dataService.getEansBySku(producto.sku);
+
     // Retornar el contrato acordado
     return res.json({
       producto: {
@@ -111,7 +114,8 @@ router.get('/producto/:identificador', async (req, res, next) => {
         descripcion: producto.descripcion,
         proveedor: producto.proveedor,
         grupo_compras: producto.grupo_compras,
-        grupo_articulos: producto.grupo_articulos
+        grupo_articulos: producto.grupo_articulos,
+        eans
       },
       ficha_tecnica: ficha,
       origen
@@ -127,7 +131,7 @@ router.get('/producto/:identificador', async (req, res, next) => {
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
 router.post('/fichas/aprobar', async (req, res, next) => {
-  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por } = req.body;
+  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = req.body;
 
   // Validación básica del contrato
   if (!sku) {
@@ -153,7 +157,8 @@ router.post('/fichas/aprobar', async (req, res, next) => {
       especificaciones_json,
       foto_url,
       template_preferido,
-      aprobado_por
+      aprobado_por,
+      ean
     });
 
     return res.json({
