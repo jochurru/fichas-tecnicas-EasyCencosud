@@ -13,7 +13,20 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
+// Cliente global usado principalmente para autenticación
 export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+  auth: {
+    persistSession: false
+  },
+  realtime: {
+    transport: ws
+  }
+});
+
+// Cliente dedicado exclusivo para consultas de base de datos.
+// Esto evita que mutaciones de headers (provocadas al validar tokens JWT de usuarios de bajos privilegios)
+// afecten las consultas del backend y causen problemas de RLS.
+export const supabaseDb = createClient(supabaseUrl || '', supabaseKey || '', {
   auth: {
     persistSession: false
   },

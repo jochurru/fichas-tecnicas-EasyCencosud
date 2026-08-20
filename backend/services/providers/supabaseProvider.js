@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase.js';
+import { supabaseDb as supabase } from '../../lib/supabase.js';
 
 /**
  * Proveedor de Datos para Supabase.
