@@ -4,6 +4,7 @@ import {
   LogOut, RefreshCw, FileSpreadsheet, KeyRound, ArrowRight,
   Database, QrCode
 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function AdminPanel({ onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -34,7 +35,7 @@ export default function AdminPanel({ onClose }) {
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -116,8 +117,8 @@ export default function AdminPanel({ onClose }) {
 
         // Seleccionar endpoint basado en la pestaña activa
         const endpoint = activeTab === 'catalog' 
-          ? '/api/catalogos/importar' 
-          : '/api/catalogos/importar-eans';
+          ? `${API_BASE_URL}/catalogos/importar` 
+          : `${API_BASE_URL}/catalogos/importar-eans`;
 
         const res = await fetch(endpoint, {
           method: 'POST',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function FichaEditor({ data, onSaveSuccess }) {
   const { producto, ficha_tecnica } = data;
@@ -50,7 +51,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
       if (templatePreferido === 3) templateName = 'fleje2';
 
       // 1. Llamar al endpoint POST
-      const response = await fetch('/api/fichas/imprimir', {
+      const response = await fetch(`${API_BASE_URL}/fichas/imprimir`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -128,7 +129,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
     };
 
     try {
-      const response = await fetch('/api/fichas/aprobar', {
+      const response = await fetch(`${API_BASE_URL}/fichas/aprobar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

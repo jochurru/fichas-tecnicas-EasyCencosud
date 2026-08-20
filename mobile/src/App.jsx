@@ -3,6 +3,7 @@ import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings } from 'luc
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
+import { API_BASE_URL } from './config';
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +25,7 @@ export default function App() {
     setProductData(null);
 
     try {
-      const response = await fetch(`/api/producto/${encodeURIComponent(identificador.trim())}`);
+      const response = await fetch(`${API_BASE_URL}/producto/${encodeURIComponent(identificador.trim())}`);
       const data = await response.json();
 
       if (!response.ok) {
