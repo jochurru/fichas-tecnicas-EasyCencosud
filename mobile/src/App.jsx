@@ -237,6 +237,7 @@ export default function App() {
               <FichaEditor 
                 data={productData} 
                 token={token}
+                userEmail={userEmail}
                 onSaveSuccess={(updatedFicha, newEan) => {
                   // Actualizar estado local con la nueva ficha aprobada e EAN
                   setProductData({

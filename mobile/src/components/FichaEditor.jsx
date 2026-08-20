@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-export default function FichaEditor({ data, token, onSaveSuccess }) {
+export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
 
@@ -35,7 +35,10 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
     setFotoUrl(ficha_tecnica?.foto_url || '');
     setTemplatePreferido(ficha_tecnica?.template_preferido || 1);
     setEan(producto.eans && producto.eans.length > 0 ? producto.eans[0] : '');
-  }, [data]);
+    
+    // Si ya tiene un aprobador registrado, usarlo; de lo contrario, por defecto es el email del usuario logueado
+    setAprobadoPor(ficha_tecnica?.aprobado_por || userEmail || 'OPERADOR_LOCAL');
+  }, [data, userEmail]);
 
   // Manejo de cambios en las especificaciones dinámicas
   const handleSpecChange = (index, field, value) => {
