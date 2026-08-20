@@ -60,7 +60,47 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   // Remplazos básicos globales en el HTML usando Regex
   html = html.replace(/\{\{tipo_herramienta\}\}/g, specData.tipo_herramienta || 'HERRAMIENTA');
   html = html.replace(/\{\{destacado\}\}/g, destacado);
-  html = html.replace(/\{\{marca\}\}/g, specData.marca || 'GENERICA');
+  // Resolver el logo de la marca (si está disponible en nuestra base de logotipos oficiales vectoriales)
+  const brandName = (specData.marca || 'GENERICA').trim();
+  const brandLower = brandName.toLowerCase();
+  
+  const brandLogoMap = {
+    'einhell': 'https://upload.wikimedia.org/wikipedia/commons/1/1b/Einhell_Logo.svg',
+    'bosch': 'https://upload.wikimedia.org/wikipedia/commons/2/29/Bosch-Logo.svg',
+    'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/7/74/DeWalt_logo.svg',
+    'stanley': 'https://upload.wikimedia.org/wikipedia/commons/8/87/Stanley_Tools_logo.svg',
+    'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
+    'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
+    'b&d': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
+    'makita': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Makita_logo.svg',
+    'karcher': 'https://upload.wikimedia.org/wikipedia/commons/8/8b/K%C3%A4rcher_logo.svg',
+    'dremel': 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Dremel_logo.svg',
+    'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
+    'skil': 'https://upload.wikimedia.org/wikipedia/commons/3/30/Skil_Logo.svg',
+    'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
+    'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
+  };
+
+  let logoUrl = null;
+  for (const key of Object.keys(brandLogoMap)) {
+    if (brandLower.includes(key)) {
+      logoUrl = brandLogoMap[key];
+      break;
+    }
+  }
+
+  let headerBrandHtml = brandName;
+  if (logoUrl) {
+    let logoHeight = '18px';
+    if (templateName === 'a4') {
+      logoHeight = '32px';
+    } else if (templateName === 'fleje2') {
+      logoHeight = '12px';
+    }
+    headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; filter: brightness(0) invert(1); display: inline-block; vertical-align: middle;" />`;
+  }
+
+  html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
   html = html.replace(/\{\{sku\}\}/g, producto.sku);
   html = html.replace(/\{\{ean\}\}/g, ean);
   html = html.replace(/\{\{descripcion\}\}/g, producto.descripcion || '');
