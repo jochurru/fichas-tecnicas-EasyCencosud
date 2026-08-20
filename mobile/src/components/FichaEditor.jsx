@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function FichaEditor({ data, token, onSaveSuccess }) {
@@ -18,6 +18,7 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
   
   // Feedback
   const [loading, setLoading] = useState(false);
+  const [pdfLoadingState, setPdfLoadingState] = useState('idle'); // 'idle' | 'preview' | 'print'
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -44,6 +45,9 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
   };
 
   const handlePrintAction = async (action) => {
+    setPdfLoadingState(action);
+    setErrorMsg('');
+    setSuccessMsg('');
     try {
       // Mapear id del template preferido al string esperado por el backend
       let templateName = 'fleje3';
@@ -63,8 +67,17 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
         })
       });
 
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userEmail');
+        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
+        window.location.reload();
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error('Error al generar el PDF de impresión.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al generar el PDF de impresión.');
       }
 
       // 2. Leer la respuesta como Blob binario
@@ -91,6 +104,8 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
     } catch (err) {
       console.error('Error de impresión:', err);
       alert('Hubo un error al generar la ficha técnica: ' + err.message);
+    } finally {
+      setPdfLoadingState('idle');
     }
   };
 
@@ -136,6 +151,14 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
         },
         body: JSON.stringify(payload)
       });
+
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userEmail');
+        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
+        window.location.reload();
+        return;
+      }
 
       const result = await response.json();
 
@@ -380,19 +403,29 @@ export default function FichaEditor({ data, token, onSaveSuccess }) {
         <div className="grid grid-cols-2 gap-3 mt-3">
           <button
             type="button"
+            disabled={pdfLoadingState !== 'idle' || loading}
             onClick={() => handlePrintAction('preview')}
-            className="bg-gray-100 hover:bg-gray-200 active:scale-[0.98] text-gray-700 font-bold py-3 rounded-xl border border-gray-200 transition-all flex justify-center items-center gap-1.5 text-xs"
+            className="bg-gray-100 hover:bg-gray-200 active:scale-[0.98] text-gray-700 font-bold py-3 rounded-xl border border-gray-200 transition-all flex justify-center items-center gap-1.5 text-xs disabled:opacity-50 disabled:pointer-events-none"
           >
-            <Eye className="w-4 h-4" />
-            Vista Previa
+            {pdfLoadingState === 'preview' ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-gray-500" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+            {pdfLoadingState === 'preview' ? 'Generando...' : 'Vista Previa'}
           </button>
           <button
             type="button"
+            disabled={pdfLoadingState !== 'idle' || loading}
             onClick={() => handlePrintAction('print')}
-            className="bg-easy-yellow hover:bg-yellow-400 active:scale-[0.98] text-easy-dark font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm shadow-yellow-400/10"
+            className="bg-easy-yellow hover:bg-yellow-400 active:scale-[0.98] text-easy-dark font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm shadow-yellow-400/10 disabled:opacity-50 disabled:pointer-events-none"
           >
-            <Printer className="w-4 h-4" />
-            Imprimir Ficha Técnica
+            {pdfLoadingState === 'print' ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-easy-dark" />
+            ) : (
+              <Printer className="w-4 h-4" />
+            )}
+            {pdfLoadingState === 'print' ? 'Descargando...' : 'Imprimir Ficha'}
           </button>
         </div>
 

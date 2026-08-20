@@ -43,6 +43,16 @@ export default function App() {
           'Authorization': `Bearer ${token}`
         }
       });
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userEmail');
+        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
+        setToken(null);
+        setUserEmail('');
+        setProductData(null);
+        return;
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
