@@ -1,53 +1,31 @@
 import { Router } from 'express';
-import { supabase } from '../lib/supabase.js';
+import { dataService } from '../services/dataService.js';
 import { generatePdfFromFicha } from '../lib/pdfGenerator.js';
 
 const router = Router();
 
 /**
- * Función auxiliar para recuperar datos de la base de datos y compilar el PDF.
+ * Función auxiliar para recuperar datos a través de dataService y compilar el PDF.
  * 
  * @param {string} sku - El SKU del producto
  * @param {string} templateName - El nombre de la plantilla
  * @returns {Promise<Buffer>}
  */
 async function buildFichaPdf(sku, templateName) {
-  // 1. Obtener la información del producto maestro
-  const { data: producto, error: prodError } = await supabase
-    .from('productos')
-    .select('*')
-    .eq('sku', sku)
-    .maybeSingle();
-
-  if (prodError) {
-    throw new Error(`Database error resolving product: ${prodError.message}`);
-  }
+  // 1. Obtener la información del producto maestro desde el servicio de datos
+  const producto = await dataService.getProductoBySku(sku);
   if (!producto) {
     throw new Error('PRODUCT_NOT_FOUND');
   }
 
-  // 2. Obtener la ficha técnica asociada
-  const { data: ficha_tecnica, error: fichaError } = await supabase
-    .from('fichas_tecnicas')
-    .select('*')
-    .eq('sku', sku)
-    .maybeSingle();
-
-  if (fichaError) {
-    throw new Error(`Database error resolving ficha: ${fichaError.message}`);
-  }
+  // 2. Obtener la ficha técnica asociada desde el servicio de datos
+  const ficha_tecnica = await dataService.getFichaBySku(sku);
   if (!ficha_tecnica) {
     throw new Error('FICHA_NOT_FOUND');
   }
 
   // 3. Obtener el primer EAN asociado al SKU
-  const { data: eanRow } = await supabase
-    .from('codigos_ean')
-    .select('ean')
-    .eq('sku', sku)
-    .limit(1)
-    .maybeSingle();
-  const ean = eanRow ? eanRow.ean : 'SIN EAN';
+  const ean = await dataService.getEanBySku(sku);
 
   // 4. Generar el PDF usando el motor de Puppeteer
   return await generatePdfFromFicha({ producto, ficha_tecnica, ean }, templateName);
