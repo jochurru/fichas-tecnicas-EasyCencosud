@@ -1,84 +1,103 @@
-# Proyecto Fichas Técnicas - Easy Cencosud
+# Fichas Técnicas Easy Cencosud (Góndolas & Salón de Ventas)
 
-Este repositorio contiene la estructura modular para el sistema Mobile-First de Fichas Técnicas del punto de venta de Easy Cencosud. El objetivo inicial es procesar y gestionar las fichas para el **Grupo de compras 45 (Herramientas)** de forma dinámica y extensible.
+Aplicación web móvil corporativa (PWA) diseñada para optimizar los procesos de búsqueda, validación, edición y generación en PDF de fichas técnicas de productos y cartelas de góndola (flejes) para las tiendas **Easy** del grupo **Cencosud**.
 
-## Estructura del Proyecto
+---
 
-```
-/Proyecto Fichas
-  ├── backend/               # Servidor API Node.js (JavaScript - ES Modules)
-  │     ├── lib/
-  │     │     └── supabase.js  # Cliente de conexión a Supabase
-  │     ├── routes/
-  │     │     └── productos.js # Endpoints (GET /api/producto/:id, POST /api/fichas/aprobar)
-  │     ├── .env.example       # Plantilla de variables de entorno para el backend
-  │     ├── index.js           # Punto de entrada de Express
-  │     └── package.json       # Dependencias y scripts de ejecución
-  ├── etl/                   # Script de Ingesta y Carga de datos (Python)
-  │     ├── load_sap_data.py   # Script de ETL para procesar el reporte SAP en XLSX
-  │     └── requirements.txt   # Librerías de Python requeridas para el ETL
-  └── supabase/              # Base de datos
-        └── migrations/
-              └── 20260819000000_init_schema.sql # Esquema DDL inicial
+## 🏗️ Arquitectura de la Solución
+
+El sistema sigue una arquitectura desacoplada moderna y 100% serverless, ideal para optimizar costos de infraestructura y escalar de forma transparente ante picos de demanda en los locales comerciales.
+
+```mermaid
+graph TD
+    Client[Frontend: React PWA + Tailwind + Vite] -- "HTTPS / JWT" --> API[Backend: Node.js + Express en Google Cloud Run]
+    API -- "Supabase Client (Bypass RLS)" --> DB[(PostgreSQL en Supabase)]
+    API -- "Puppeteer (Headless Chrome)" --> PDF[Generación de PDF en Caliente]
+    API -- "Caché de PDFs" --> Bucket[Supabase Storage bucket: fichas-pdf]
+    SSO[Azure AD / Entra ID] -.-> Login[Ingreso SSO-Ready / Supabase Auth]
 ```
 
----
-
-## 1. Configuración de Base de Datos (Supabase)
-
-1. Creá un proyecto en [Supabase](https://supabase.com/).
-2. Copiá el contenido del archivo [`supabase/migrations/20260819000000_init_schema.sql`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/supabase/migrations/20260819000000_init_schema.sql) y ejecutalo en el **SQL Editor** de la consola de Supabase. Esto creará las tablas:
-   - `productos`
-   - `codigos_ean`
-   - `fichas_tecnicas`
-   junto con sus índices y el trigger automático de actualización para `updated_at`.
-
----
-
-## 2. Ingesta Inicial de Datos (ETL)
-
-El script de ETL está en Python y procesará el archivo Excel `logistica local.XLSX` ubicado en tu carpeta de descargas: `C:\Users\Jonatan Churruarin\Downloads\logistica local.XLSX`.
-
-### Preparación del ETL
-1. Creá un archivo `.env` dentro de la carpeta `backend/` usando como guía el archivo `.env.example` y completá tus claves de Supabase:
-   ```env
-   SUPABASE_URL=https://tu-proyecto-id.supabase.co
-   SUPABASE_KEY=tu-clave-service-role-o-anon
-   ```
-2. Instalá las dependencias requeridas en tu consola local:
-   ```bash
-   pip install -r etl/requirements.txt
-   ```
-3. Ejecutá el ETL:
-   ```bash
-   python etl/load_sap_data.py
-   ```
-   *El script leerá el Excel, aplicará un mapeo tolerante a problemas de codificación de caracteres, filtrará estrictamente el **Grupo de compras 45 (Herramientas)**, limpiará nulos, eliminará duplicados y los cargará en bloques en la tabla `productos`.*
+### Componentes de la Arquitectura
+1.  **Frontend (React Client - Firebase Hosting):**
+    *   Compilado como una **PWA (Progressive Web App)** con soporte offline mediante Service Workers.
+    *   Utiliza la API `HTML5 IndexedDB` local en el celular para almacenar las búsquedas exitosas y permitir la visualización offline de fichas en zonas ciegas de Wi-Fi del salón.
+2.  **Backend (API Server - Google Cloud Run):**
+    *   Una API REST desarrollada en Node.js y Express empaquetada en un contenedor Docker.
+    *   Utiliza Puppeteer (Headless Chrome) para la renderización matemática exacta de los PDFs a partir de plantillas HTML y CSS diseñadas a escala real de impresión (`A4`, `90x74mm` y `80x40mm`).
+3.  **Caché de Descargas y CDN (Supabase Storage):**
+    *   Para evitar la saturación de CPU que provoca levantar múltiples procesos Chrome, el backend implementa una estrategia *Cache-Aside* en el bucket `fichas-pdf`. Las descargas de PDFs pre-generados se sirven de manera directa en `<50ms` desde la CDN de Supabase.
+4.  **Capa de Datos y Autenticación (Supabase PostgreSQL):**
+    *   Almacena las especificaciones de SAP, las fichas aprobadas locales y los mapeos de códigos de barra (EAN).
+    *   Autenticación integrada via JWT para control de accesos.
 
 ---
 
-## 3. Servidor de API Backend (Node.js)
+## 🌟 Características Principales
 
-El backend corre sobre Express en Node.js puro usando **ES Modules** para una sintaxis limpia.
+*   **Buscador Multimodal:** Permite escanear códigos de barra directamente con la cámara del celular del operador (librería `html5-qrcode`) o escribir manualmente el SKU/EAN.
+*   **Enriquecimiento con Gemini AI:** Si el producto consultado existe en SAP pero no tiene ficha técnica creada, el backend invoca a Gemini Pro en tiempo real para estructurar las especificaciones técnicas del texto del producto de SAP de manera estructurada en JSON.
+*   **Diseño e Impresión Centrada (Anti-Recortes):** Todas las plantillas se generan en tamaño A4 con guías punteadas de corte y márgenes seguros de `15mm` para evitar que los rodillos de las impresoras físicas recorten logotipos o textos.
+*   **Control de Roles de 3 Niveles (RBAC):**
+    *   *Administrador:* Acceso a carga masiva SAP y configuraciones generales.
+    *   *Coordinador de Cartelería:* Permisos para editar atributos, cargar fotos y aprobar fichas técnicas locales.
+    *   *Operador de Pasillo:* Búsqueda, visualización y envío a impresión rápida (sin permisos de edición).
+*   **Carga Asíncrona SAP:** Ingestión de planillas Excel de SAP procesadas en segundo plano con una barra de progreso dinámico en tiempo real para evitar caídas por timeouts.
 
-### Arrancar el Servidor
-1. Desde una terminal, ingresá a la carpeta `backend`:
-   ```bash
-   cd backend
-   ```
-2. Instalá las dependencias:
-   ```bash
-   npm install
-   ```
-3. Iniciá el servidor en modo desarrollo (se reinicia automáticamente con cambios):
-   ```bash
-   npm run dev
-   ```
+---
 
-### Endpoints Disponibles
-- **Health Check:** `GET http://localhost:3000/health`
-- **Resolución de Producto/Ficha:** `GET http://localhost:3000/api/producto/:identificador`
-  - Acepta tanto un SKU (ej. `148135`) como un EAN (si estuviera en `codigos_ean`).
-  - Si el producto existe pero no tiene ficha, inicializa automáticamente un registro en `borrador_ia`.
-- **Aprobación de Ficha:** `POST http://localhost:3000/api/fichas/aprobar`
-  - Consolida y cambia el estado de la ficha técnica a `aprobado` con los campos validados del usuario.
+## 🛠️ Tecnologías y Dependencias
+
+### Frontend
+*   **Vite + React (JS):** Entorno de ejecución rápido y empaquetado.
+*   **Tailwind CSS:** Diseño UI móvil responsivo siguiendo el branding corporativo de Easy.
+*   **Vite-Plugin-PWA:** Generación de Service Workers para soporte offline.
+*   **Lucide-React:** Set de iconos vectoriales.
+*   **HTML5 QR Code:** Escaneo de códigos de barra desde el navegador móvil.
+
+### Backend
+*   **Node.js + Express:** API Servidora robusta y ligera.
+*   **Puppeteer:** Compilación exacta de HTML a formato PDF PDF/A-1a.
+*   **Supabase JS Client:** Comunicación con la base de datos PostgreSQL, Supabase Auth y Storage.
+*   **XLSX (SheetJS):** Lectura veloz de reportes de logística SAP en formato Excel.
+*   **Helmet & Express Rate Limit:** Protección contra inundaciones de red, inyecciones de código y fuerza bruta.
+
+---
+
+## 📁 Estructura del Repositorio
+
+```text
+├── backend/
+│   ├── lib/
+│   │   ├── easyFetcher.js      # Consultas y extracción de imágenes del sitio público
+│   │   ├── geminiExtractor.js  # Integración con la API de Google Gemini Pro
+│   │   ├── pdfGenerator.js     # Motor de renderizado A4/Flejes con Puppeteer
+│   │   ├── supabase.js         # Inicialización de clientes Supabase (con y sin RLS)
+│   │   └── taskManager.js      # Gestor de tareas asíncronas en memoria
+│   ├── middlewares/
+│   │   └── authMiddleware.js   # Protección de rutas por JWT y roles (Admin/Operador)
+│   ├── routes/
+│   │   ├── catalogos.js        # Ingesta SAP, Login de contingencia y consulta de tareas
+│   │   ├── impresion.js        # Endpoints de generación y CDN caché de PDFs
+│   │   └── productos.js        # Búsqueda, borrador Gemini y aprobación de fichas
+│   ├── templates/
+│   │   ├── template_a4.html    # Plantilla HTML de ficha técnica en A4
+│   │   ├── template_fleje_3.html # Plantilla de cartela de góndola de 90x74mm
+│   │   └── template_fleje_2.html # Plantilla de cartela de góndola de 80x40mm
+│   ├── index.js                # Punto de entrada de la API Express
+│   └── package.json
+└── mobile/
+    ├── public/
+    │   └── easy-logo.png       # Recursos estáticos
+    ├── src/
+    │   ├── components/
+    │   │   ├── AdminPanel.jsx  # Panel administrativo para carga SAP y progreso asíncrono
+    │   │   ├── FichaEditor.jsx # Editor de atributos, selector de plantilla y botones PDF
+    │   │   ├── Scanner.jsx     # Escáner móvil integrado para cámara
+    │   │   └── WelcomeLogin.jsx # Login corporativo / SSO-Ready
+    │   ├── lib/
+    │   │   └── indexedDb.js    # Capa de base de datos offline local del navegador
+    │   ├── App.jsx             # Orquestador del flujo principal y estado offline
+    │   └── main.jsx
+    ├── vite.config.js          # Configuración de Vite, proxy local y PWA
+    └── package.json
+```
