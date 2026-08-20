@@ -26,6 +26,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint de depuración seguro para variables de entorno
+app.get('/api/debug/env', (req, res) => {
+  const sanitize = (val) => {
+    if (!val) return 'no configurado';
+    if (val.length <= 12) return 'configurado (corto)';
+    return `${val.substring(0, 8)}...${val.substring(val.length - 4)}`;
+  };
+  res.json({
+    SUPABASE_URL: sanitize(process.env.SUPABASE_URL),
+    SUPABASE_KEY: sanitize(process.env.SUPABASE_KEY),
+    GEMINI_API_KEY: sanitize(process.env.GEMINI_API_KEY),
+    GROQ_API_KEY: sanitize(process.env.GROQ_API_KEY),
+    DATA_PROVIDER: process.env.DATA_PROVIDER || 'supabase'
+  });
+});
+
 // Rutas API
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
