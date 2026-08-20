@@ -72,8 +72,8 @@ export default function WelcomeLogin({ onLoginSuccess }) {
         
         {/* Cabecera Roja Corporativa Easy */}
         <div className="bg-easy-red p-8 text-center flex flex-col items-center gap-3">
-          <div className="bg-white p-2 rounded-full shadow-md w-16 h-16 flex items-center justify-center border-2 border-yellow-400">
-            <span className="font-black text-easy-red text-2xl tracking-tighter">easy</span>
+          <div className="bg-white p-2.5 rounded-full shadow-md w-16 h-16 flex items-center justify-center border-2 border-yellow-400 overflow-hidden">
+            <img src="/easy-logo.png" alt="Easy Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-white font-extrabold text-xl tracking-tight">Fichas Técnicas</h1>
