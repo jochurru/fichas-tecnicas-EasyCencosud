@@ -97,7 +97,33 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     } else if (templateName === 'fleje2') {
       logoHeight = '12px';
     }
-    headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; filter: brightness(0) invert(1); display: inline-block; vertical-align: middle;" />`;
+
+    try {
+      // Intentar descargar y optimizar el SVG al vuelo para mayor velocidad e incrustación inline
+      const response = await fetch(logoUrl, { 
+        headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' } 
+      });
+      
+      if (response.ok) {
+        let svgText = await response.text();
+        
+        // Optimizar DeWalt: ocultar fondo amarillo y colorear letras negras a amarillo institucional DeWalt (#febd18)
+        if (brandLower.includes('dewalt')) {
+          svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
+          svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
+        }
+
+        const base64Svg = Buffer.from(svgText).toString('base64');
+        headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      } else {
+        // Fallback a URL externa directa en caso de error HTTP en la descarga
+        headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      }
+    } catch (fetchErr) {
+      console.warn(`[pdfGenerator] Error al descargar/procesar logo para ${brandName}:`, fetchErr.message);
+      // Fallback a URL externa directa en caso de error de red
+      headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+    }
   }
 
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
