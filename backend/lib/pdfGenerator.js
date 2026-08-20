@@ -65,18 +65,18 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   const brandLower = brandName.toLowerCase();
   
   const brandLogoMap = {
-    'einhell': 'https://upload.wikimedia.org/wikipedia/commons/1/1b/Einhell_Logo.svg',
-    'bosch': 'https://upload.wikimedia.org/wikipedia/commons/2/29/Bosch-Logo.svg',
-    'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/7/74/DeWalt_logo.svg',
-    'stanley': 'https://upload.wikimedia.org/wikipedia/commons/8/87/Stanley_Tools_logo.svg',
-    'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
-    'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
-    'b&d': 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Black_%26_Decker_logo.svg',
-    'makita': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Makita_logo.svg',
-    'karcher': 'https://upload.wikimedia.org/wikipedia/commons/8/8b/K%C3%A4rcher_logo.svg',
-    'dremel': 'https://upload.wikimedia.org/wikipedia/commons/d/dd/Dremel_logo.svg',
+    'einhell': 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Einhell_Germany_logo.svg',
+    'bosch': 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Bosch-Logo.svg',
+    'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/8/89/DeWalt_Logo.svg',
+    'stanley': 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Stanley_Hand_Tools_logo.svg',
+    'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+    'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+    'b&d': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+    'makita': 'https://upload.wikimedia.org/wikipedia/commons/7/71/Makita_Logo.svg',
+    'karcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
+    'dremel': 'https://upload.wikimedia.org/wikipedia/commons/7/79/Dremel_logo.svg',
+    'skil': 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Skil_logo_2019.svg',
     'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
-    'skil': 'https://upload.wikimedia.org/wikipedia/commons/3/30/Skil_Logo.svg',
     'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
     'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
   };
