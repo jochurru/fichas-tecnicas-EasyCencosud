@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import productosRouter from './routes/productos.js';
 import impresionRouter from './routes/impresion.js';
 import catalogosRouter from './routes/catalogos.js';
@@ -12,10 +14,52 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
+// Configurar Rate Limiters
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 300, // Límite de 300 peticiones por IP cada 15 minutos
+  message: {
+    error: 'Too Many Requests',
+    message: 'Límite de solicitudes excedido para tu dirección IP. Por favor, intenta de nuevo más tarde.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // Límite estricto de 15 intentos de login por IP cada 15 minutos (evita fuerza bruta)
+  message: {
+    error: 'Too Many Requests',
+    message: 'Demasiados intentos de inicio de sesión desde esta IP. Por favor, intenta de nuevo después de 15 minutos.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const pdfLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 30, // Límite de 30 descargas/impresiones de PDF por IP cada 5 minutos (evita saturación en Puppeteer)
+  message: {
+    error: 'Too Many Requests',
+    message: 'Has excedido el límite de generación de PDFs. Por favor, espera unos minutos antes de intentar de nuevo.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Middlewares de seguridad y parsing
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargas de recursos cruzados entre Firebase y Cloud Run
+}));
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Aplicar Rate Limiters a rutas críticas antes de cargar las rutas de negocio
+app.use('/api/auth/login', authLimiter);
+app.use('/api/impresion/imprimir', pdfLimiter);
+app.use('/api/', generalLimiter);
 
 // Endpoint de salud básico
 app.get('/health', (req, res) => {
