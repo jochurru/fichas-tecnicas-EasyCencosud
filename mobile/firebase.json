@@ -10,7 +10,7 @@
       {
         "source": "/api/**",
         "run": {
-          "serviceId": "fichas-backend-api",
+          "serviceId": "fichas-tecnicas-easycencosud",
           "region": "us-central1"
         }
       },
