@@ -31,20 +31,16 @@ Detalles SAP del producto:
 
 REGLAS DE ESTANDARIZACIÓN CRÍTICAS:
 1. Debes devolver EXACTAMENTE 5 especificaciones técnicas en la lista "especificaciones". Ni más ni menos.
-2. Para herramientas eléctricas o a batería, prioriza en este orden exacto:
-   - Voltaje (ej: "12V", "20V MAX") o Potencia (ej: "750 W")
-   - Velocidad (ej: "0 - 1500 RPM")
-   - Mandril / Encastre (ej: "1/4 pulgada", "13 mm")
-   - Torque Máximo (ej: "30 Nm", "N/A" si no aplica)
-   - Batería / Alimentación (ej: "Litio-Ion 1.5 Ah", "Batería integrada" o "Cable 2m")
-3. Para accesorios, consumibles y herramientas manuales (ej: discos, grapas, brocas), prioriza:
-   - Medida / Diámetro (ej: "1/2 pulgada", "115 mm")
-   - Material (ej: "Acero HSS", "Cromo Vanadio")
-   - Cantidad / Presentación (ej: "1000 unidades", "Blister x 1")
-   - Compatibilidad / Uso (ej: "Para amoladoras", "Madera y metal")
-   - Peso o Espesor (ej: "1.2 mm", "0.45 kg")
-4. Si un valor no está explícito en la descripción breve de SAP, realiza una deducción realista en base a la marca (ej: Bosch, Makita, DeWalt, Stanley) y el tipo de herramienta. Si no se puede deducir, usa "N/A". No dejes campos vacíos ni devuelvas menos de 5 especificaciones.
-5. CONVERSIÓN DE MEDIDAS (PULGADAS A MILÍMETROS): Si un valor de medida (como diámetro de disco, mechas o tamaño de mandril/encastre) está originalmente en pulgadas (ej: "3/8 pulgadas", "1/2 pulgada", "1/2\"", "1/4\""), debes convertirlo obligatoriamente a milímetros bajo los estándares de ferretería (ej: "1/4\"" -> "6 mm" o "6.35 mm", "3/8\"" -> "10 mm", "1/2\"" -> "13 mm", "7-1/4\"" -> "184 mm", "4-1/2\"" -> "115 mm", etc.) y expresarlo únicamente en milímetros (mm).
+2. Dinamismo de especificaciones según el tipo de herramienta:
+   No fuerces campos irrelevantes. Genera las 5 especificaciones más importantes que un comprador profesional compararía para esa herramienta específica.
+   - Para Taladros/Atornilladores: Potencia/Voltaje, Velocidad, Mandril/Encastre, Torque Máximo, Alimentación/Batería.
+   - Para Sierras (circulares, de mesa, caladoras, etc.): Potencia/Voltaje, Diámetro de disco/hoja, Velocidad, Capacidad de corte (o Profundidad de corte), Peso o Alimentación.
+   - Para Amoladoras: Potencia/Voltaje, Diámetro de disco, Velocidad, Rosca del husillo (ej. M14), Peso o Alimentación.
+   - Para Lijadoras/Sopladoras/Cepillos: Potencia/Voltaje, Velocidad (o Oscilaciones/Órbitas), Tipo de base / Superficie, Peso, Alimentación.
+   - Para Accesorios y herramientas manuales (discos, brocas, etc.): Medida/Diámetro, Material, Cantidad/Presentación, Compatibilidad/Uso, Peso o Espesor.
+   - Para otras herramientas (compresores, soldadoras, etc.): Selecciona las 5 especificaciones clave (ej. Presión máxima, Amperaje, Flujo de aire, Capacidad de tanque, Peso, etc.).
+3. Si un valor no está explícito en la descripción breve de SAP, realiza una deducción realista en base a la marca (ej: Bosch, Makita, DeWalt, Stanley) y el tipo de herramienta. Si no se puede deducir, usa valores genéricos del modelo o en última instancia "Peso" (deducido de forma realista) en vez de campos irrelevantes con "N/A".
+4. CONVERSIÓN DE MEDIDAS (PULGADAS A MILÍMETROS): Si un valor de medida (como diámetro de disco, mechas o tamaño de mandril/encastre) está originalmente en pulgadas (ej: "3/8 pulgadas", "1/2 pulgada", "1/2\"", "1/4\""), debes convertirlo obligatoriamente a milímetros bajo los estándares de ferretería (ej: "1/4\"" -> "6 mm" o "6.35 mm", "3/8\"" -> "10 mm", "1/2\"" -> "13 mm", "7-1/4\"" -> "184 mm", "4-1/2\"" -> "115 mm", etc.) y expresarlo únicamente en milímetros (mm).
 
 Devuelve ÚNICAMENTE un JSON válido que siga exactamente esta estructura:
 {
@@ -111,20 +107,16 @@ Detalles SAP del producto:
 
 REGLAS DE ESTANDARIZACIÓN CRÍTICAS:
 1. Debes devolver EXACTAMENTE 5 especificaciones técnicas en la lista "especificaciones". Ni más ni menos.
-2. Para herramientas eléctricas o a batería, prioriza en este orden exacto:
-   - Voltaje (ej: "12V", "20V MAX") o Potencia (ej: "750 W")
-   - Velocidad (ej: "0 - 1500 RPM")
-   - Mandril / Encastre (ej: "1/4 pulgada", "13 mm")
-   - Torque Máximo (ej: "30 Nm", "N/A" si no aplica)
-   - Batería / Alimentación (ej: "Litio-Ion 1.5 Ah", "Batería integrada" o "Cable 2m")
-3. Para accesorios, consumibles y herramientas manuales (ej: discos, grapas, brocas), prioriza:
-   - Medida / Diámetro (ej: "1/2 pulgada", "115 mm")
-   - Material (ej: "Acero HSS", "Cromo Vanadio")
-   - Cantidad / Presentación (ej: "1000 unidades", "Blister x 1")
-   - Compatibilidad / Uso (ej: "Para amoladoras", "Madera y metal")
-   - Peso o Espesor (ej: "1.2 mm", "0.45 kg")
-4. Si un valor no está explícito en la descripción breve de SAP, realiza una deducción realista en base a la marca (ej: Bosch, Makita, DeWalt, Stanley) y el tipo de herramienta. Si no se puede deducir, usa "N/A". No dejes campos vacíos ni devuelvas menos de 5 especificaciones.
-5. CONVERSIÓN DE MEDIDAS (PULGADAS A MILÍMETROS): Si un valor de medida (como diámetro de disco, mechas o tamaño de mandril/encastre) está originalmente en pulgadas (ej: "3/8 pulgadas", "1/2 pulgada", "1/2\"", "1/4\""), debes convertirlo obligatoriamente a milímetros bajo los estándares de ferretería (ej: "1/4\"" -> "6 mm" o "6.35 mm", "3/8\"" -> "10 mm", "1/2\"" -> "13 mm", "7-1/4\"" -> "184 mm", "4-1/2\"" -> "115 mm", etc.) y expresarlo únicamente en milímetros (mm).
+2. Dinamismo de especificaciones según el tipo de herramienta:
+   No fuerces campos irrelevantes. Genera las 5 especificaciones más importantes que un comprador profesional compararía para esa herramienta específica.
+   - Para Taladros/Atornilladores: Potencia/Voltaje, Velocidad, Mandril/Encastre, Torque Máximo, Alimentación/Batería.
+   - Para Sierras (circulares, de mesa, caladoras, etc.): Potencia/Voltaje, Diámetro de disco/hoja, Velocidad, Capacidad de corte (o Profundidad de corte), Peso o Alimentación.
+   - Para Amoladoras: Potencia/Voltaje, Diámetro de disco, Velocidad, Rosca del husillo (ej. M14), Peso o Alimentación.
+   - Para Lijadoras/Sopladoras/Cepillos: Potencia/Voltaje, Velocidad (o Oscilaciones/Órbitas), Tipo de base / Superficie, Peso, Alimentación.
+   - Para Accesorios y herramientas manuales (discos, brocas, etc.): Medida/Diámetro, Material, Cantidad/Presentación, Compatibilidad/Uso, Peso o Espesor.
+   - Para otras herramientas (compresores, soldadoras, etc.): Selecciona las 5 especificaciones clave (ej. Presión máxima, Amperaje, Flujo de aire, Capacidad de tanque, Peso, etc.).
+3. Si un valor no está explícito en la descripción breve de SAP, realiza una deducción realista en base a la marca (ej: Bosch, Makita, DeWalt, Stanley) y el tipo de herramienta. Si no se puede deducir, usa valores genéricos del modelo o en última instancia "Peso" (deducido de forma realista) en vez de campos irrelevantes con "N/A".
+4. CONVERSIÓN DE MEDIDAS (PULGADAS A MILÍMETROS): Si un valor de medida (como diámetro de disco, mechas o tamaño de mandril/encastre) está originalmente en pulgadas (ej: "3/8 pulgadas", "1/2 pulgada", "1/2\"", "1/4\""), debes convertirlo obligatoriamente a milímetros bajo los estándares de ferretería (ej: "1/4\"" -> "6 mm" o "6.35 mm", "3/8\"" -> "10 mm", "1/2\"" -> "13 mm", "7-1/4\"" -> "184 mm", "4-1/2\"" -> "115 mm", etc.) y expresarlo únicamente en milímetros (mm).
 
 Devuelve ÚNICAMENTE un JSON válido que siga exactamente esta estructura:
 {
