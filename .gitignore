@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+/dist
+/mobile/dist
+
+# Environment variables & API keys (CRITICAL)
+.env
+backend/.env
+etl/.env
+
+# Python caching & Virtual Environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv/
+ENV/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Puppeteer downloads / Cache (if any)
+.local-chromium
+.cache/

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cartela de Góndola Fleje 2</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        body {
+            width: 80mm;
+            height: 40mm;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+        }
+        
+        @media print {
+            body {
+                border: none;
+            }
+            @page {
+                size: 80mm 40mm;
+                margin: 0;
+            }
+        }
+
+        /* Header */
+        .header {
+            background: #222222;
+            color: #ffffff;
+            height: 9mm;
+            padding: 1mm 2.5mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 60%;
+        }
+        .header-title {
+            font-size: 5.5pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+            line-height: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .header-subtitle {
+            font-size: 4.5pt;
+            font-weight: 700;
+            color: #ffed00; /* Amarillo Easy */
+            margin-top: 0.2mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .header-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 38%;
+        }
+        .header-brand {
+            font-size: 5.5pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1;
+        }
+        .header-sku {
+            font-size: 4.5pt;
+            color: #94a3b8;
+            margin-top: 0.2mm;
+        }
+
+        /* Body Grid */
+        .body-grid {
+            flex: 1;
+            display: flex;
+            height: 21mm;
+            border-bottom: 0.5px solid #cbd5e1;
+        }
+        
+        /* Columna Izquierda (Specs) */
+        .specs-column {
+            width: 42%;
+            display: flex;
+            flex-direction: column;
+            border-right: 0.5px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .spec-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 0.5px solid #e2e8f0;
+            padding: 0.2mm 0.8mm;
+            text-align: center;
+        }
+        .spec-cell:last-child {
+            border-bottom: none;
+        }
+        .spec-label {
+            font-size: 3.5pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+            margin-bottom: 0.1mm;
+            line-height: 1;
+        }
+        .spec-value {
+            font-size: 5.5pt;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1;
+        }
+
+        /* Columna Derecha (Foto) */
+        .image-column {
+            width: 58%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0.8mm;
+            background: #ffffff;
+        }
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Footer Grid */
+        .footer-grid {
+            height: 7.5mm;
+            display: flex;
+            background: #f1f5f9;
+        }
+        .footer-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 0.5px solid #cbd5e1;
+            padding: 0.2mm 0.8mm;
+            text-align: center;
+        }
+        .footer-cell:last-child {
+            border-right: none;
+        }
+        .footer-label {
+            font-size: 3.5pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+            margin-bottom: 0.1mm;
+            line-height: 1;
+        }
+        .footer-value {
+            font-size: 5.5pt;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1;
+        }
+
+        /* Bottom Bar */
+        .bottom-bar {
+            height: 2.5mm;
+            background: #e30613; /* Rojo Easy */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <span class="header-title">{{tipo_herramienta}}</span>
+            <span class="header-subtitle">{{destacado}}</span>
+        </div>
+        <div class="header-right">
+            <span class="header-brand">{{marca}}</span>
+            <span class="header-sku">SAP {{sku}}</span>
+        </div>
+    </div>
+
+    <!-- Body Grid -->
+    <div class="body-grid">
+        <!-- Columna Izquierda (4 especificaciones principales) -->
+        <div class="specs-column">
+            <div class="spec-cell">
+                <span class="spec-label">{{spec1_label}}</span>
+                <span class="spec-value">{{spec1_value}}</span>
+            </div>
+            <div class="spec-cell">
+                <span class="spec-label">{{spec2_label}}</span>
+                <span class="spec-value">{{spec2_value}}</span>
+            </div>
+            <div class="spec-cell">
+                <span class="spec-label">{{spec3_label}}</span>
+                <span class="spec-value">{{spec3_value}}</span>
+            </div>
+            <div class="spec-cell">
+                <span class="spec-label">{{spec4_label}}</span>
+                <span class="spec-value">{{spec4_value}}</span>
+            </div>
+        </div>
+
+        <!-- Columna Derecha (Foto del Producto) -->
+        <div class="image-column">
+            <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
+        </div>
+    </div>
+
+    <!-- Footer Grid (3 especificaciones complementarias/origen/garantia) -->
+    <div class="footer-grid">
+        <div class="footer-cell">
+            <span class="footer-label">{{spec5_label}}</span>
+            <span class="footer-value">{{spec5_value}}</span>
+        </div>
+        <div class="footer-cell">
+            <span class="footer-label">Origen</span>
+            <span class="footer-value">{{origen}}</span>
+        </div>
+        <div class="footer-cell">
+            <span class="footer-label">Garantía</span>
+            <span class="footer-value">{{garantia}}</span>
+        </div>
+    </div>
+
+    <!-- Franja Inferior -->
+    <div class="bottom-bar"></div>
+</body>
+</html>
