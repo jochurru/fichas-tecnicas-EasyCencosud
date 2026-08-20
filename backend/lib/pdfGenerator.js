@@ -91,11 +91,11 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
 
   let headerBrandHtml = brandName;
   if (logoUrl) {
-    let logoHeight = '18px';
+    let logoHeight = '24px'; // Por defecto para Fleje 3 (90x74mm)
     if (templateName === 'a4') {
       logoHeight = '50px';
     } else if (templateName === 'fleje2') {
-      logoHeight = '12px';
+      logoHeight = '16px'; // Para Fleje 2 (80x40mm)
     }
 
     try {
