@@ -168,4 +168,56 @@ export class SupabaseProvider {
     }
     return data ? data.ean : 'SIN EAN';
   }
+
+  /**
+   * Obtiene todos los SKUs registrados en la base de datos.
+   * @returns {Promise<string[]>} Lista de SKUs
+   */
+  async getAllSkus() {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('sku');
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en getAllSkus:`, error);
+      throw error;
+    }
+    return data ? data.map(p => p.sku) : [];
+  }
+
+  /**
+   * Guarda o actualiza múltiples productos en lote (upsert).
+   * @param {Array<Object>} productos - Lista de productos a persistir
+   * @returns {Promise<void>}
+   */
+  async upsertProductosBatch(productos) {
+    if (!productos || productos.length === 0) return;
+
+    const { error } = await supabase
+      .from('productos')
+      .upsert(productos, { onConflict: 'sku' });
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en upsertProductosBatch:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Guarda o actualiza múltiples códigos EAN en lote (upsert).
+   * @param {Array<Object>} eans - Lista de códigos EAN a persistir
+   * @returns {Promise<void>}
+   */
+  async upsertEansBatch(eans) {
+    if (!eans || eans.length === 0) return;
+
+    const { error } = await supabase
+      .from('codigos_ean')
+      .upsert(eans, { onConflict: 'ean' });
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en upsertEansBatch:`, error);
+      throw error;
+    }
+  }
 }

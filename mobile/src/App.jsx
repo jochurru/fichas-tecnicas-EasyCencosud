@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Camera, Cloud, CloudOff, Info, HelpCircle } from 'lucide-react';
+import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
+import AdminPanel from './components/AdminPanel';
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +10,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [productData, setProductData] = useState(null);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   
   // Conexión simulada activa
   const [isOnline, setIsOnline] = useState(true);
@@ -61,19 +63,30 @@ export default function App() {
             </div>
           </div>
 
-          {/* Estado de Red */}
-          <div className="flex items-center gap-1.5 bg-red-800/40 px-2.5 py-1 rounded-full text-xs font-semibold">
-            {isOnline ? (
-              <>
-                <Cloud className="w-3.5 h-3.5 text-easy-yellow animate-pulse" />
-                <span className="text-red-100 text-[10px]">Cloud Conectado</span>
-              </>
-            ) : (
-              <>
-                <CloudOff className="w-3.5 h-3.5 text-gray-300" />
-                <span className="text-gray-300 text-[10px]">Offline</span>
-              </>
-            )}
+          <div className="flex items-center gap-2">
+            {/* Estado de Red */}
+            <div className="flex items-center gap-1.5 bg-red-800/40 px-2.5 py-1 rounded-full text-xs font-semibold">
+              {isOnline ? (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-easy-yellow animate-pulse" />
+                  <span className="text-red-100 text-[10px]">Cloud Conectado</span>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="w-3.5 h-3.5 text-gray-300" />
+                  <span className="text-gray-300 text-[10px]">Offline</span>
+                </>
+              )}
+            </div>
+
+            {/* Botón de Administración */}
+            <button 
+              onClick={() => setIsAdminOpen(true)}
+              className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
+              title="Administración SAP"
+            >
+              <Settings className="w-4.5 h-4.5 text-red-100 hover:text-white" />
+            </button>
           </div>
         </header>
 
@@ -208,6 +221,11 @@ export default function App() {
             onScanSuccess={handleScanSuccess} 
             onClose={() => setActiveScanner(false)} 
           />
+        )}
+
+        {/* Modal de Administración SAP */}
+        {isAdminOpen && (
+          <AdminPanel onClose={() => setIsAdminOpen(false)} />
         )}
 
         {/* Footer simple de marca */}

@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import productosRouter from './routes/productos.js';
 import impresionRouter from './routes/impresion.js';
+import catalogosRouter from './routes/catalogos.js';
+import { supabase } from './lib/supabase.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -26,6 +28,7 @@ app.get('/health', (req, res) => {
 // Rutas API
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
+app.use('/api', catalogosRouter);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
@@ -36,8 +39,41 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Crear usuario administrador por defecto en el arranque si no existe
+const createDefaultAdmin = async () => {
+  try {
+    const email = 'admin@easy.com.ar';
+    const password = process.env.ADMIN_PASSWORD || 'EasyIT2026!';
+
+    console.log(`[Startup] Verificando usuario administrador por defecto (${email})...`);
+    
+    // Intentar crear el usuario mediante la API de administración de Supabase
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
+
+    if (error) {
+      // Si el usuario ya existe en Supabase Auth, simplemente lo informamos (es lo esperado)
+      if (error.message.includes('already exists') || error.status === 422 || error.message.includes('unique')) {
+        console.log('[Startup] ✓ Usuario administrador ya registrado en Supabase.');
+      } else {
+        console.warn('[Startup] ⚠️ Advertencia al verificar/crear administrador:', error.message);
+      }
+    } else {
+      console.log('[Startup] ★ ¡Usuario administrador creado con éxito en Supabase Auth!');
+    }
+  } catch (err) {
+    console.error('[Startup] ❌ Error en la creación del administrador:', err.message);
+  }
+};
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor de Fichas Técnicas corriendo en http://localhost:${PORT}`);
   console.log(`- Health Check: http://localhost:${PORT}/health`);
+  
+  // Ejecutar verificación de administrador
+  createDefaultAdmin();
 });
