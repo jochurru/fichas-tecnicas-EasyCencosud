@@ -108,6 +108,9 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
           svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
           svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
           svgText = svgText.replace(/fill="#000000"/g, 'fill="#febd18"');
+        } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
+          // Kärcher utiliza letras sin atributo fill (negras por defecto) y un rectángulo de clase .f
+          svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
         } else {
           // Convertir rellenos y trazos negros a blanco para legibilidad en el fondo oscuro
           svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
