@@ -18,20 +18,16 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   const specData = ficha_tecnica.especificaciones_json || {};
   const specs = specData.especificaciones || [];
 
-  // 1. Determinar plantilla y dimensiones físicas
+  // 1. Determinar plantilla y dimensiones físicas (todas se renderizan en un lienzo A4 para evitar recortes físicos en impresoras)
   let templateFileName = 'template_fleje_3.html';
-  let width = '90mm';
-  let height = '74mm';
-
   if (templateName === 'a4') {
     templateFileName = 'template_a4.html';
-    width = '210mm';
-    height = '297mm';
   } else if (templateName === 'fleje2') {
     templateFileName = 'template_fleje_2.html';
-    width = '80mm';
-    height = '40mm';
   }
+
+  const width = '210mm';
+  const height = '297mm';
 
   // Leer plantilla HTML
   const templatePath = path.join(__dirname, '..', 'templates', templateFileName);

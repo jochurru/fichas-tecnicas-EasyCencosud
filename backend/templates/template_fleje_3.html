@@ -11,22 +11,37 @@
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         body {
-            width: 90mm;
-            height: 74mm;
-            background: #fff;
+            width: 210mm;
+            height: 297mm;
+            background: #f8fafc;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #ddd;
+            display: block;
+            padding: 15mm;
         }
         
         @media print {
             body {
-                border: none;
+                background: #fff;
             }
             @page {
-                size: 90mm 74mm;
+                size: A4 portrait;
                 margin: 0;
+            }
+        }
+
+        .card {
+            width: 90mm;
+            height: 74mm;
+            background: #fff;
+            border: 1.5px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        @media print {
+            .card {
+                box-shadow: none;
             }
         }
 
@@ -203,63 +218,65 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="header-left">
-            <span class="header-title">{{tipo_herramienta}}</span>
-            <span class="header-subtitle">{{destacado}}</span>
+    <div class="card">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <span class="header-title">{{tipo_herramienta}}</span>
+                <span class="header-subtitle">{{destacado}}</span>
+            </div>
+            <div class="header-right">
+                <span class="header-brand">{{marca}}</span>
+                <span class="header-sku">SAP {{sku}}</span>
+            </div>
         </div>
-        <div class="header-right">
-            <span class="header-brand">{{marca}}</span>
-            <span class="header-sku">SAP {{sku}}</span>
+
+        <!-- Body Grid -->
+        <div class="body-grid">
+            <!-- Columna Izquierda (4 especificaciones principales) -->
+            <div class="specs-column">
+                <div class="spec-cell">
+                    <span class="spec-label">{{spec1_label}}</span>
+                    <span class="spec-value">{{spec1_value}}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">{{spec2_label}}</span>
+                    <span class="spec-value">{{spec2_value}}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">{{spec3_label}}</span>
+                    <span class="spec-value">{{spec3_value}}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">{{spec4_label}}</span>
+                    <span class="spec-value">{{spec4_value}}</span>
+                </div>
+            </div>
+
+            <!-- Columna Derecha (Foto del Producto) -->
+            <div class="image-column">
+                <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
+            </div>
         </div>
+
+        <!-- Footer Grid (3 especificaciones complementarias/origen/garantia) -->
+        <div class="footer-grid">
+            <div class="footer-cell">
+                <span class="footer-label">{{spec5_label}}</span>
+                <span class="footer-value">{{spec5_value}}</span>
+            </div>
+            <div class="footer-cell">
+                <span class="footer-label">Origen</span>
+                <span class="footer-value">{{origen}}</span>
+            </div>
+            <div class="footer-cell">
+                <span class="footer-label">Garantía</span>
+                <span class="footer-value">{{garantia}}</span>
+            </div>
+        </div>
+
+        <!-- Franja Inferior -->
+        <div class="bottom-bar"></div>
     </div>
-
-    <!-- Body Grid -->
-    <div class="body-grid">
-        <!-- Columna Izquierda (4 especificaciones principales) -->
-        <div class="specs-column">
-            <div class="spec-cell">
-                <span class="spec-label">{{spec1_label}}</span>
-                <span class="spec-value">{{spec1_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec2_label}}</span>
-                <span class="spec-value">{{spec2_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec3_label}}</span>
-                <span class="spec-value">{{spec3_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec4_label}}</span>
-                <span class="spec-value">{{spec4_value}}</span>
-            </div>
-        </div>
-
-        <!-- Columna Derecha (Foto del Producto) -->
-        <div class="image-column">
-            <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
-        </div>
-    </div>
-
-    <!-- Footer Grid (3 especificaciones complementarias/origen/garantia) -->
-    <div class="footer-grid">
-        <div class="footer-cell">
-            <span class="footer-label">{{spec5_label}}</span>
-            <span class="footer-value">{{spec5_value}}</span>
-        </div>
-        <div class="footer-cell">
-            <span class="footer-label">Origen</span>
-            <span class="footer-value">{{origen}}</span>
-        </div>
-        <div class="footer-cell">
-            <span class="footer-label">Garantía</span>
-            <span class="footer-value">{{garantia}}</span>
-        </div>
-    </div>
-
-    <!-- Franja Inferior -->
-    <div class="bottom-bar"></div>
 </body>
 </html>
