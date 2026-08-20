@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "easy-fichas-tecnicas",
     "public": "dist",
     "ignore": [
       "firebase.json",
