@@ -74,24 +74,22 @@ export default function FichaEditor({ data, onSaveSuccess }) {
         // Abrir previsualización en pestaña nueva
         window.open(blobUrl, '_blank');
       } else {
-        // Disparar diálogo de impresión a través de iframe oculto
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = blobUrl;
-        document.body.appendChild(iframe);
-        iframe.onload = () => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          // Limpiar iframe y liberar memoria
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            window.URL.revokeObjectURL(blobUrl);
-          }, 1500);
-        };
+        // Forzar descarga del archivo PDF en el dispositivo móvil/computadora
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `ficha_tecnica_${producto.sku}_${templateName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Liberar el objeto URL creado
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
       }
     } catch (err) {
       console.error('Error de impresión:', err);
-      alert('Hubo un error al generar la cartela de impresión: ' + err.message);
+      alert('Hubo un error al generar la ficha técnica: ' + err.message);
     }
   };
 
@@ -392,7 +390,7 @@ export default function FichaEditor({ data, onSaveSuccess }) {
             className="bg-easy-yellow hover:bg-yellow-400 active:scale-[0.98] text-easy-dark font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm shadow-yellow-400/10"
           >
             <Printer className="w-4 h-4" />
-            Imprimir Cartela
+            Imprimir Ficha Técnica
           </button>
         </div>
 
