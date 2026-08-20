@@ -14,7 +14,15 @@ const router = Router();
  */
 router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
   const { identificador } = req.params;
-  const cleanedId = identificador.trim();
+  // Sanitizar entrada: permitir únicamente caracteres alfanuméricos y guiones (SKU / EAN válidos en SAP)
+  const cleanedId = identificador.trim().replace(/[^a-zA-Z0-9-]/g, '');
+  
+  if (!cleanedId) {
+    return res.status(400).json({ 
+      error: 'Identificador inválido',
+      message: 'El SKU o EAN ingresado contiene caracteres no permitidos.' 
+    });
+  }
 
   try {
     let sku = cleanedId;
