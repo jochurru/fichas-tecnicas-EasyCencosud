@@ -48,21 +48,7 @@ export default function WelcomeLogin({ onLoginSuccess }) {
   };
 
   const handleSsoClick = () => {
-    setSsoSimulated(true);
-    console.log('[SSO] Integración modular: Aquí se dispararía el flujo OAuth2/SAML redirect a https://login.microsoftonline.com/cencosud.onmicrosoft.com');
-    
-    // Simular un inicio de sesión SSO exitoso como operador común después de 2 segundos de animación
-    setTimeout(() => {
-      setSsoSimulated(false);
-      
-      // Para propósitos de demostración, el SSO simulará loguear al usuario operador
-      const mockToken = 'mock_sso_token_cencosud_jwt';
-      const mockUser = { email: 'usuario@easy.com.ar', id: 'sso-user-123' };
-      
-      localStorage.setItem('userToken', mockToken);
-      localStorage.setItem('userEmail', mockUser.email);
-      onLoginSuccess(mockToken, mockUser);
-    }, 2000);
+    setErrorMsg('El inicio de sesión único (SSO Corporativo Cencosud) mediante Azure Active Directory requiere la vinculación de DNS corporativos e infraestructura de red interna. Para la demostración técnica, por favor ingrese utilizando el formulario de Correo Institucional.');
   };
 
   return (
