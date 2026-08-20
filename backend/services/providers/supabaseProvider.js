@@ -6,21 +6,61 @@ import { supabase } from '../../lib/supabase.js';
  */
 export class SupabaseProvider {
   /**
+   * Ejecuta una consulta a Supabase aplicando reintentos automáticos ante fallas transitorias de red o timeout.
+   */
+  async _queryWithRetry(queryFn, label = 'query') {
+    let lastError = null;
+    const maxRetries = 3;
+    const backoff = 500; // ms
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const { data, error } = await queryFn();
+        
+        if (error) {
+          const errorMsg = error.message || '';
+          const isTransient = errorMsg.toLowerCase().includes('fetch') || 
+                              errorMsg.toLowerCase().includes('timeout') || 
+                              errorMsg.toLowerCase().includes('connection') || 
+                              errorMsg.toLowerCase().includes('socket') ||
+                              error.status === 502 || 
+                              error.status === 503 || 
+                              error.status === 504;
+
+          if (isTransient && attempt < maxRetries) {
+            console.warn(`[SupabaseProvider] Error transitorio en ${label} (intento ${attempt}/${maxRetries}): ${errorMsg}. Reintentando en ${backoff * attempt}ms...`);
+            await new Promise(r => setTimeout(r, backoff * attempt));
+            continue;
+          }
+          throw error;
+        }
+        return data;
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxRetries) {
+          const errStr = err.message || String(err);
+          console.warn(`[SupabaseProvider] Excepción en ${label} (intento ${attempt}/${maxRetries}): ${errStr}. Reintentando en ${backoff * attempt}ms...`);
+          await new Promise(r => setTimeout(r, backoff * attempt));
+        }
+      }
+    }
+    throw lastError;
+  }
+
+  /**
    * Resuelve el SKU correspondiente a un código EAN.
    * @param {string} ean - Código de barras EAN-13
    * @returns {Promise<string|null>} SKU asociado o null si no existe
    */
   async resolveSkuFromEan(ean) {
-    const { data, error } = await supabase
-      .from('codigos_ean')
-      .select('sku')
-      .eq('ean', ean)
-      .maybeSingle();
-
-    if (error) {
-      console.error(`[SupabaseProvider] Error en resolveSkuFromEan:`, error);
-      throw error;
-    }
+    const data = await this._queryWithRetry(() => 
+      supabase
+        .from('codigos_ean')
+        .select('sku')
+        .eq('ean', ean)
+        .maybeSingle(),
+      'resolveSkuFromEan'
+    );
     return data ? data.sku : null;
   }
 
@@ -30,17 +70,14 @@ export class SupabaseProvider {
    * @returns {Promise<Object|null>} Producto maestro o null
    */
   async getProductoBySku(sku) {
-    const { data, error } = await supabase
-      .from('productos')
-      .select('*')
-      .eq('sku', sku)
-      .maybeSingle();
-
-    if (error) {
-      console.error(`[SupabaseProvider] Error en getProductoBySku:`, error);
-      throw error;
-    }
-    return data;
+    return this._queryWithRetry(() => 
+      supabase
+        .from('productos')
+        .select('*')
+        .eq('sku', sku)
+        .maybeSingle(),
+      'getProductoBySku'
+    );
   }
 
   /**
@@ -49,17 +86,14 @@ export class SupabaseProvider {
    * @returns {Promise<Object|null>} Ficha técnica o null
    */
   async getFichaBySku(sku) {
-    const { data, error } = await supabase
-      .from('fichas_tecnicas')
-      .select('*')
-      .eq('sku', sku)
-      .maybeSingle();
-
-    if (error) {
-      console.error(`[SupabaseProvider] Error en getFichaBySku:`, error);
-      throw error;
-    }
-    return data;
+    return this._queryWithRetry(() => 
+      supabase
+        .from('fichas_tecnicas')
+        .select('*')
+        .eq('sku', sku)
+        .maybeSingle(),
+      'getFichaBySku'
+    );
   }
 
   /**
