@@ -94,33 +94,43 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Crear usuario administrador por defecto en el arranque si no existe
-const createDefaultAdmin = async () => {
-  try {
-    const email = 'admin@easy.com.ar';
-    const password = process.env.ADMIN_PASSWORD || 'EasyIT2026!';
-
-    console.log(`[Startup] Verificando usuario administrador por defecto (${email})...`);
-    
-    // Intentar crear el usuario mediante la API de administración de Supabase
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
-    });
-
-    if (error) {
-      // Si el usuario ya existe en Supabase Auth, simplemente lo informamos (es lo esperado)
-      if (error.message.includes('already exists') || error.status === 422 || error.message.includes('unique')) {
-        console.log('[Startup] ✓ Usuario administrador ya registrado en Supabase.');
-      } else {
-        console.warn('[Startup] ⚠️ Advertencia al verificar/crear administrador:', error.message);
-      }
-    } else {
-      console.log('[Startup] ★ ¡Usuario administrador creado con éxito en Supabase Auth!');
+// Crear usuarios por defecto (Administrador y Operador) en el arranque si no existen
+const createDefaultUsers = async () => {
+  const usersToCreate = [
+    {
+      email: 'admin@easy.com.ar',
+      password: process.env.ADMIN_PASSWORD || 'EasyIT2026!',
+      label: 'administrador'
+    },
+    {
+      email: 'usuario@easy.com.ar',
+      password: 'UsuarioIT2026!',
+      label: 'operador / usuario'
     }
-  } catch (err) {
-    console.error('[Startup] ❌ Error en la creación del administrador:', err.message);
+  ];
+
+  for (const userConfig of usersToCreate) {
+    try {
+      console.log(`[Startup] Verificando usuario ${userConfig.label} (${userConfig.email})...`);
+      
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: userConfig.email,
+        password: userConfig.password,
+        email_confirm: true
+      });
+
+      if (error) {
+        if (error.message.includes('already exists') || error.status === 422 || error.message.includes('unique')) {
+          console.log(`[Startup] ✓ Usuario ${userConfig.label} ya registrado en Supabase.`);
+        } else {
+          console.warn(`[Startup] ⚠️ Advertencia al verificar/crear ${userConfig.label}:`, error.message);
+        }
+      } else {
+        console.log(`[Startup] ★ ¡Usuario ${userConfig.label} creado con éxito en Supabase Auth!`);
+      }
+    } catch (err) {
+      console.error(`[Startup] ❌ Error al procesar ${userConfig.label}:`, err.message);
+    }
   }
 };
 
@@ -129,6 +139,6 @@ app.listen(PORT, () => {
   console.log(`Servidor de Fichas Técnicas corriendo en http://localhost:${PORT}`);
   console.log(`- Health Check: http://localhost:${PORT}/health`);
   
-  // Ejecutar verificación de administrador
-  createDefaultAdmin();
+  // Ejecutar verificación de administrador y operador
+  createDefaultUsers();
 });

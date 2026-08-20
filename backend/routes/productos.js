@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { dataService } from '../services/dataService.js';
 import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
+import { requireAuth } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
  * @desc    Busca un producto por SKU o código EAN.
  *          Si el producto existe pero no tiene ficha técnica, crea un borrador_ia inicial.
  */
-router.get('/producto/:identificador', async (req, res, next) => {
+router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
   const { identificador } = req.params;
   const cleanedId = identificador.trim();
 
@@ -130,7 +131,7 @@ router.get('/producto/:identificador', async (req, res, next) => {
  * @route   POST /api/fichas/aprobar
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
-router.post('/fichas/aprobar', async (req, res, next) => {
+router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
   const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = req.body;
 
   // Validación básica del contrato

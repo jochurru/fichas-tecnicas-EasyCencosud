@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings } from 'lucide-react';
+import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings, LogOut } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
+import WelcomeLogin from './components/WelcomeLogin';
 import { API_BASE_URL } from './config';
 
 export default function App() {
+  const [token, setToken] = useState(localStorage.getItem('userToken') || null);
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeScanner, setActiveScanner] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,6 +19,16 @@ export default function App() {
   // Conexión simulada activa
   const [isOnline, setIsOnline] = useState(true);
 
+  const handleLogout = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userEmail');
+    setToken(null);
+    setUserEmail('');
+    setProductData(null);
+    setSearchTerm('');
+    setIsAdminOpen(false);
+  };
+
   // Buscar producto por SKU o EAN
   const handleSearch = async (identificador) => {
     if (!identificador.trim()) return;
@@ -25,7 +38,11 @@ export default function App() {
     setProductData(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/producto/${encodeURIComponent(identificador.trim())}`);
+      const response = await fetch(`${API_BASE_URL}/producto/${encodeURIComponent(identificador.trim())}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -47,6 +64,17 @@ export default function App() {
     setActiveScanner(false);
     handleSearch(barcode);
   };
+
+  if (!token) {
+    return (
+      <WelcomeLogin 
+        onLoginSuccess={(t, u) => {
+          setToken(t);
+          setUserEmail(u.email);
+        }} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center">
@@ -80,13 +108,24 @@ export default function App() {
               )}
             </div>
 
-            {/* Botón de Administración */}
+            {/* Botón de Administración - Solo para administradores */}
+            {userEmail === 'admin@easy.com.ar' && (
+              <button 
+                onClick={() => setIsAdminOpen(true)}
+                className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
+                title="Administración SAP"
+              >
+                <Settings className="w-4.5 h-4.5 text-red-100 hover:text-white" />
+              </button>
+            )}
+
+            {/* Botón de Cerrar Sesión */}
             <button 
-              onClick={() => setIsAdminOpen(true)}
+              onClick={handleLogout}
               className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
-              title="Administración SAP"
+              title="Cerrar Sesión"
             >
-              <Settings className="w-4.5 h-4.5 text-red-100 hover:text-white" />
+              <LogOut className="w-4.5 h-4.5 text-red-100 hover:text-white" />
             </button>
           </div>
         </header>
@@ -187,6 +226,7 @@ export default function App() {
 
               <FichaEditor 
                 data={productData} 
+                token={token}
                 onSaveSuccess={(updatedFicha, newEan) => {
                   // Actualizar estado local con la nueva ficha aprobada e EAN
                   setProductData({
@@ -230,7 +270,7 @@ export default function App() {
 
         {/* Modal de Administración SAP */}
         {isAdminOpen && (
-          <AdminPanel onClose={() => setIsAdminOpen(false)} />
+          <AdminPanel token={token} onClose={() => setIsAdminOpen(false)} />
         )}
 
         {/* Footer simple de marca */}

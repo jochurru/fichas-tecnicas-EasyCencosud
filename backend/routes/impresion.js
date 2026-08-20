@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { dataService } from '../services/dataService.js';
 import { generatePdfFromFicha } from '../lib/pdfGenerator.js';
+import { requireAuth } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ async function buildFichaPdf(sku, templateName) {
  * @desc    Genera y devuelve la cartela de góndola en PDF para un SKU específico.
  *          Soporta el query parameter ?template=a4|fleje3|fleje2.
  */
-router.get('/fichas/:sku/pdf', async (req, res, next) => {
+router.get('/fichas/:sku/pdf', requireAuth, async (req, res, next) => {
   const { sku } = req.params;
   const template = req.query.template || 'fleje3';
 
@@ -67,7 +68,7 @@ router.get('/fichas/:sku/pdf', async (req, res, next) => {
  * @route   POST /api/fichas/imprimir
  * @desc    Genera y devuelve la ficha técnica en PDF a partir del SKU y template seleccionado.
  */
-router.post('/fichas/imprimir', async (req, res, next) => {
+router.post('/fichas/imprimir', requireAuth, async (req, res, next) => {
   const { sku, template } = req.body;
 
   if (!sku) {

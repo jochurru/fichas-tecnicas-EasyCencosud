@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-export default function FichaEditor({ data, onSaveSuccess }) {
+export default function FichaEditor({ data, token, onSaveSuccess }) {
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
 
@@ -54,7 +54,8 @@ export default function FichaEditor({ data, onSaveSuccess }) {
       const response = await fetch(`${API_BASE_URL}/fichas/imprimir`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           sku: producto.sku,
@@ -130,7 +131,8 @@ export default function FichaEditor({ data, onSaveSuccess }) {
       const response = await fetch(`${API_BASE_URL}/fichas/aprobar`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });

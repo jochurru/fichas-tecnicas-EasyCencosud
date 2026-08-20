@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import XLSX from 'xlsx';
-import { requireAuth } from '../middlewares/authMiddleware.js';
+import { requireAdmin } from '../middlewares/authMiddleware.js';
 import { dataService } from '../services/dataService.js';
 import { supabase } from '../lib/supabase.js';
 
@@ -9,9 +9,9 @@ const router = Router();
 /**
  * @route   POST /api/catalogos/importar
  * @desc    Procesa un reporte XLSX de SAP en base64, detecta nuevos productos y los carga a la base de datos.
- * @access  Privado (requiere JWT válido de Supabase)
+ * @access  Privado (requiere privilegios de Administrador)
  */
-router.post('/catalogos/importar', requireAuth, async (req, res, next) => {
+router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
   const { fileBase64 } = req.body;
 
   if (!fileBase64) {
@@ -178,7 +178,7 @@ router.post('/catalogos/importar', requireAuth, async (req, res, next) => {
  * @desc    Procesa un reporte XLSX de códigos de barra en base64 y los asocia a los SKUs en codigos_ean.
  * @access  Privado (requiere JWT válido de Supabase)
  */
-router.post('/catalogos/importar-eans', requireAuth, async (req, res, next) => {
+router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => {
   const { fileBase64 } = req.body;
 
   if (!fileBase64) {
