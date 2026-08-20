@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Lock, User, UploadCloud, AlertCircle, CheckCircle, 
-  LogOut, RefreshCw, FileSpreadsheet, KeyRound, ArrowRight
+  LogOut, RefreshCw, FileSpreadsheet, KeyRound, ArrowRight,
+  Database, QrCode
 } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
@@ -9,6 +10,7 @@ export default function AdminPanel({ onClose }) {
   const [email, setEmail] = useState('admin@easy.com.ar');
   const [password, setPassword] = useState('');
   
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -90,7 +92,7 @@ export default function AdminPanel({ onClose }) {
     }
   };
 
-  // Convertir XLSX a Base64 y subir a la API protegida
+  // Convertir XLSX a Base64 y subir a la API protegida correspondiente
   const processAndUploadFile = (file) => {
     setErrorMsg('');
     setSuccessMsg('');
@@ -112,7 +114,12 @@ export default function AdminPanel({ onClose }) {
         const base64String = event.target.result.split(',')[1];
         const token = localStorage.getItem('adminToken');
 
-        const res = await fetch('/api/catalogos/importar', {
+        // Seleccionar endpoint basado en la pestaña activa
+        const endpoint = activeTab === 'catalog' 
+          ? '/api/catalogos/importar' 
+          : '/api/catalogos/importar-eans';
+
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -133,8 +140,12 @@ export default function AdminPanel({ onClose }) {
         }
 
         setStats(data.estadisticas);
-        setNewSkus(data.nuevosSkus || []);
-        setSuccessMsg('¡Catálogo SAP importado y sincronizado correctamente!');
+        if (activeTab === 'catalog') {
+          setNewSkus(data.nuevosSkus || []);
+          setSuccessMsg('¡Catálogo SAP importado y sincronizado correctamente!');
+        } else {
+          setSuccessMsg('¡Mapeo de códigos de barras EAN cargado con éxito!');
+        }
       } catch (err) {
         setErrorMsg(err.message);
       } finally {
@@ -179,7 +190,7 @@ export default function AdminPanel({ onClose }) {
               <div className="text-center space-y-1">
                 <h3 className="text-base font-bold text-gray-800">Iniciar Sesión</h3>
                 <p className="text-xs text-gray-400">
-                  Ingresá tus credenciales de operador para actualizar la base logística de SAP.
+                  Ingresá tus credenciales de operador para actualizar la base logística de SAP o EANs.
                 </p>
               </div>
 
@@ -248,6 +259,32 @@ export default function AdminPanel({ onClose }) {
                 </button>
               </div>
 
+              {/* Selector de Pestañas (Modo de Carga) */}
+              {!loading && !stats && (
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => setActiveTab('catalog')}
+                    className={`flex-grow py-2.5 text-xs font-bold rounded-lg transition-all flex justify-center items-center gap-1.5 ${
+                      activeTab === 'catalog'
+                        ? 'bg-white text-easy-dark shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <Database className="w-3.5 h-3.5" /> Catálogo SAP
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('ean')}
+                    className={`flex-grow py-2.5 text-xs font-bold rounded-lg transition-all flex justify-center items-center gap-1.5 ${
+                      activeTab === 'ean'
+                        ? 'bg-white text-easy-dark shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <QrCode className="w-3.5 h-3.5" /> Mapeo EAN
+                  </button>
+                </div>
+              )}
+
               {/* Zona de Drop para Archivos */}
               {!loading && !stats && (
                 <div 
@@ -262,9 +299,13 @@ export default function AdminPanel({ onClose }) {
                   onDrop={handleDrop}
                 >
                   <UploadCloud className="w-12 h-12 text-gray-400 mb-3" />
-                  <p className="text-xs font-bold text-gray-700 mb-1">Cargar Catálogo SAP</p>
-                  <p className="text-[10px] text-gray-400 mb-4 max-w-[240px]">
-                    Arrastrá el archivo Excel (.xlsx) de logística de SAP aquí, o hacé clic para buscar.
+                  <p className="text-xs font-bold text-gray-700 mb-1">
+                    {activeTab === 'catalog' ? 'Cargar Catálogo de Productos' : 'Cargar Base de EANs'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mb-4 max-w-[280px]">
+                    {activeTab === 'catalog' 
+                      ? 'Arrastrá la planilla de logística SAP (.xlsx) aquí, filtraremos el Grupo de compras 45.' 
+                      : 'Arrastrá la planilla de relación de códigos de barra (.xlsx) con columnas SKU/Material y EAN.'}
                   </p>
                   
                   <label className="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold px-4 py-2 rounded-xl text-xs cursor-pointer shadow-sm active:scale-95 transition-all">
@@ -284,9 +325,11 @@ export default function AdminPanel({ onClose }) {
                 <div className="py-8 flex flex-col justify-center items-center text-center space-y-3">
                   <RefreshCw className="w-10 h-10 text-easy-red animate-spin" />
                   <div>
-                    <p className="text-xs font-bold text-gray-700">Analizando Reporte SAP...</p>
+                    <p className="text-xs font-bold text-gray-700">
+                      {activeTab === 'catalog' ? 'Procesando catálogo maestro...' : 'Registrando mapeos de EAN...'}
+                    </p>
                     <p className="text-[10px] text-gray-400 mt-0.5">
-                      Leyendo filas, aplicando filtros de Grupo de compras 45 y actualizando Supabase. No cierres la ventana.
+                      Leyendo celdas y ejecutando escrituras masivas en lotes en Supabase. No cierres la ventana.
                     </p>
                   </div>
                 </div>
@@ -307,24 +350,31 @@ export default function AdminPanel({ onClose }) {
                     <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">{successMsg}</p>
-                      <p className="text-[10px] text-green-700/80 mt-0.5">La base de datos de productos activos está sincronizada.</p>
+                      <p className="text-[10px] text-green-700/80 mt-0.5">La sincronización con la base de datos Supabase finalizó con éxito.</p>
                     </div>
                   </div>
 
                   {/* Tarjetas de Estadísticas */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-gray-50 border border-gray-100 p-3 rounded-xl text-center">
-                      <span className="text-[10px] text-gray-400 font-medium block">Total Procesados (GC 45)</span>
-                      <span className="text-lg font-bold text-easy-dark">{stats.totalProcesados}</span>
+                  {activeTab === 'catalog' ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-gray-50 border border-gray-100 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-gray-400 font-medium block">Total Procesados (GC 45)</span>
+                        <span className="text-lg font-bold text-easy-dark">{stats.totalProcesados}</span>
+                      </div>
+                      <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-easy-red font-bold block">Nuevos Agregados</span>
+                        <span className="text-lg font-bold text-easy-red">{stats.nuevosCargados}</span>
+                      </div>
                     </div>
-                    <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-center">
-                      <span className="text-[10px] text-easy-red font-bold block">Nuevos Agregados</span>
-                      <span className="text-lg font-bold text-easy-red">{stats.nuevosCargados}</span>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-center">
+                      <span className="text-xs text-gray-400 font-bold block mb-1">Mapeos EAN Registrados y Sincronizados</span>
+                      <span className="text-2xl font-black text-easy-dark">{stats.eansCargados}</span>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Listado de SKUs Nuevos */}
-                  {newSkus.length > 0 ? (
+                  {/* Listado de SKUs Nuevos (Solo en pestaña de Catálogo) */}
+                  {activeTab === 'catalog' && newSkus.length > 0 && (
                     <div className="space-y-1.5">
                       <h4 className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">
                         Productos Nuevos Incorporados ({newSkus.length}):
@@ -338,7 +388,9 @@ export default function AdminPanel({ onClose }) {
                         ))}
                       </div>
                     </div>
-                  ) : (
+                  )}
+
+                  {activeTab === 'catalog' && newSkus.length === 0 && (
                     <p className="text-center text-[10px] text-gray-400 py-3 bg-gray-50 rounded-xl border border-dashed">
                       No se encontraron nuevos SKUs para agregar. Todos los productos ya existían y fueron actualizados.
                     </p>
@@ -352,7 +404,7 @@ export default function AdminPanel({ onClose }) {
                     }}
                     className="w-full border border-gray-200 hover:bg-gray-50 active:scale-95 text-gray-600 font-bold py-2.5 rounded-xl text-xs transition-all flex justify-center items-center gap-1"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5" /> Cargar otro reporte
+                    <FileSpreadsheet className="w-3.5 h-3.5" /> Subir otra planilla
                   </button>
                 </div>
               )}

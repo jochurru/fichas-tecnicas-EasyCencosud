@@ -174,6 +174,115 @@ router.post('/catalogos/importar', requireAuth, async (req, res, next) => {
 });
 
 /**
+ * @route   POST /api/catalogos/importar-eans
+ * @desc    Procesa un reporte XLSX de códigos de barra en base64 y los asocia a los SKUs en codigos_ean.
+ * @access  Privado (requiere JWT válido de Supabase)
+ */
+router.post('/catalogos/importar-eans', requireAuth, async (req, res, next) => {
+  const { fileBase64 } = req.body;
+
+  if (!fileBase64) {
+    return res.status(400).json({ error: 'El campo "fileBase64" es obligatorio.' });
+  }
+
+  try {
+    console.log('[Catalogos] Decodificando archivo XLSX de EANs...');
+    const buffer = Buffer.from(fileBase64, 'base64');
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet);
+
+    console.log(`[Catalogos] Filas totales en Excel de EANs: ${rows.length}`);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'El archivo Excel está vacío.' });
+    }
+
+    // Detectar columnas usando mapeo flexible
+    let firstRow = rows[0];
+    let colMapping = {};
+
+    for (let key of Object.keys(firstRow)) {
+      const keyStr = String(key).trim();
+      const keyLower = keyStr.toLowerCase();
+
+      if (keyLower === 'material' || keyLower === 'sku' || keyLower.includes('art') || keyLower.includes('código sap') || keyLower.includes('codigo sap')) {
+        colMapping[key] = 'sku';
+      } else if (keyLower.includes('ean') || keyLower.includes('codigo de barra') || keyLower.includes('código de barra') || keyLower.includes('upc') || keyLower.includes('barras')) {
+        colMapping[key] = 'ean';
+      }
+    }
+
+    // Validar columnas requeridas
+    const requiredKeys = ['sku', 'ean'];
+    const foundKeys = Object.values(colMapping);
+    const missingKeys = requiredKeys.filter(k => !foundKeys.includes(k));
+
+    if (missingKeys.length > 0) {
+      return res.status(400).json({ 
+        error: 'Estructura de Excel inválida', 
+        message: `No se encontraron las columnas requeridas: ${missingKeys.join(', ')}. Verifica que la planilla contenga el SKU/Material y el código EAN.`
+      });
+    }
+
+    // Filtrar y limpiar
+    const cleanedEans = [];
+    
+    for (let row of rows) {
+      let rawSku = '';
+      let rawEan = '';
+
+      for (let [origKey, mappedKey] of Object.entries(colMapping)) {
+        const val = row[origKey];
+        if (val !== undefined && val !== null) {
+          if (mappedKey === 'sku') rawSku = String(val).trim();
+          if (mappedKey === 'ean') rawEan = String(val).trim();
+        }
+      }
+
+      // Limpiar decimales flotantes
+      if (rawSku.endsWith('.0')) rawSku = rawSku.split('.')[0];
+      if (rawEan.endsWith('.0')) rawEan = rawEan.split('.')[0];
+
+      if (!rawSku || !rawEan) continue;
+
+      cleanedEans.push({
+        ean: rawEan,
+        sku: rawSku
+      });
+    }
+
+    // Quitar duplicados por EAN
+    const uniqueEans = Array.from(new Map(cleanedEans.map(e => [e.ean, e])).values());
+
+    console.log(`[Catalogos] Total registros EAN limpios a importar: ${uniqueEans.length}`);
+
+    // Cargar en lotes de 100 en Supabase
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < uniqueEans.length; i += BATCH_SIZE) {
+      const batch = uniqueEans.slice(i, i + BATCH_SIZE);
+      await dataService.upsertEansBatch(batch);
+    }
+
+    return res.json({
+      success: true,
+      estadisticas: {
+        totalProcesados: uniqueEans.length,
+        eansCargados: uniqueEans.length
+      }
+    });
+
+  } catch (error) {
+    console.error('[Catalogos] Error al importar EANs:', error);
+    return res.status(500).json({ 
+      error: 'Error al procesar el catálogo de EANs', 
+      message: error.message 
+    });
+  }
+});
+
+/**
  * @route   POST /api/auth/login
  * @desc    Inicia sesión con email y contraseña utilizando Supabase Auth y devuelve un token JWT.
  * @access  Público
