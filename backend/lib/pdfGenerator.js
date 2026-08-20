@@ -178,20 +178,17 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     // Setear contenido HTML
     await page.setContent(html, { waitUntil: 'networkidle0' });
     
-    // Definir márgenes de impresión seguros según la plantilla para evitar recortes por rodillos físicos de la impresora
-    let margin = { top: '3mm', right: '3mm', bottom: '3mm', left: '3mm' }; // Fleje 3 (90x74mm)
-    if (templateName === 'a4') {
-      margin = { top: '8mm', right: '8mm', bottom: '8mm', left: '8mm' };
-    } else if (templateName === 'fleje2') {
-      margin = { top: '2mm', right: '2mm', bottom: '2mm', left: '2mm' };
-    }
-
     // Generar PDF con dimensiones exactas
     const pdfBuffer = await page.pdf({
       width,
       height,
       printBackground: true,
-      margin
+      margin: {
+        top: '0mm',
+        right: '0mm',
+        bottom: '0mm',
+        left: '0mm'
+      }
     });
 
     return pdfBuffer;
