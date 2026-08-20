@@ -42,6 +42,44 @@ app.get('/api/debug/env', (req, res) => {
   });
 });
 
+// Endpoint de depuración seguro para la base de datos
+app.get('/api/debug/db', async (req, res) => {
+  try {
+    const { count, error: countError } = await supabase
+      .from('productos')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      return res.status(500).json({ step: 'conteo', error: countError });
+    }
+
+    const { data: sampleProducts, error: sampleError } = await supabase
+      .from('productos')
+      .select('sku, descripcion')
+      .limit(3);
+
+    if (sampleError) {
+      return res.status(500).json({ step: 'muestra', error: sampleError });
+    }
+
+    const { data: targetProduct, error: targetError } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('sku', '1269208')
+      .maybeSingle();
+
+    res.json({
+      success: true,
+      totalProductos: count,
+      muestra: sampleProducts,
+      busquedaSierra: targetProduct,
+      targetError
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Excepcion critica', message: err.message });
+  }
+});
+
 // Rutas API
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
