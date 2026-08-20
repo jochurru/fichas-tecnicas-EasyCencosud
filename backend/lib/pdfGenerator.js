@@ -111,6 +111,18 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
         if (brandLower.includes('dewalt')) {
           svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
           svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
+          svgText = svgText.replace(/fill="#000000"/g, 'fill="#febd18"');
+        } else {
+          // Convertir rellenos y trazos negros a blanco para legibilidad en el fondo oscuro
+          svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
+          svgText = svgText.replace(/fill="#000000"/g, 'fill="#ffffff"');
+          svgText = svgText.replace(/fill="#000"/g, 'fill="#ffffff"');
+          svgText = svgText.replace(/fill="black"/g, 'fill="white"');
+          
+          svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
+          svgText = svgText.replace(/stroke="#000000"/g, 'stroke="#ffffff"');
+          svgText = svgText.replace(/stroke="#000"/g, 'stroke="#ffffff"');
+          svgText = svgText.replace(/stroke="black"/g, 'stroke="white"');
         }
 
         const base64Svg = Buffer.from(svgText).toString('base64');
