@@ -93,7 +93,7 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   if (logoUrl) {
     let logoHeight = '18px';
     if (templateName === 'a4') {
-      logoHeight = '32px';
+      logoHeight = '50px';
     } else if (templateName === 'fleje2') {
       logoHeight = '12px';
     }
