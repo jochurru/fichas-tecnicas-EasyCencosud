@@ -4,6 +4,8 @@ import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
+import { validateSchema, searchSchema, approveFichaSchema } from '../middlewares/validation.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 
@@ -12,17 +14,9 @@ const router = Router();
  * @desc    Busca un producto por SKU o código EAN.
  *          Si el producto existe pero no tiene ficha técnica, crea un borrador_ia inicial.
  */
-router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
+router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema, 'params'), async (req, res, next) => {
   const { identificador } = req.params;
-  // Sanitizar entrada: permitir únicamente caracteres alfanuméricos y guiones (SKU / EAN válidos en SAP)
   const cleanedId = identificador.trim().replace(/[^a-zA-Z0-9-]/g, '');
-  
-  if (!cleanedId) {
-    return res.status(400).json({ 
-      error: 'Identificador inválido',
-      message: 'El SKU o EAN ingresado contiene caracteres no permitidos.' 
-    });
-  }
 
   try {
     let sku = cleanedId;
@@ -37,11 +31,25 @@ router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
     // 2. Obtener la información del producto maestro
     const producto = await dataService.getProductoBySku(sku);
     if (!producto) {
+      logAuditEvent(req, {
+        accion: 'PRODUCT_SEARCH',
+        entidad: 'PRODUCTO',
+        sku: cleanedId,
+        resultado: 'FAILURE'
+      });
+
       return res.status(404).json({
         error: 'Producto no encontrado',
         message: `No se encontró ningún producto con SKU o EAN: ${cleanedId}`
       });
     }
+
+    logAuditEvent(req, {
+      accion: 'PRODUCT_SEARCH',
+      entidad: 'PRODUCTO',
+      sku: producto.sku,
+      resultado: 'SUCCESS'
+    });
 
     // 3. Obtener o inicializar la ficha técnica dinámica
     let ficha = null;
@@ -109,6 +117,39 @@ router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
       // 3. Persistir borrador_ia en base de datos usando la abstracción
       try {
         ficha = await dataService.saveFichaBorrador(producto.sku, especificacionesJson, fotoUrl);
+
+        // Registrar instantánea histórica del borrador IA (versión 1)
+        const { data: lastHist } = await supabaseDb
+          .from('fichas_historial')
+          .select('version')
+          .eq('sku', producto.sku)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const nextV = lastHist ? lastHist.version + 1 : 1;
+
+        const { error: insertHistError } = await supabaseDb
+          .from('fichas_historial')
+          .insert([{
+            sku: producto.sku,
+            version: nextV,
+            especificaciones_json: especificacionesJson,
+            foto_url: fotoUrl,
+            origen_cambio: 'IA_DRAFT',
+            modificado_por: 'GEMINI_AI'
+          }]);
+
+        if (insertHistError) {
+          console.error('[Productos] Error al registrar borrador en el historial:', insertHistError.message);
+        }
+
+        logAuditEvent(req, {
+          accion: 'AI_DRAFT_CREATED',
+          entidad: 'FICHA_TECNICA',
+          sku: producto.sku,
+          valores_nuevos: especificacionesJson
+        });
       } catch (insertError) {
         console.error('Error al guardar el borrador de la ficha técnica:', insertError);
       }
@@ -140,28 +181,31 @@ router.get('/producto/:identificador', requireAuth, async (req, res, next) => {
  * @route   POST /api/fichas/aprobar
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
-router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
+router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), async (req, res, next) => {
   const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = req.body;
 
-  // Validación básica del contrato
-  if (!sku) {
-    return res.status(400).json({ error: 'El campo "sku" es obligatorio.' });
-  }
-  if (!aprobado_por) {
-    return res.status(400).json({ error: 'El campo "aprobado_por" es obligatorio.' });
-  }
-
   try {
-    // Verificar que el producto realmente existe
+    // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
+    const previousFicha = await dataService.getFichaBySku(sku);
+
+    // 2. Verificar que el producto realmente existe
     const producto = await dataService.getProductoBySku(sku);
     if (!producto) {
+      logAuditEvent(req, {
+        accion: 'PRODUCT_APPROVE',
+        entidad: 'FICHA_TECNICA',
+        sku,
+        valores_nuevos: { error: 'Producto inexistente' },
+        resultado: 'FAILURE'
+      });
+
       return res.status(404).json({
         error: 'Producto no encontrado',
         message: `No se puede aprobar una ficha para un SKU inexistente: ${sku}`
       });
     }
 
-    // Guardar la ficha técnica aprobada a través de la abstracción
+    // 3. Guardar la ficha técnica aprobada a través de la abstracción
     const updatedFicha = await dataService.saveFichaAprobada({
       sku,
       especificaciones_json,
@@ -171,7 +215,35 @@ router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
       ean
     });
 
-    // Invalidar caché de PDFs para este SKU en Supabase Storage (las 3 plantillas posibles)
+    // 4. Registrar instantánea histórica en la tabla fichas_historial
+    const { data: lastHist } = await supabaseDb
+      .from('fichas_historial')
+      .select('version')
+      .eq('sku', sku)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextVersion = lastHist ? lastHist.version + 1 : 1;
+
+    const { error: insertHistError } = await supabaseDb
+      .from('fichas_historial')
+      .insert([{
+        sku,
+        version: nextVersion,
+        especificaciones_json,
+        foto_url,
+        origen_cambio: aprobado_por.includes('coord') || aprobado_por.includes('admin')
+          ? 'APROBACION_COORDINADOR'
+          : 'EDICION_LOCAL',
+        modificado_por: aprobado_por
+      }]);
+
+    if (insertHistError) {
+      console.error('[Productos] Error al registrar historial de versión:', insertHistError.message);
+    }
+
+    // 5. Invalidar caché de PDFs para este SKU en Supabase Storage (las 3 plantillas posibles)
     const cacheFiles = [`${sku}_a4.pdf`, `${sku}_fleje3.pdf`, `${sku}_fleje2.pdf`];
     supabaseDb.storage.from('fichas-pdf').remove(cacheFiles)
       .then(({ error }) => {
@@ -180,7 +252,17 @@ router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
       })
       .catch(err => console.error(`[PDF Storage] Error al limpiar caché de PDF:`, err));
 
-    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${aprobado_por} a las ${new Date().toISOString()}`);
+    // 6. Registrar en el Log de Auditoría Inmutable
+    logAuditEvent(req, {
+      accion: 'PRODUCT_APPROVE',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_anteriores: previousFicha ? previousFicha.especificaciones_json : null,
+      valores_nuevos: especificaciones_json,
+      resultado: 'SUCCESS'
+    });
+
+    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${aprobado_por}`);
 
     return res.json({
       message: 'Ficha técnica aprobada y consolidada exitosamente.',
@@ -189,6 +271,15 @@ router.post('/fichas/aprobar', requireAuth, async (req, res, next) => {
 
   } catch (error) {
     console.error('Error al aprobar la ficha técnica:', error);
+    
+    logAuditEvent(req, {
+      accion: 'PRODUCT_APPROVE',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_nuevos: { error: error.message },
+      resultado: 'FAILURE'
+    });
+
     return res.status(500).json({
       error: 'Error interno al aprobar la ficha técnica',
       message: error.message

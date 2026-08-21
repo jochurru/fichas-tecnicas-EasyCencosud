@@ -3,6 +3,8 @@ import { dataService } from '../services/dataService.js';
 import { generatePdfFromFicha } from '../lib/pdfGenerator.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
+import { validateSchema, printGetParamsSchema, printGetQuerySchema, printPostSchema } from '../middlewares/validation.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 
@@ -38,84 +40,108 @@ async function buildFichaPdf(sku, templateName) {
  * @desc    Genera y devuelve la cartela de góndola en PDF para un SKU específico.
  *          Soporta el query parameter ?template=a4|fleje3|fleje2.
  */
-router.get('/fichas/:sku/pdf', requireAuth, async (req, res, next) => {
-  const { sku } = req.params;
-  const template = req.query.template || 'fleje3';
-  const fileName = `${sku}_${template}.pdf`;
+router.get(
+  '/fichas/:sku/pdf', 
+  requireAuth, 
+  validateSchema(printGetParamsSchema, 'params'),
+  validateSchema(printGetQuerySchema, 'query'),
+  async (req, res, next) => {
+    const { sku } = req.params;
+    const { template } = req.query;
+    const fileName = `${sku}_${template}.pdf`;
 
-  try {
-    // 1. Intentar descargar desde la caché de Supabase Storage
-    console.log(`[GET PDF] Buscando en caché: ${fileName}...`);
-    const { data: fileBlob, error: downloadError } = await supabaseDb.storage
-      .from('fichas-pdf')
-      .download(fileName);
+    // Registrar auditoría de inicio de impresión
+    logAuditEvent(req, {
+      accion: 'PRINT_REQUESTED',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_nuevos: { template, source: 'GET' }
+    });
 
-    if (!downloadError && fileBlob) {
-      console.log(`[GET PDF] ✓ Caché HIT para SKU: ${sku} (${template})`);
-      const arrayBuffer = await fileBlob.arrayBuffer();
+    try {
+      // 1. Intentar descargar desde la caché de Supabase Storage
+      console.log(`[GET PDF] Buscando en caché: ${fileName}...`);
+      const { data: fileBlob, error: downloadError } = await supabaseDb.storage
+        .from('fichas-pdf')
+        .download(fileName);
+
+      if (!downloadError && fileBlob) {
+        console.log(`[GET PDF] ✓ Caché HIT para SKU: ${sku} (${template})`);
+        const arrayBuffer = await fileBlob.arrayBuffer();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+        return res.send(Buffer.from(arrayBuffer));
+      }
+
+      // 2. Caché MISS: Generar PDF en caliente con Puppeteer
+      console.log(`[GET PDF] ✗ Caché MISS. Generando formato ${template} para SKU: ${sku}...`);
+      const pdfBuffer = await buildFichaPdf(sku, template);
+
+      // Registrar auditoría de generación del PDF (Caché MISS)
+      logAuditEvent(req, {
+        accion: 'PDF_GENERATED',
+        entidad: 'FICHA_TECNICA',
+        sku,
+        valores_nuevos: { template }
+      });
+
+      // 3. Guardar el PDF generado en la caché en segundo plano
+      supabaseDb.storage
+        .from('fichas-pdf')
+        .upload(fileName, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true
+        })
+        .then(({ error }) => {
+          if (error) console.error(`[GET PDF] Error al subir caché para ${fileName}:`, error.message);
+          else console.log(`[GET PDF] Ficha ${fileName} guardada en caché.`);
+        })
+        .catch(err => console.error(`[GET PDF] Error de subida en segundo plano:`, err));
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-      return res.send(Buffer.from(arrayBuffer));
-    }
+      return res.send(Buffer.from(pdfBuffer));
 
-    // 2. Caché MISS: Generar PDF en caliente con Puppeteer
-    console.log(`[GET PDF] ✗ Caché MISS. Generando formato ${template} para SKU: ${sku}...`);
-    const pdfBuffer = await buildFichaPdf(sku, template);
-
-    // 3. Guardar el PDF generado en la caché en segundo plano
-    supabaseDb.storage
-      .from('fichas-pdf')
-      .upload(fileName, pdfBuffer, {
-        contentType: 'application/pdf',
-        upsert: true
-      })
-      .then(({ error }) => {
-        if (error) console.error(`[GET PDF] Error al subir caché para ${fileName}:`, error.message);
-        else console.log(`[GET PDF] Ficha ${fileName} guardada en caché.`);
-      })
-      .catch(err => console.error(`[GET PDF] Error de subida en segundo plano:`, err));
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-    return res.send(Buffer.from(pdfBuffer));
-
-  } catch (error) {
-    if (error.message === 'PRODUCT_NOT_FOUND') {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
-    if (error.message === 'FICHA_NOT_FOUND') {
-      return res.status(404).json({ 
-        error: 'Ficha técnica no encontrada', 
-        message: 'Debe consultar o inicializar la ficha técnica antes de poder imprimir.' 
+    } catch (error) {
+      logAuditEvent(req, {
+        accion: 'PRINT_REQUESTED',
+        entidad: 'FICHA_TECNICA',
+        sku,
+        valores_nuevos: { error: error.message },
+        resultado: 'FAILURE'
       });
+
+      if (error.message === 'PRODUCT_NOT_FOUND') {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+      if (error.message === 'FICHA_NOT_FOUND') {
+        return res.status(404).json({ 
+          error: 'Ficha técnica no encontrada', 
+          message: 'Debe consultar o inicializar la ficha técnica antes de poder imprimir.' 
+        });
+      }
+      console.error(`[GET PDF] Error al generar PDF para el SKU ${sku}:`, error);
+      next(error);
     }
-    console.error(`[GET PDF] Error al generar PDF para el SKU ${sku}:`, error);
-    next(error);
   }
-});
+);
 
 /**
  * @route   POST /api/fichas/imprimir
  * @desc    Genera y devuelve la ficha técnica en PDF a partir del SKU y template seleccionado.
  */
-router.post('/fichas/imprimir', requireAuth, async (req, res, next) => {
+router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), async (req, res, next) => {
   const { sku, template } = req.body;
-
-  if (!sku) {
-    return res.status(400).json({ error: 'El campo "sku" es obligatorio.' });
-  }
-
-  const validTemplates = ['a4', 'fleje3', 'fleje2'];
   const selectedTemplate = template || 'fleje3';
-
-  if (!validTemplates.includes(selectedTemplate)) {
-    return res.status(400).json({ 
-      error: 'Template no válido.', 
-      message: `Los valores permitidos son: ${validTemplates.join(', ')}` 
-    });
-  }
-
   const fileName = `${sku}_${selectedTemplate}.pdf`;
+
+  // Registrar auditoría de inicio de impresión
+  logAuditEvent(req, {
+    accion: 'PRINT_REQUESTED',
+    entidad: 'FICHA_TECNICA',
+    sku,
+    valores_nuevos: { template: selectedTemplate, source: 'POST' }
+  });
 
   try {
     // 1. Intentar descargar desde la caché de Supabase Storage
@@ -136,6 +162,14 @@ router.post('/fichas/imprimir', requireAuth, async (req, res, next) => {
     console.log(`[POST PDF] ✗ Caché MISS. Generando formato ${selectedTemplate} para SKU: ${sku}...`);
     const pdfBuffer = await buildFichaPdf(sku, selectedTemplate);
 
+    // Registrar auditoría de generación del PDF (Caché MISS)
+    logAuditEvent(req, {
+      accion: 'PDF_GENERATED',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_nuevos: { template: selectedTemplate }
+    });
+
     // 3. Guardar el PDF en la caché de Supabase en segundo plano
     supabaseDb.storage
       .from('fichas-pdf')
@@ -154,6 +188,14 @@ router.post('/fichas/imprimir', requireAuth, async (req, res, next) => {
     return res.send(Buffer.from(pdfBuffer));
 
   } catch (error) {
+    logAuditEvent(req, {
+      accion: 'PRINT_REQUESTED',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_nuevos: { error: error.message },
+      resultado: 'FAILURE'
+    });
+
     if (error.message === 'PRODUCT_NOT_FOUND') {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }

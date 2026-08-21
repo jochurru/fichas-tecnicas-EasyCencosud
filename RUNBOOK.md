@@ -11,13 +11,14 @@ Este manual documenta cómo ejecutar localmente, desplegar a producción y resol
 *   **Firebase CLI:** Instalado globalmente (`npm install -g firebase-tools`).
 
 ### Configuración de Variables de Entorno (`.env`)
-En la carpeta `/backend/` debe existir un archivo `.env` con las siguientes credenciales:
+En la carpeta `/backend/` debe existir un archivo `.env` con las siguientes credenciales (ver `.env.example` como referencia):
 ```env
 PORT=3000
 SUPABASE_URL=https://<id-proyecto>.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (Service Role Key para omitir RLS)
-GEMINI_API_KEY=AIzaSy... (API Key de Google Gemini Pro)
-ADMIN_PASSWORD=EasyIT2026!
+SUPABASE_KEY=<su-service-role-key-para-bypass-de-rls>
+GEMINI_API_KEY=<su-api-key-de-google-gemini-pro>
+JWT_SECRET=<su-clave-secreta-jwt>
+ADMIN_PASSWORD=<su-contrasena-de-contingencia-admin>
 ```
 
 ### Ejecución Paso a Paso
@@ -96,3 +97,18 @@ El backend se compila en un contenedor Docker y se despliega en Google Cloud Run
 *   **Síntoma:** Al subir planillas SAP pesadas con miles de filas, el navegador se queda esperando y luego devuelve error de Timeout de red.
 *   **Causa:** El procesamiento síncrono bloquea el hilo de ejecución de Express por más de 60 segundos (tiempo límite de conexiones en Cloud Run).
 *   **Solución:** Asegurar que el endpoint `/api/catalogos/importar` devuelva inmediatamente un `taskId` con código `202 Accepted` y procese la información usando `setImmediate()` o colas en segundo plano, permitiendo que la interfaz consulte el progreso a través de `/api/catalogos/tareas/:id`.
+
+### F. Fallos de validación Zod en peticiones (Error 400 - Error de Validación)
+*   **Síntoma:** El cliente React recibe un error HTTP 400 indicando incompatibilidad de campos o dominio no permitido.
+*   **Causa:** Se ha integrado un middleware de validación estricta en el backend para prevenir cargas maliciosas o inyecciones en parámetros SKU, EAN o esquemas JSON.
+*   **Solución:** Asegurar que los correos de ingreso correspondan a los dominios institucionales (`@easy.com.ar` o `@cencosud.com.ar`) y que los SKUs/EANs no contengan caracteres especiales inyectables.
+
+### G. Monitoreo de Auditoría y Trazabilidad
+*   **Logs de Auditoría:** Consulta la tabla `audit_logs` en Supabase para trazar actividades críticas (búsquedas, impresiones, ingresos):
+    ```sql
+    SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100;
+    ```
+*   **Historial de Cambios (Versionado):** Consulta la tabla `fichas_historial` para comparar versiones previas de especificaciones técnicas:
+    ```sql
+    SELECT version, especificaciones_json, modificado_por FROM fichas_historial WHERE sku = '1367504' ORDER BY version DESC;
+    ```

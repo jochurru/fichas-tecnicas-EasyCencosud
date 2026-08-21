@@ -4,6 +4,8 @@ import { requireAdmin } from '../middlewares/authMiddleware.js';
 import { dataService } from '../services/dataService.js';
 import { supabase, supabaseDb } from '../lib/supabase.js';
 import { taskManager } from '../lib/taskManager.js';
+import { validateSchema, loginSchema, excelUploadSchema } from '../middlewares/validation.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 
@@ -12,12 +14,8 @@ const router = Router();
  * @desc    Procesa un reporte XLSX de SAP en base64, detecta nuevos productos y los carga a la base de datos.
  * @access  Privado (requiere privilegios de Administrador)
  */
-router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
+router.post('/catalogos/importar', requireAdmin, validateSchema(excelUploadSchema), async (req, res, next) => {
   const { fileBase64 } = req.body;
-
-  if (!fileBase64) {
-    return res.status(400).json({ error: 'El campo "fileBase64" es obligatorio.' });
-  }
 
   try {
     // 1. Decodificar Base64 a buffer
@@ -32,6 +30,13 @@ router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
     // Convertir la hoja a JSON
     const rows = XLSX.utils.sheet_to_json(worksheet);
     console.log(`[Catalogos] Filas totales en Excel: ${rows.length}`);
+
+    // Registrar auditoría de inicio de importación SAP
+    logAuditEvent(req, {
+      accion: 'SAP_IMPORT_START',
+      entidad: 'CATALOGO',
+      valores_nuevos: { filasExcel: rows.length }
+    });
 
     if (rows.length === 0) {
       return res.status(400).json({ error: 'El archivo Excel está vacío.' });
@@ -203,9 +208,27 @@ router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
 
         console.log(`[Catalogos] ✓ Tarea asíncrona ${taskId} finalizada con éxito.`);
 
+        logAuditEvent(req, {
+          accion: 'SAP_IMPORT_COMPLETE',
+          entidad: 'CATALOGO',
+          valores_nuevos: {
+            totalProcesados: processedCount - eansCargados,
+            nuevosCargados,
+            eansCargados
+          },
+          resultado: 'SUCCESS'
+        });
+
       } catch (bgError) {
         console.error(`[Catalogos] ❌ Error en segundo plano en tarea ${taskId}:`, bgError);
         taskManager.failTask(taskId, bgError.message || 'Error durante el procesamiento del lote.');
+        
+        logAuditEvent(req, {
+          accion: 'SAP_IMPORT_COMPLETE',
+          entidad: 'CATALOGO',
+          valores_nuevos: { error: bgError.message },
+          resultado: 'FAILURE'
+        });
       }
     });
 
@@ -230,12 +253,8 @@ router.post('/catalogos/importar', requireAdmin, async (req, res, next) => {
  * @desc    Procesa un reporte XLSX de códigos de barra en base64 y los asocia a los SKUs en codigos_ean.
  * @access  Privado (requiere JWT válido de Supabase)
  */
-router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => {
+router.post('/catalogos/importar-eans', requireAdmin, validateSchema(excelUploadSchema), async (req, res, next) => {
   const { fileBase64 } = req.body;
-
-  if (!fileBase64) {
-    return res.status(400).json({ error: 'El campo "fileBase64" es obligatorio.' });
-  }
 
   try {
     console.log('[Catalogos] Decodificando archivo XLSX de EANs...');
@@ -246,6 +265,13 @@ router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => 
     const rows = XLSX.utils.sheet_to_json(worksheet);
 
     console.log(`[Catalogos] Filas totales en Excel de EANs: ${rows.length}`);
+
+    // Registrar auditoría de inicio de importación EANs
+    logAuditEvent(req, {
+      accion: 'SAP_IMPORT_START',
+      entidad: 'EAN_MAP',
+      valores_nuevos: { filasExcel: rows.length }
+    });
 
     if (rows.length === 0) {
       return res.status(400).json({ error: 'El archivo Excel está vacío.' });
@@ -317,6 +343,13 @@ router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => 
       await dataService.upsertEansBatch(batch);
     }
 
+    logAuditEvent(req, {
+      accion: 'SAP_IMPORT_COMPLETE',
+      entidad: 'EAN_MAP',
+      valores_nuevos: { totalProcesados: uniqueEans.length, eansCargados: uniqueEans.length },
+      resultado: 'SUCCESS'
+    });
+
     return res.json({
       success: true,
       estadisticas: {
@@ -327,6 +360,14 @@ router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => 
 
   } catch (error) {
     console.error('[Catalogos] Error al importar EANs:', error);
+    
+    logAuditEvent(req, {
+      accion: 'SAP_IMPORT_COMPLETE',
+      entidad: 'EAN_MAP',
+      valores_nuevos: { error: error.message },
+      resultado: 'FAILURE'
+    });
+
     return res.status(500).json({ 
       error: 'Error al procesar el catálogo de EANs', 
       message: error.message 
@@ -339,12 +380,8 @@ router.post('/catalogos/importar-eans', requireAdmin, async (req, res, next) => 
  * @desc    Inicia sesión con email y contraseña utilizando Supabase Auth y devuelve un token JWT.
  * @access  Público
  */
-router.post('/auth/login', async (req, res, next) => {
+router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'El email y la contraseña son obligatorios.' });
-  }
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -353,11 +390,26 @@ router.post('/auth/login', async (req, res, next) => {
     });
 
     if (error || !data.session) {
+      // Inyectar el email en req.user temporalmente para identificar al firmante del log de falla
+      req.user = { email };
+      logAuditEvent(req, {
+        accion: 'LOGIN_FAILED',
+        entidad: 'USUARIO',
+        resultado: 'FAILURE'
+      });
+
       return res.status(401).json({ 
         error: 'Unauthorized', 
         message: 'Credenciales de acceso inválidas o usuario no verificado.' 
       });
     }
+
+    req.user = { email: data.user.email };
+    logAuditEvent(req, {
+      accion: 'LOGIN',
+      entidad: 'USUARIO',
+      resultado: 'SUCCESS'
+    });
 
     return res.json({
       token: data.session.access_token,
@@ -369,6 +421,13 @@ router.post('/auth/login', async (req, res, next) => {
 
   } catch (err) {
     console.error('[Auth] Error al iniciar sesión:', err.message);
+    req.user = { email };
+    logAuditEvent(req, {
+      accion: 'LOGIN_FAILED',
+      entidad: 'USUARIO',
+      valores_nuevos: { error: err.message },
+      resultado: 'ERROR'
+    });
     next(err);
   }
 });

@@ -24,3 +24,14 @@ Thumbs.db
 # Puppeteer downloads / Cache (if any)
 .local-chromium
 .cache/
+
+# Execution Logs & Temporary Scratch Files
+*.log
+scratch/
+.gemini/
+
+# Private credentials & Certificates
+*.pem
+*.cert
+*.key
+*.pfx
