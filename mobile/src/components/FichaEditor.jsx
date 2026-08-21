@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
+export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onTokenExpired }) {
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
   const isOffline = data?.origen === 'local_offline';
@@ -76,10 +76,13 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
       });
 
       if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userEmail');
-        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
-        window.location.reload();
+        if (onTokenExpired) {
+          onTokenExpired();
+        } else {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userEmail');
+          window.location.reload();
+        }
         return;
       }
 
@@ -161,10 +164,13 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess }) {
       });
 
       if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userEmail');
-        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
-        window.location.reload();
+        if (onTokenExpired) {
+          onTokenExpired();
+        } else {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userEmail');
+          window.location.reload();
+        }
         return;
       }
 

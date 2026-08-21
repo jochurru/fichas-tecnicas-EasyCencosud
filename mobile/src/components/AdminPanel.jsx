@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-export default function AdminPanel({ token, onClose }) {
+export default function AdminPanel({ token, onClose, onTokenExpired }) {
   const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -82,7 +82,12 @@ export default function AdminPanel({ token, onClose }) {
         const data = await res.json();
         
         if (res.status === 401 || res.status === 403) {
-          throw new Error('Sesión expirada o privilegios insuficientes. Por favor, vuelve a ingresar.');
+          if (onTokenExpired) {
+            onTokenExpired();
+          } else {
+            throw new Error('Sesión expirada o privilegios insuficientes. Por favor, vuelve a ingresar.');
+          }
+          return;
         }
 
         if (!res.ok) {
@@ -103,9 +108,13 @@ export default function AdminPanel({ token, onClose }) {
 
               if (progressRes.status === 401 || progressRes.status === 403) {
                 clearInterval(interval);
-                setErrorMsg('Sesión expirada durante el procesamiento.');
-                setLoading(false);
-                setTaskProgress(null);
+                if (onTokenExpired) {
+                  onTokenExpired();
+                } else {
+                  setErrorMsg('Sesión expirada durante el procesamiento.');
+                  setLoading(false);
+                  setTaskProgress(null);
+                }
                 return;
               }
 

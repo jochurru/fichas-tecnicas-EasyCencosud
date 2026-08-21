@@ -41,6 +41,17 @@ export default function App() {
     setIsAdminOpen(false);
   };
 
+  const handleTokenExpiration = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userEmail');
+    setToken(null);
+    setUserEmail('');
+    setProductData(null);
+    setSearchTerm('');
+    setIsAdminOpen(false);
+    alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
+  };
+
   // Buscar producto por SKU o EAN
   const handleSearch = async (identificador) => {
     if (!identificador.trim()) return;
@@ -79,12 +90,7 @@ export default function App() {
         }
       });
       if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userEmail');
-        alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
-        setToken(null);
-        setUserEmail('');
-        setProductData(null);
+        handleTokenExpiration();
         return;
       }
 
@@ -308,6 +314,7 @@ export default function App() {
                 data={productData} 
                 token={token}
                 userEmail={userEmail}
+                onTokenExpired={handleTokenExpiration}
                 onSaveSuccess={(updatedFicha, newEan) => {
                   // Actualizar estado local con la nueva ficha aprobada e EAN
                   setProductData({
@@ -351,7 +358,7 @@ export default function App() {
 
         {/* Modal de Administración SAP */}
         {isAdminOpen && (
-          <AdminPanel token={token} onClose={() => setIsAdminOpen(false)} />
+          <AdminPanel token={token} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
         )}
 
         {/* Footer simple de marca */}
