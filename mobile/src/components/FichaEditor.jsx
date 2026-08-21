@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, Image, Layers, Eye, Printer, RefreshCw } from 'lucide-react';
+import { 
+  Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, 
+  Image, Layers, Eye, Printer, RefreshCw, GitCommit, ShieldAlert,
+  HelpCircle
+} from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import CompletenessBar from './CompletenessBar';
+import VersionComparatorModal from './VersionComparatorModal';
+import { calculateCompleteness, detectInconsistencies, getEstadoMetadata } from '../lib/dataQuality';
 
 export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onTokenExpired }) {
   const { producto, ficha_tecnica } = data;
@@ -20,6 +27,12 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   const [templatePreferido, setTemplatePreferido] = useState(1);
   const [aprobadoPor, setAprobadoPor] = useState('OPERADOR_LOCAL');
   const [ean, setEan] = useState('');
+  const [estado, setEstado] = useState('BORRADOR');
+  
+  // Analítica de Calidad en tiempo real
+  const [completeness, setCompleteness] = useState(0);
+  const [inconsistencies, setInconsistencies] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   // Feedback
   const [loading, setLoading] = useState(false);
@@ -29,26 +42,55 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
 
   // Sincronizar estados cuando los datos de entrada cambien
   useEffect(() => {
+    const defaultOrigen = ficha_tecnica?.estado === 'GENERADA_POR_IA' || ficha_tecnica?.estado === 'borrador_ia' ? 'IA' : 'SAP';
+    
     setMarca(specData.marca || '');
     setTipoHerramienta(specData.tipo_herramienta || '');
     setEspecificaciones(
       Array.isArray(specData.especificaciones) 
-        ? [...specData.especificaciones] 
+        ? specData.especificaciones.map(s => ({
+            clave: s.clave || '',
+            valor: s.valor || '',
+            origen: s.origen || defaultOrigen,
+            fecha_validacion: s.fecha_validacion || new Date().toISOString().split('T')[0]
+          }))
         : []
     );
     setSugerenciaImagen(specData.sugerencia_busqueda_imagen || '');
     setFotoUrl(ficha_tecnica?.foto_url || '');
     setTemplatePreferido(ficha_tecnica?.template_preferido || 1);
     setEan(producto.eans && producto.eans.length > 0 ? producto.eans[0] : '');
+    setEstado(ficha_tecnica?.estado || (ficha_tecnica ? 'PENDIENTE_VALIDACION' : 'BORRADOR'));
     
     // El aprobador por defecto es siempre el usuario activo de esta sesión, para registrar su firma en caso de guardar
     setAprobadoPor(userEmail || 'OPERADOR_LOCAL');
   }, [data, userEmail]);
 
+  // Calcular completitud e inconsistencias en tiempo real
+  useEffect(() => {
+    const tempFicha = {
+      foto_url: fotoUrl,
+      ean: ean,
+      especificaciones_json: {
+        marca,
+        tipo_herramienta: tipoHerramienta,
+        especificaciones
+      }
+    };
+    const score = calculateCompleteness(producto, tempFicha);
+    const alerts = detectInconsistencies(producto, tempFicha);
+    
+    setCompleteness(score);
+    setInconsistencies(alerts);
+  }, [marca, tipoHerramienta, especificaciones, fotoUrl, ean, producto]);
+
   // Manejo de cambios en las especificaciones dinámicas
   const handleSpecChange = (index, field, value) => {
     const updated = [...especificaciones];
     updated[index][field] = value;
+    // Trazabilidad por Atributo (P1.3): Atribuir edición manual al Operador activo
+    updated[index].origen = 'Usuario';
+    updated[index].fecha_validacion = new Date().toISOString().split('T')[0];
     setEspecificaciones(updated);
   };
 
@@ -122,7 +164,12 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   };
 
   const addSpecification = () => {
-    setEspecificaciones([...especificaciones, { clave: '', valor: '' }]);
+    setEspecificaciones([...especificaciones, { 
+      clave: '', 
+      valor: '', 
+      origen: 'Usuario', 
+      fecha_validacion: new Date().toISOString().split('T')[0] 
+    }]);
   };
 
   const removeSpecification = (index) => {
@@ -151,7 +198,8 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
       foto_url: fotoUrl.trim() || null,
       template_preferido: templatePreferido,
       aprobado_por: aprobadoPor,
-      ean: ean.trim() || null
+      ean: ean.trim() || null,
+      estado: estado // Enviar el estado seleccionado en el editor
     };
 
     try {
@@ -197,23 +245,58 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
       {/* Cabecera del Editor */}
-      <div className="bg-gray-50 px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-gray-50 px-5 py-4 border-b border-gray-100 flex justify-between items-start">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-easy-red bg-red-50 px-2 py-0.5 rounded">
             Ficha Técnica
           </span>
           <h2 className="text-xl font-bold text-easy-dark mt-1">SKU {producto.sku}</h2>
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-          ficha_tecnica?.estado === 'aprobado' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-yellow-100 text-yellow-800'
-        }`}>
-          {ficha_tecnica?.estado === 'aprobado' ? '✓ Aprobada' : '✍ Borrador IA'}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          {/* Badge de Estado P1.2 */}
+          <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+            getEstadoMetadata(estado).bg
+          } ${
+            getEstadoMetadata(estado).text
+          }`}>
+            {getEstadoMetadata(estado).label}
+          </span>
+          
+          {/* Botón de Historial P0.6 */}
+          {!isOffline && (
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-gray-500 hover:text-easy-red border border-gray-200 bg-white px-2 py-1 rounded-xl shadow-sm active:scale-95 transition-all"
+            >
+              <GitCommit className="w-3.5 h-3.5 text-easy-red" />
+              <span>Ver Historial</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="p-5 space-y-6">
+        
+        {/* Completitud de Ficha (P1.1) */}
+        <CompletenessBar percentage={completeness} />
+
+        {/* Alertas de Inconsistencias (P1.4) */}
+        {inconsistencies.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs space-y-2">
+            <div className="flex items-center gap-2 text-amber-800 font-bold">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Se detectaron {inconsistencies.length} alertas de calidad:</span>
+            </div>
+            <ul className="list-disc pl-5 text-amber-700/90 space-y-1 font-semibold">
+              {inconsistencies.map((alert, idx) => (
+                <li key={idx} className={alert.gravedad === 'alta' ? 'text-red-700 font-bold' : ''}>
+                  {alert.mensaje}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         
         {/* Sección: Datos de SAP (Solo lectura) */}
         <div>
@@ -338,6 +421,21 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
                   placeholder="Valor (ej. 750W)"
                   className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red disabled:opacity-60 disabled:bg-gray-50"
                 />
+                
+                {/* Badge de Trazabilidad de Atributo P1.3 */}
+                <span 
+                  className={`text-[8px] font-black uppercase px-1.5 py-1 rounded shrink-0 select-none ${
+                    spec.origen === 'SAP' 
+                      ? 'bg-gray-150 text-gray-500' 
+                      : spec.origen === 'IA' 
+                        ? 'bg-purple-100 text-purple-700' 
+                        : 'bg-blue-100 text-blue-700'
+                  }`}
+                  title={`Validación: ${spec.fecha_validacion || 'Desconocida'}`}
+                >
+                  {spec.origen || 'SAP'}
+                </span>
+
                 <button
                   type="button"
                   disabled={isReadOnly || isOffline}
@@ -383,6 +481,25 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Sección: Estado de la Ficha (Ciclo de Vida P1.2) */}
+        <div>
+          <label className="block text-xs font-bold text-gray-600 mb-1">Estado de la Ficha</label>
+          <select
+            disabled={isReadOnly || isOffline}
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50 font-semibold text-gray-700"
+          >
+            <option value="BORRADOR">Borrador</option>
+            <option value="GENERADA_POR_IA">Generada por IA</option>
+            <option value="PENDIENTE_VALIDACION">Pendiente de Validación</option>
+            <option value="APROBADA">Aprobada</option>
+            <option value="OBSERVADA">Observada</option>
+            <option value="DESACTUALIZADA">Desactualizada</option>
+            <option value="VENCIDA">Vencida</option>
+          </select>
         </div>
 
         {/* Sección: Aprobador (Local) */}
@@ -456,6 +573,17 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
         </div>
 
       </form>
+
+      {/* Modal del Comparador de Versiones P0.6 */}
+      {isHistoryOpen && (
+        <VersionComparatorModal
+          sku={producto.sku}
+          currentSpecs={{ marca, tipo_herramienta: tipoHerramienta, especificaciones }}
+          currentFotoUrl={fotoUrl}
+          token={token}
+          onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
     </div>
   );
 }

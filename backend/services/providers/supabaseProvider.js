@@ -110,7 +110,7 @@ export class SupabaseProvider {
     const payload = {
       especificaciones_json: especificacionesJson,
       foto_url: fotoUrl,
-      estado: 'borrador_ia',
+      estado: 'GENERADA_POR_IA',
       template_preferido: existing?.template_preferido || 1
     };
 
@@ -142,18 +142,18 @@ export class SupabaseProvider {
   /**
    * Consolida y aprueba una ficha técnica editada por un operador.
    * Asocia opcionalmente un código EAN al SKU en la tabla codigos_ean.
-   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean }
+   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado }
    * @returns {Promise<Object>} Ficha técnica aprobada
    */
   async saveFichaAprobada(data) {
-    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = data;
+    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado } = data;
     const existing = await this.getFichaBySku(sku);
     let queryResult;
 
     const payload = {
       foto_url: foto_url || null,
       especificaciones_json: especificaciones_json || {},
-      estado: 'aprobado',
+      estado: estado || 'APROBADA',
       template_preferido: template_preferido || 1,
       aprobado_por,
       aprobado_at: new Date().toISOString()

@@ -182,7 +182,7 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
 router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), async (req, res, next) => {
-  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean } = req.body;
+  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado } = req.body;
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
@@ -212,7 +212,8 @@ router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), 
       foto_url,
       template_preferido,
       aprobado_por,
-      ean
+      ean,
+      estado
     });
 
     // 4. Registrar instantánea histórica en la tabla fichas_historial
@@ -284,6 +285,30 @@ router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), 
       error: 'Error interno al aprobar la ficha técnica',
       message: error.message
     });
+  }
+});
+
+/**
+ * @route   GET /api/fichas/:sku/historial
+ * @desc    Obtiene el historial de versiones de una ficha técnica por SKU.
+ */
+router.get('/fichas/:sku/historial', requireAuth, async (req, res, next) => {
+  const { sku } = req.params;
+  try {
+    const { data: history, error } = await supabaseDb
+      .from('fichas_historial')
+      .select('id, sku, version, especificaciones_json, foto_url, origen_cambio, modificado_por, created_at')
+      .eq('sku', sku)
+      .order('version', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return res.json(history || []);
+  } catch (err) {
+    console.error('[Historial] Error al consultar versiones:', err.message);
+    next(err);
   }
 });
 

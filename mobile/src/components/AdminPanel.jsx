@@ -60,6 +60,51 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
     }
   };
 
+  // Estados y efecto para Calidad de Catálogo (P1.5)
+  const [qualityData, setQualityData] = useState(null);
+  const [qualityLoading, setQualityLoading] = useState(false);
+  const [qualityError, setQualityError] = useState('');
+  
+  // Filtros
+  const [filterEstado, setFilterEstado] = useState('ALL');
+  const [searchTermQuality, setSearchTermQuality] = useState('');
+
+  useEffect(() => {
+    if (activeTab === 'quality') {
+      loadQualityData();
+    }
+  }, [activeTab]);
+
+  const loadQualityData = async () => {
+    setQualityLoading(true);
+    setQualityError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/calidad-catalogo`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.status === 401 || res.status === 403) {
+        if (onTokenExpired) {
+          onTokenExpired();
+        }
+        return;
+      }
+      
+      if (!res.ok) {
+        throw new Error('No se pudo establecer conexión para recuperar reportes de calidad.');
+      }
+      
+      const data = await res.json();
+      setQualityData(data);
+    } catch (err) {
+      setQualityError(err.message || 'Error desconocido al obtener métricas de calidad.');
+    } finally {
+      setQualityLoading(false);
+    }
+  };
+
   // Drag and Drop Helpers
   const handleDrag = (e) => {
     e.preventDefault();
@@ -243,7 +288,7 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
               </div>
             </div>
 
-            {/* Selector de Pestañas (Modo de Carga / Métricas) */}
+            {/* Selector de Pestañas (Modo de Carga / Métricas / Calidad) */}
             {!loading && !stats && (
               <div className="flex bg-gray-100 p-1 rounded-xl">
                 <button
@@ -275,6 +320,16 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                   }`}
                 >
                   <TrendingUp className="w-3.5 h-3.5" /> Métricas
+                </button>
+                <button
+                  onClick={() => setActiveTab('quality')}
+                  className={`flex-grow py-2.5 text-xs font-bold rounded-lg transition-all flex justify-center items-center gap-1.5 ${
+                    activeTab === 'quality'
+                      ? 'bg-white text-easy-dark shadow-sm'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" /> Calidad
                 </button>
               </div>
             )}
@@ -607,6 +662,192 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                       </div>
                     )}
                     
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pestaña de Calidad de Catálogo (P1.5) */}
+            {!loading && activeTab === 'quality' && (
+              <div className="space-y-6">
+                {qualityLoading && (
+                  <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+                    <RefreshCw className="w-8 h-8 text-easy-red animate-spin" />
+                    <p className="text-xs text-gray-500 font-bold">Analizando calidad de base de datos...</p>
+                  </div>
+                )}
+
+                {qualityError && (
+                  <div className="bg-red-50 border border-red-200 text-easy-red p-4 rounded-xl text-xs flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-bold">Error de Calidad:</span>
+                      <p className="mt-0.5 text-gray-600">{qualityError}</p>
+                      <button onClick={loadQualityData} className="mt-2 text-easy-red underline font-bold active:scale-95 transition-all">Reintentar</button>
+                    </div>
+                  </div>
+                )}
+
+                {!qualityLoading && !qualityError && qualityData && (
+                  <div className="space-y-6">
+                    
+                    {/* Resumen KPIs de Calidad */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-2xl border border-green-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Fichas Completas</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-green-600">
+                          <span className="text-2xl font-black font-mono">{qualityData.resumen.completas}</span>
+                          <span className="text-[10px] font-extrabold uppercase text-green-500">/{qualityData.resumen.totalProductos}</span>
+                        </div>
+                        <span className="text-[9px] text-gray-400 font-semibold block mt-1.5">Completitud &gt;= 80%</span>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-2xl border border-rose-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Incompletas / Críticas</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-rose-600">
+                          <span className="text-2xl font-black font-mono">{qualityData.resumen.incompletas}</span>
+                          <span className="text-[10px] font-extrabold uppercase text-rose-500">productos</span>
+                        </div>
+                        <span className="text-[9px] text-rose-500/80 font-bold block mt-1.5">Completitud &lt; 80%</span>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-2xl border border-amber-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Sin Foto Oficial</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-amber-700">
+                          <span className="text-2xl font-black font-mono">{qualityData.resumen.sinImagen}</span>
+                          <span className="text-[10px] font-extrabold uppercase text-amber-600">artículos</span>
+                        </div>
+                        <span className="text-[9px] text-gray-400 font-semibold block mt-1.5">Requieren subir imagen</span>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-red-50 to-white p-4 rounded-2xl border border-red-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Inconsistencias</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-easy-red">
+                          <span className="text-2xl font-black font-mono">{qualityData.resumen.totalInconsistencias}</span>
+                          <span className="text-[10px] font-extrabold uppercase">alertas</span>
+                        </div>
+                        <span className="text-[9px] text-easy-red/80 font-bold block mt-1.5">Errores de integridad</span>
+                      </div>
+                    </div>
+
+                    {/* Desglose de Fichas por Estado */}
+                    <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm space-y-3">
+                      <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                        <Layers className="w-4 h-4 text-easy-red" />
+                        <span>Distribución del Ciclo de Vida</span>
+                      </h4>
+                      
+                      <div className="space-y-2 pt-1.5">
+                        {Object.entries(qualityData.estados).map(([est, count]) => {
+                          const percentage = qualityData.resumen.totalProductos > 0
+                            ? Math.round((count / qualityData.resumen.totalProductos) * 100)
+                            : 0;
+                          
+                          // No listar estados en 0 para no saturar la pantalla colectora
+                          if (count === 0 && est !== 'APROBADA' && est !== 'BORRADOR') return null;
+
+                          return (
+                            <div key={est} className="space-y-1">
+                              <div className="flex justify-between text-[11px] font-semibold text-gray-600">
+                                <span>{est}</span>
+                                <span className="font-mono text-gray-500">{count} ({percentage}%)</span>
+                              </div>
+                              <div className="w-full bg-gray-150 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-1.5 rounded-full ${
+                                    est === 'APROBADA' ? 'bg-green-500' :
+                                    est === 'PENDIENTE_VALIDACION' ? 'bg-blue-500' :
+                                    est === 'BORRADOR' || est === 'GENERADA_POR_IA' ? 'bg-orange-500' :
+                                    'bg-rose-500'
+                                  }`} 
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Tabla de Productos que requieren atención */}
+                    <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-gray-700">Productos con Alertas / Incompletos</span>
+                          <span className="text-[10px] bg-red-50 text-easy-red px-2 py-0.5 rounded-full font-black">Atención: {qualityData.requierenAtencion.length}</span>
+                        </div>
+                        
+                        {/* Filtros locales */}
+                        <div className="flex gap-2 mt-1">
+                          <select
+                            value={filterEstado}
+                            onChange={(e) => setFilterEstado(e.target.value)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-[10px] font-bold text-gray-600 focus:outline-none focus:ring-1 focus:ring-easy-red"
+                          >
+                            <option value="ALL">Todos los Estados</option>
+                            <option value="SIN_FICHA">Sin Ficha</option>
+                            <option value="BORRADOR">Borrador</option>
+                            <option value="GENERADA_POR_IA">Borrador IA</option>
+                            <option value="PENDIENTE_VALIDACION">Pendiente</option>
+                            <option value="OBSERVADA">Observadas</option>
+                          </select>
+
+                          <input
+                            type="text"
+                            placeholder="Buscar SKU..."
+                            value={searchTermQuality}
+                            onChange={(e) => setSearchTermQuality(e.target.value)}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-easy-red"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                              <th className="px-4 py-2">Producto</th>
+                              <th className="px-4 py-2 text-center">Completo</th>
+                              <th className="px-4 py-2 text-center">Alertas</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 text-[11px]">
+                            {qualityData.requierenAtencion
+                              .filter(item => {
+                                if (filterEstado !== 'ALL' && item.estado !== filterEstado) return false;
+                                if (searchTermQuality && !item.sku.includes(searchTermQuality)) return false;
+                                return true;
+                              })
+                              .map((item, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50/45">
+                                  <td className="px-4 py-2.5">
+                                    <span className="font-mono font-bold text-gray-600 block">{item.sku}</span>
+                                    <span className="text-[10px] text-gray-400 truncate max-w-[150px] block">{item.descripcion}</span>
+                                    <span className="text-[8px] bg-gray-100 text-gray-500 font-bold px-1 py-0.5 rounded mt-0.5 inline-block">{item.estado}</span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <span className={`font-mono font-bold ${
+                                      item.completitud >= 80 ? 'text-green-600' :
+                                      item.completitud >= 50 ? 'text-yellow-600' :
+                                      'text-rose-600'
+                                    }`}>{item.completitud}%</span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    {item.inconsistenciasCount > 0 ? (
+                                      <span className="text-[10px] bg-red-50 text-easy-red px-1.5 py-0.5 rounded-full font-bold" title={item.inconsistencias.map(i => i.mensaje).join('\n')}>
+                                        ⚠️ {item.inconsistenciasCount}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
                   </div>
                 )}
               </div>

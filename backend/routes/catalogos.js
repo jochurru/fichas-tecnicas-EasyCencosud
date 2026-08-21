@@ -6,6 +6,7 @@ import { supabase, supabaseDb } from '../lib/supabase.js';
 import { taskManager } from '../lib/taskManager.js';
 import { validateSchema, loginSchema, excelUploadSchema } from '../middlewares/validation.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { calculateCompleteness, detectInconsistencies } from '../lib/dataQuality.js';
 
 const router = Router();
 
@@ -534,6 +535,134 @@ router.get('/catalogos/metricas', requireAdmin, async (req, res, next) => {
     console.error('[Metricas] Error al generar reportes consolidados:', err.message);
     res.status(500).json({
       error: 'Error al generar reportes',
+      message: err.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/admin/calidad-catalogo
+ * @desc    Obtiene métricas agregadas de calidad y completitud del catálogo en tiempo real.
+ * @access  Privado (requiere privilegios de Administrador)
+ */
+router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
+  try {
+    // 1. Obtener todos los productos y realizar left join con sus fichas_tecnicas
+    const { data: records, error } = await supabaseDb
+      .from('productos')
+      .select('sku, descripcion, ean, fichas_tecnicas(especificaciones_json, foto_url, estado, ean)');
+
+    if (error) {
+      throw error;
+    }
+
+    const safeRecords = records || [];
+
+    let totalProductos = safeRecords.length;
+    let fichasAprobadas = 0;
+    let completas = 0; // >= 80%
+    let incompletas = 0; // < 80%
+    let sinImagen = 0;
+    let sinEspecificaciones = 0;
+    let totalInconsistencias = 0;
+    
+    // Contadores por estado
+    const estadoCounts = {
+      'SIN_FICHA': 0,
+      'BORRADOR': 0,
+      'GENERADA_POR_IA': 0,
+      'PENDIENTE_VALIDACION': 0,
+      'APROBADA': 0,
+      'OBSERVADA': 0,
+      'DESACTUALIZADA': 0,
+      'VENCIDA': 0
+    };
+
+    const productosAtencion = [];
+
+    // Recolectar todos los EANs para chequear duplicados
+    const allEans = [];
+    safeRecords.forEach(r => {
+      // fichas_tecnicas podría venir como array o objeto simple
+      const f = Array.isArray(r.fichas_tecnicas) ? r.fichas_tecnicas[0] : r.fichas_tecnicas;
+      const ean = f?.ean || r.ean;
+      if (ean) allEans.push(ean);
+    });
+
+    safeRecords.forEach(r => {
+      const f = Array.isArray(r.fichas_tecnicas) ? r.fichas_tecnicas[0] : r.fichas_tecnicas;
+      
+      const completeness = calculateCompleteness(r, f);
+      
+      // Filtrar el EAN actual de la lista global para chequear duplicidad
+      const currentEan = f?.ean || r.ean;
+      const otherEans = allEans.filter(e => e !== currentEan);
+      const inconsistencies = detectInconsistencies(r, f, otherEans);
+      
+      const estado = f?.estado || 'SIN_FICHA';
+      
+      if (estadoCounts[estado] !== undefined) {
+        estadoCounts[estado]++;
+      } else {
+        estadoCounts[estado] = 1;
+      }
+
+      if (estado === 'APROBADA') {
+        fichasAprobadas++;
+      }
+
+      if (completeness >= 80) {
+        completas++;
+      } else {
+        incompletas++;
+      }
+
+      if (!f?.foto_url || f.foto_url.trim().length === 0) {
+        sinImagen++;
+      }
+
+      const specsList = f?.especificaciones_json?.especificaciones || [];
+      if (specsList.length === 0) {
+        sinEspecificaciones++;
+      }
+
+      totalInconsistencias += inconsistencies.length;
+
+      // Un producto requiere atención si está incompleto, tiene inconsistencias o no tiene ficha aprobada
+      if (completeness < 80 || inconsistencies.length > 0 || estado !== 'APROBADA') {
+        productosAtencion.push({
+          sku: r.sku,
+          descripcion: r.descripcion,
+          estado,
+          completitud: completeness,
+          inconsistenciasCount: inconsistencies.length,
+          inconsistencias
+        });
+      }
+    });
+
+    // Ordenar productos de atención por completitud ascendente (más críticos primero)
+    productosAtencion.sort((a, b) => a.completitud - b.completitud);
+
+    return res.json({
+      resumen: {
+        totalProductos,
+        fichasAprobadas,
+        fichasPendientes: totalProductos - fichasAprobadas,
+        completas,
+        incompletas,
+        sinImagen,
+        sinEspecificaciones,
+        totalInconsistencias
+      },
+      estados: estadoCounts,
+      requierenAtencion: productosAtencion.slice(0, 50) // Limitar a los 50 más críticos para rendimiento móvil
+    });
+
+  } catch (err) {
+    console.error('[CalidadCatalogo] Error al generar reporte de calidad:', err.message);
+    res.status(500).json({
+      error: 'Error al generar reporte de calidad',
       message: err.message
     });
   }

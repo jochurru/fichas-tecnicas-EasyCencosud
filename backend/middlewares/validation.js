@@ -62,6 +62,7 @@ export const searchSchema = z.object({
 export const approveFichaSchema = z.object({
   sku: z.string()
     .trim()
+    .min(1, 'El SKU es obligatorio.')
     .regex(/^[a-zA-Z0-9-]+$/, 'El SKU debe ser alfanumérico limpio.'),
   especificaciones_json: z.object({
     marca: z.string()
@@ -75,7 +76,9 @@ export const approveFichaSchema = z.object({
     especificaciones: z.array(
       z.object({
         clave: z.string().trim().min(1, 'La clave del atributo no puede estar vacía.').max(100),
-        valor: z.string().trim().min(1, 'El valor del atributo no puede estar vacío.').max(500)
+        valor: z.string().trim().min(1, 'El valor del atributo no puede estar vacío.').max(500),
+        origen: z.string().trim().optional(),
+        fecha_validacion: z.string().trim().optional()
       })
     ),
     sugerencia_busqueda_imagen: z.string().trim().optional().nullable()
@@ -111,7 +114,17 @@ export const approveFichaSchema = z.object({
         return /^\d+$/.test(val) && val.length <= 20;
       },
       { message: 'El código EAN debe ser una cadena numérica limpia.' }
-    )
+    ),
+  estado: z.enum([
+    'SIN_FICHA',
+    'BORRADOR',
+    'GENERADA_POR_IA',
+    'PENDIENTE_VALIDACION',
+    'APROBADA',
+    'OBSERVADA',
+    'DESACTUALIZADA',
+    'VENCIDA'
+  ]).optional().default('APROBADA')
 });
 
 // 4. Esquemas: Impresión (GET & POST)

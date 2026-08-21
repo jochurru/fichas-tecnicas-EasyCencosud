@@ -1,0 +1,160 @@
+/**
+ * Utilitario de Reglas de Negocio para Calidad de Datos (Fichas Técnicas Easy Cencosud)
+ */
+
+/**
+ * Calcula el porcentaje de completitud de una ficha técnica (0 a 100%).
+ * 
+ * Ponderación:
+ * - SKU presente: 15%
+ * - EAN presente: 15%
+ * - Marca presente: 15%
+ * - Foto/Imagen presente: 20%
+ * - Descripción presente: 15%
+ * - Especificaciones técnicas mínimas (al menos 3 atributos): 20%
+ * 
+ * @param {Object} producto - Producto maestro SAP
+ * @param {Object} ficha - Ficha técnica consolidada o borrador
+ * @returns {number} Porcentaje de completitud (entero de 0 a 100)
+ */
+export function calculateCompleteness(producto, ficha) {
+  let score = 0;
+  
+  if (producto?.sku) score += 15;
+  if (ficha?.ean || producto?.ean) score += 15;
+  
+  const specsObj = ficha?.especificaciones_json || {};
+  const specsList = specsObj.especificaciones || [];
+  const marca = specsObj.marca || '';
+  
+  if (marca && marca.trim().length > 0) score += 15;
+  if (ficha?.foto_url && ficha.foto_url.trim().length > 0) score += 20;
+  if (producto?.descripcion && producto.descripcion.trim().length > 0) score += 15;
+  
+  // Al menos 3 especificaciones
+  if (specsList.length >= 3) {
+    score += 20;
+  } else if (specsList.length > 0) {
+    score += Math.round(specsList.length * 6.6); // Crédito parcial
+  }
+  
+  return Math.min(score, 100);
+}
+
+/**
+ * Analiza la ficha y el maestro SAP para detectar inconsistencias de datos.
+ * 
+ * @param {Object} producto - Producto maestro SAP
+ * @param {Object} ficha - Ficha técnica
+ * @param {Array<string>} [eanList] - Opcional. Lista de EANs ya mapeados para chequear duplicados.
+ * @returns {Array<Object>} Inconsistencias detectadas [{ tipo, mensaje, gravedad }]
+ */
+export function detectInconsistencies(producto, ficha, eanList = []) {
+  const alerts = [];
+  const specsObj = ficha?.especificaciones_json || {};
+  const specsList = specsObj.especificaciones || [];
+  const ean = ficha?.ean || producto?.ean || '';
+  const fotoUrl = ficha?.foto_url || '';
+  const desc = producto?.descripcion || '';
+  const marca = specsObj.marca || '';
+
+  // 1. EAN Faltante o Duplicado
+  if (!ean) {
+    alerts.push({
+      tipo: 'EAN_MISSING',
+      mensaje: 'Falta asociar código de barras EAN.',
+      gravedad: 'media'
+    });
+  } else if (eanList.length > 0 && eanList.includes(ean)) {
+    alerts.push({
+      tipo: 'EAN_DUPLICATE',
+      mensaje: `El código EAN ${ean} está duplicado en otra ficha técnica.`,
+      gravedad: 'alta'
+    });
+  }
+
+  // 2. Imagen/Foto Faltante
+  if (!fotoUrl || fotoUrl.trim().length === 0) {
+    alerts.push({
+      tipo: 'IMAGE_MISSING',
+      mensaje: 'El producto no posee imagen oficial.',
+      gravedad: 'media'
+    });
+  }
+
+  // 3. Especificaciones Vacías o Anómalas
+  if (specsList.length === 0) {
+    alerts.push({
+      tipo: 'SPECS_EMPTY',
+      mensaje: 'No se han ingresado especificaciones técnicas.',
+      gravedad: 'alta'
+    });
+  } else {
+    specsList.forEach((spec, idx) => {
+      const key = (spec.clave || '').trim();
+      const val = (spec.valor || '').trim().toLowerCase();
+      
+      if (!key || !val) {
+        alerts.push({
+          tipo: 'SPEC_VALUE_EMPTY',
+          mensaje: `La especificación #${idx + 1} tiene campos vacíos.`,
+          gravedad: 'alta'
+        });
+      } else if (
+        val === 'n/a' || 
+        val === 'null' || 
+        val === 'undefined' || 
+        val === 'no aplica' || 
+        val === '-' ||
+        val === 'sin especificar'
+      ) {
+        alerts.push({
+          tipo: 'SPEC_VALUE_ANOMALOUS',
+          mensaje: `El atributo "${spec.clave}" contiene un valor anómalo ("${spec.valor}").`,
+          gravedad: 'media'
+        });
+      }
+    });
+  }
+
+  // 4. Discrepancia entre descripción de SAP y marca ingresada
+  if (marca && desc) {
+    const descLower = desc.toLowerCase();
+    const marcaLower = marca.toLowerCase();
+    
+    // Si la descripción de SAP incluye marcas reconocidas pero la ficha tiene otra marca
+    const commonBrands = ['dewalt', 'bosch', 'einhell', 'stanley', 'black', 'makita', 'karcher', 'skil', 'gamma'];
+    const detectedSapBrand = commonBrands.find(b => descLower.includes(b));
+    
+    if (detectedSapBrand && !marcaLower.includes(detectedSapBrand)) {
+      alerts.push({
+        tipo: 'BRAND_DISCREPANCY',
+        mensaje: `Posible discrepancia: La descripción SAP sugiere marca "${detectedSapBrand.toUpperCase()}" pero se configuró "${marca}".`,
+        gravedad: 'alta'
+      });
+    }
+  }
+
+  return alerts;
+}
+
+/**
+ * Devuelve un color/badge CSS para el estado de la ficha técnica.
+ * 
+ * @param {string} estado - Estado de la ficha
+ * @returns {Object} { label, colorBg, colorText }
+ */
+export function getEstadoMetadata(estado) {
+  const map = {
+    'SIN_FICHA': { label: 'Sin Ficha', bg: 'bg-gray-100', text: 'text-gray-600' },
+    'BORRADOR': { label: 'Borrador', bg: 'bg-orange-100', text: 'text-orange-700' },
+    'GENERADA_POR_IA': { label: 'Generada por IA', bg: 'bg-purple-100', text: 'text-purple-700' },
+    'PENDIENTE_VALIDACION': { label: 'Pendiente Validación', bg: 'bg-blue-100', text: 'text-blue-700' },
+    'APROBADA': { label: 'Aprobada', bg: 'bg-green-100', text: 'text-green-700' },
+    'OBSERVADA': { label: 'Observada', bg: 'bg-rose-100', text: 'text-rose-700' },
+    'DESACTUALIZADA': { label: 'Desactualizada', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+    'VENCIDA': { label: 'Vencida', bg: 'bg-red-100', text: 'text-red-700' }
+  };
+  
+  return map[estado] || { label: estado || 'Desconocido', bg: 'bg-gray-100', text: 'text-gray-600' };
+}
