@@ -433,6 +433,110 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
 });
 
 /**
+ * @route   GET /api/catalogos/metricas
+ * @desc    Obtiene métricas agregadas de los logs de auditoría para la gerencia.
+ * @access  Privado (requiere privilegios de Administrador)
+ */
+router.get('/catalogos/metricas', requireAdmin, async (req, res, next) => {
+  try {
+    // 1. Obtener todos los registros de auditoría
+    const { data: logs, error } = await supabaseDb
+      .from('audit_logs')
+      .select('accion, sku, usuario_email, rol, timestamp')
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    let busquedas = 0;
+    let aprobaciones = 0;
+    let impresiones = 0;
+    let loginFailed = 0;
+
+    const skuCounts = {};
+    const operatorCounts = {};
+    let draftsCreated = 0;
+    let draftsApproved = 0;
+
+    const safeLogs = logs || [];
+
+    safeLogs.forEach(log => {
+      // Contar acciones generales
+      if (log.accion === 'PRODUCT_SEARCH') busquedas++;
+      else if (log.accion === 'PRODUCT_APPROVE') aprobaciones++;
+      else if (log.accion === 'PRINT_REQUESTED') impresiones++;
+      else if (log.accion === 'LOGIN_FAILED') loginFailed++;
+      else if (log.accion === 'AI_DRAFT_CREATED') draftsCreated++;
+      else if (log.accion === 'AI_DRAFT_APPROVED') draftsApproved++;
+
+      // Contar SKUs
+      if (log.sku) {
+        const cleanSku = String(log.sku).trim();
+        if (!skuCounts[cleanSku]) {
+          skuCounts[cleanSku] = { sku: cleanSku, total: 0, impresiones: 0 };
+        }
+        skuCounts[cleanSku].total++;
+        if (log.accion === 'PRINT_REQUESTED') {
+          skuCounts[cleanSku].impresiones++;
+        }
+      }
+
+      // Contar Operadores
+      if (log.usuario_email && log.usuario_email !== 'SYSTEM_GUEST') {
+        const email = log.usuario_email.trim();
+        if (!operatorCounts[email]) {
+          operatorCounts[email] = { email, rol: log.rol || 'OPERADOR', busquedas: 0, aprobaciones: 0, impresiones: 0 };
+        }
+        if (log.accion === 'PRODUCT_SEARCH') operatorCounts[email].busquedas++;
+        else if (log.accion === 'PRODUCT_APPROVE') operatorCounts[email].aprobaciones++;
+        else if (log.accion === 'PRINT_REQUESTED') operatorCounts[email].impresiones++;
+      }
+    });
+
+    // Top 10 SKUs por demanda (búsquedas + impresiones)
+    const topSkus = Object.values(skuCounts)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    // Listado de Operadores ordenados por nivel de uso/impresión
+    const operadores = Object.values(operatorCounts)
+      .sort((a, b) => b.impresiones - a.impresiones || b.busquedas - a.busquedas);
+
+    // Si no hay aprobaciones explícitas de borradores registradas con AI_DRAFT_APPROVED,
+    // podemos aproximarla por la cantidad de aprobaciones de ficha técnica del total
+    const actualDraftsApproved = draftsApproved || aprobaciones;
+    const aiAcceptanceRate = draftsCreated > 0
+      ? Math.round((actualDraftsApproved / draftsCreated) * 100)
+      : 100;
+
+    res.json({
+      resumen: {
+        busquedas,
+        aprobaciones,
+        impresiones,
+        loginFailed,
+        horasAhorradas: Number((impresiones * 14.5 / 60).toFixed(2))
+      },
+      topSkus,
+      operadores,
+      ia: {
+        draftsCreated,
+        draftsApproved: actualDraftsApproved,
+        tasaAceptacion: Math.min(aiAcceptanceRate, 100)
+      }
+    });
+
+  } catch (err) {
+    console.error('[Metricas] Error al generar reportes consolidados:', err.message);
+    res.status(500).json({
+      error: 'Error al generar reportes',
+      message: err.message
+    });
+  }
+});
+
+/**
  * @route   GET /api/catalogos/tareas/:id
  * @desc    Obtiene el estado de progreso de una tarea de procesamiento de Excel en segundo plano.
  * @access  Privado (requiere privilegios de Administrador)

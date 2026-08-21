@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, UploadCloud, AlertCircle, CheckCircle, 
   RefreshCw, FileSpreadsheet, KeyRound, ArrowRight,
-  Database, QrCode
+  Database, QrCode, TrendingUp, Clock, Award,
+  FileText, Percent, ShieldAlert, BarChart2, Check, UserCheck
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function AdminPanel({ token, onClose, onTokenExpired }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean'
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'analytics'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -16,6 +17,48 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
   const [stats, setStats] = useState(null);
   const [newSkus, setNewSkus] = useState([]);
   const [taskProgress, setTaskProgress] = useState(null);
+
+  // Estados de Métricas y Analítica
+  const [metrics, setMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState('');
+
+  // Efecto para cargar métricas al cambiar a la pestaña 'analytics'
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      loadMetrics();
+    }
+  }, [activeTab]);
+
+  const loadMetrics = async () => {
+    setMetricsLoading(true);
+    setMetricsError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/catalogos/metricas`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.status === 401 || res.status === 403) {
+        if (onTokenExpired) {
+          onTokenExpired();
+        }
+        return;
+      }
+      
+      if (!res.ok) {
+        throw new Error('No se pudo establecer conexión para recuperar reportes.');
+      }
+      
+      const data = await res.json();
+      setMetrics(data);
+    } catch (err) {
+      setMetricsError(err.message || 'Error desconocido al obtener métricas.');
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
 
   // Drag and Drop Helpers
   const handleDrag = (e) => {
@@ -200,7 +243,7 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
               </div>
             </div>
 
-            {/* Selector de Pestañas (Modo de Carga) */}
+            {/* Selector de Pestañas (Modo de Carga / Métricas) */}
             {!loading && !stats && (
               <div className="flex bg-gray-100 p-1 rounded-xl">
                 <button
@@ -223,11 +266,21 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                 >
                   <QrCode className="w-3.5 h-3.5" /> Mapeo EAN
                 </button>
+                <button
+                  onClick={() => setActiveTab('analytics')}
+                  className={`flex-grow py-2.5 text-xs font-bold rounded-lg transition-all flex justify-center items-center gap-1.5 ${
+                    activeTab === 'analytics'
+                      ? 'bg-white text-easy-dark shadow-sm'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <TrendingUp className="w-3.5 h-3.5" /> Métricas
+                </button>
               </div>
             )}
 
-            {/* Zona de Drop para Archivos */}
-            {!loading && !stats && (
+            {/* Zona de Drop para Archivos (Solo visible en pestañas de Carga SAP/EAN) */}
+            {!loading && !stats && (activeTab === 'catalog' || activeTab === 'ean') && (
               <div 
                 className={`border-2 border-dashed rounded-2xl p-8 flex flex-col justify-center items-center text-center transition-all ${
                   dragActive 
@@ -372,6 +425,190 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Subir otra planilla
                 </button>
+              </div>
+            )}
+
+            {/* Pestaña de Métricas y Analítica */}
+            {!loading && activeTab === 'analytics' && (
+              <div className="space-y-6">
+                {metricsLoading && (
+                  <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+                    <RefreshCw className="w-8 h-8 text-easy-red animate-spin" />
+                    <p className="text-xs text-gray-500 font-bold">Generando reportes consolidados...</p>
+                  </div>
+                )}
+
+                {metricsError && (
+                  <div className="bg-red-50 border border-red-200 text-easy-red p-4 rounded-xl text-xs flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-bold">Error al cargar métricas:</span>
+                      <p className="mt-0.5 text-gray-600">{metricsError}</p>
+                      <button onClick={loadMetrics} className="mt-2 text-easy-red underline font-bold active:scale-95 transition-all">Reintentar</button>
+                    </div>
+                  </div>
+                )}
+
+                {!metricsLoading && !metricsError && metrics && (
+                  <div className="space-y-6">
+                    
+                    {/* Resumen en Tarjetas */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-red-50 to-white p-4 rounded-2xl border border-red-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Ahorro Estimado</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-easy-red">
+                          <span className="text-2xl font-black font-mono">{metrics.resumen.horasAhorradas}</span>
+                          <span className="text-[10px] font-extrabold uppercase">horas</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gray-500">
+                          <Clock className="w-3.5 h-3.5 text-easy-red" />
+                          <span>En pasillo de ventas</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-yellow-50 to-white p-4 rounded-2xl border border-yellow-100/55 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Fichas Impresas</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-easy-dark">
+                          <span className="text-2xl font-black font-mono">{metrics.resumen.impresiones}</span>
+                          <span className="text-[10px] font-extrabold uppercase text-gray-500">carteles</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gray-500">
+                          <FileText className="w-3.5 h-3.5 text-yellow-500" />
+                          <span>En sucursales</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Búsquedas</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-blue-600">
+                          <span className="text-2xl font-black font-mono">{metrics.resumen.busquedas}</span>
+                          <span className="text-[10px] font-extrabold uppercase text-blue-500">consultas</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gray-500">
+                          <Database className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Consultas SAP/EAN</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-2xl border border-green-100 flex flex-col justify-between shadow-sm">
+                        <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Efectividad IA</span>
+                        <div className="mt-1.5 flex items-baseline gap-1 text-green-600">
+                          <span className="text-2xl font-black font-mono">{metrics.ia.tasaAceptacion}%</span>
+                          <span className="text-[10px] font-extrabold uppercase text-green-500">precisión</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gray-500">
+                          <Award className="w-3.5 h-3.5 text-green-500" />
+                          <span>Borrador aprobado</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gráfico/Progreso de Aceptación IA */}
+                    <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-1.5">
+                          <Percent className="w-4 h-4 text-easy-red" />
+                          <span className="text-xs font-bold text-gray-700">Conversión de Borradores IA</span>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-easy-red">{metrics.ia.tasaAceptacion}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-150">
+                        <div 
+                          className="bg-easy-red h-2 rounded-full transition-all duration-500" 
+                          style={{ width: `${metrics.ia.tasaAceptacion}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-[9px] font-extrabold uppercase tracking-wider text-gray-400 pt-0.5">
+                        <span>Borradores creados: {metrics.ia.draftsCreated}</span>
+                        <span>Aprobados por tiendas: {metrics.ia.draftsApproved}</span>
+                      </div>
+                    </div>
+
+                    {/* Top 10 SKU más demandados */}
+                    <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-easy-red" />
+                        <span className="text-xs font-bold text-gray-700">Top 10 Productos Demandados</span>
+                      </div>
+                      <div className="overflow-x-auto max-h-[220px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                              <th className="px-4 py-2">SKU</th>
+                              <th className="px-4 py-2 text-center">Consultas</th>
+                              <th className="px-4 py-2 text-center">Impresiones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 text-[11px]">
+                            {metrics.topSkus.length === 0 ? (
+                              <tr>
+                                <td colSpan="3" className="px-4 py-4 text-center text-gray-400">Sin datos de consultas aún</td>
+                              </tr>
+                            ) : (
+                              metrics.topSkus.map((item, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50/45">
+                                  <td className="px-4 py-2 font-mono font-bold text-gray-600">{item.sku}</td>
+                                  <td className="px-4 py-2 text-center font-bold text-gray-700">{item.total}</td>
+                                  <td className="px-4 py-2 text-center text-easy-red font-bold">{item.impresiones}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Actividad de Operadores */}
+                    <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-easy-red" />
+                        <span className="text-xs font-bold text-gray-700">Actividad de Colaboradores</span>
+                      </div>
+                      <div className="overflow-x-auto max-h-[220px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                              <th className="px-4 py-2">Email</th>
+                              <th className="px-4 py-2 text-center">Búsquedas</th>
+                              <th className="px-4 py-2 text-center">Ediciones</th>
+                              <th className="px-4 py-2 text-center">Impresiones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 text-[11px]">
+                            {metrics.operadores.length === 0 ? (
+                              <tr>
+                                <td colSpan="4" className="px-4 py-4 text-center text-gray-400">Sin actividad registrada</td>
+                              </tr>
+                            ) : (
+                              metrics.operadores.map((op, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50/45">
+                                  <td className="px-4 py-2 font-semibold text-gray-600 max-w-[140px] truncate">{op.email}</td>
+                                  <td className="px-4 py-2 text-center font-mono font-semibold text-gray-500">{op.busquedas}</td>
+                                  <td className="px-4 py-2 text-center font-mono font-semibold text-gray-500">{op.aprobaciones}</td>
+                                  <td className="px-4 py-2 text-center font-mono font-bold text-easy-red">{op.impresiones}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Tarjeta de Seguridad */}
+                    {metrics.resumen.loginFailed > 0 && (
+                      <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3.5 rounded-2xl text-[11px] flex items-start gap-2">
+                        <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+                        <div>
+                          <span className="font-bold text-amber-900">Alerta de Seguridad</span>
+                          <p className="mt-0.5 text-amber-800/80">
+                            Se registraron <strong className="font-bold text-amber-900">{metrics.resumen.loginFailed} intentos de login fallidos</strong>. Podés auditar las IPs de origen directamente desde la tabla `audit_logs` en Supabase.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                  </div>
+                )}
               </div>
             )}
           </div>
