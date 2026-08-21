@@ -71,7 +71,8 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
         },
         body: JSON.stringify({
           sku: producto.sku,
-          template: templateName
+          template: templateName,
+          action: action === 'preview' ? 'preview' : 'print'
         })
       });
 

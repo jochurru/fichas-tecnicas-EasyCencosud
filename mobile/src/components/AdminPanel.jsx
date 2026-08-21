@@ -474,7 +474,7 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                         </div>
                         <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-gray-500">
                           <FileText className="w-3.5 h-3.5 text-yellow-500" />
-                          <span>En sucursales</span>
+                          <span>Físicos (Vistas previas: {metrics.resumen.vistasPrevias})</span>
                         </div>
                       </div>
 

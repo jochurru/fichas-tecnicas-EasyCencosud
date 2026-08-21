@@ -452,6 +452,7 @@ router.get('/catalogos/metricas', requireAdmin, async (req, res, next) => {
     let busquedas = 0;
     let aprobaciones = 0;
     let impresiones = 0;
+    let vistasPrevias = 0;
     let loginFailed = 0;
 
     const skuCounts = {};
@@ -466,6 +467,7 @@ router.get('/catalogos/metricas', requireAdmin, async (req, res, next) => {
       if (log.accion === 'PRODUCT_SEARCH') busquedas++;
       else if (log.accion === 'PRODUCT_APPROVE') aprobaciones++;
       else if (log.accion === 'PRINT_REQUESTED') impresiones++;
+      else if (log.accion === 'PREVIEW_REQUESTED') vistasPrevias++;
       else if (log.accion === 'LOGIN_FAILED') loginFailed++;
       else if (log.accion === 'AI_DRAFT_CREATED') draftsCreated++;
       else if (log.accion === 'AI_DRAFT_APPROVED') draftsApproved++;
@@ -515,6 +517,7 @@ router.get('/catalogos/metricas', requireAdmin, async (req, res, next) => {
         busquedas,
         aprobaciones,
         impresiones,
+        vistasPrevias,
         loginFailed,
         horasAhorradas: Number((impresiones * 14.5 / 60).toFixed(2))
       },

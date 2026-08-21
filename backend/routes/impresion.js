@@ -47,12 +47,13 @@ router.get(
   validateSchema(printGetQuerySchema, 'query'),
   async (req, res, next) => {
     const { sku } = req.params;
-    const { template } = req.query;
+    const { template, action } = req.query;
     const fileName = `${sku}_${template}.pdf`;
 
-    // Registrar auditoría de inicio de impresión
+    // Registrar auditoría de inicio de impresión o vista previa
+    const auditAction = action === 'preview' ? 'PREVIEW_REQUESTED' : 'PRINT_REQUESTED';
     logAuditEvent(req, {
-      accion: 'PRINT_REQUESTED',
+      accion: auditAction,
       entidad: 'FICHA_TECNICA',
       sku,
       valores_nuevos: { template, source: 'GET' }
@@ -104,7 +105,7 @@ router.get(
 
     } catch (error) {
       logAuditEvent(req, {
-        accion: 'PRINT_REQUESTED',
+        accion: auditAction,
         entidad: 'FICHA_TECNICA',
         sku,
         valores_nuevos: { error: error.message },
@@ -131,13 +132,14 @@ router.get(
  * @desc    Genera y devuelve la ficha técnica en PDF a partir del SKU y template seleccionado.
  */
 router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), async (req, res, next) => {
-  const { sku, template } = req.body;
+  const { sku, template, action } = req.body;
   const selectedTemplate = template || 'fleje3';
   const fileName = `${sku}_${selectedTemplate}.pdf`;
 
-  // Registrar auditoría de inicio de impresión
+  // Registrar auditoría de inicio de impresión o vista previa
+  const auditAction = action === 'preview' ? 'PREVIEW_REQUESTED' : 'PRINT_REQUESTED';
   logAuditEvent(req, {
-    accion: 'PRINT_REQUESTED',
+    accion: auditAction,
     entidad: 'FICHA_TECNICA',
     sku,
     valores_nuevos: { template: selectedTemplate, source: 'POST' }
@@ -189,7 +191,7 @@ router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), as
 
   } catch (error) {
     logAuditEvent(req, {
-      accion: 'PRINT_REQUESTED',
+      accion: auditAction,
       entidad: 'FICHA_TECNICA',
       sku,
       valores_nuevos: { error: error.message },

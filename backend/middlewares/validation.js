@@ -122,14 +122,16 @@ export const printGetParamsSchema = z.object({
 });
 
 export const printGetQuerySchema = z.object({
-  template: z.enum(['a4', 'fleje3', 'fleje2']).optional().default('fleje3')
+  template: z.enum(['a4', 'fleje3', 'fleje2']).optional().default('fleje3'),
+  action: z.enum(['preview', 'print']).optional().default('print')
 });
 
 export const printPostSchema = z.object({
   sku: z.string()
     .trim()
     .regex(/^[a-zA-Z0-9-]+$/, 'El SKU debe ser alfanumérico.'),
-  template: z.enum(['a4', 'fleje3', 'fleje2']).optional().default('fleje3')
+  template: z.enum(['a4', 'fleje3', 'fleje2']).optional().default('fleje3'),
+  action: z.enum(['preview', 'print']).optional().default('print')
 });
 
 // 5. Esquema: Carga Excel SAP (/api/catalogos/importar e importar-eans)
