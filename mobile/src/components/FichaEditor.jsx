@@ -85,7 +85,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
     
     setCompleteness(score);
     setInconsistencies(alerts);
-  }, [marca, tipoHerramienta, especificaciones, fotoUrl, ean, producto]);
+  }, [marca, tipoHerramienta, especificaciones, fotoUrl, eans, producto]);
 
   // Manejo de cambios en las especificaciones dinámicas
   const handleSpecChange = (index, field, value) => {
@@ -234,7 +234,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
 
       setSuccessMsg('Ficha técnica aprobada y guardada con éxito.');
       setTimeout(() => {
-        onSaveSuccess(result.ficha_tecnica, ean.trim() || null);
+        onSaveSuccess(result.ficha_tecnica, eans && eans.length > 0 ? eans[0] : null);
       }, 1500);
 
     } catch (err) {
