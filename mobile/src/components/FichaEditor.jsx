@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, 
   Image, Layers, Eye, Printer, RefreshCw, GitCommit, ShieldAlert,
-  HelpCircle
+  HelpCircle, QrCode, X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import CompletenessBar from './CompletenessBar';
 import VersionComparatorModal from './VersionComparatorModal';
+import Scanner from './Scanner';
 import { calculateCompleteness, detectInconsistencies, getEstadoMetadata } from '../lib/dataQuality';
 
 export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onTokenExpired }) {
@@ -26,7 +27,9 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   const [fotoUrl, setFotoUrl] = useState('');
   const [templatePreferido, setTemplatePreferido] = useState(1);
   const [aprobadoPor, setAprobadoPor] = useState('OPERADOR_LOCAL');
-  const [ean, setEan] = useState('');
+  const [eans, setEans] = useState([]);
+  const [newEanText, setNewEanText] = useState('');
+  const [scanActiveForEan, setScanActiveForEan] = useState(false);
   const [estado, setEstado] = useState('BORRADOR');
   
   // Analítica de Calidad en tiempo real
@@ -59,7 +62,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
     setSugerenciaImagen(specData.sugerencia_busqueda_imagen || '');
     setFotoUrl(ficha_tecnica?.foto_url || '');
     setTemplatePreferido(ficha_tecnica?.template_preferido || 1);
-    setEan(producto.eans && producto.eans.length > 0 ? producto.eans[0] : '');
+    setEans(producto.eans || []);
     setEstado(ficha_tecnica?.estado || (ficha_tecnica ? 'PENDIENTE_VALIDACION' : 'BORRADOR'));
     
     // El aprobador por defecto es siempre el usuario activo de esta sesión, para registrar su firma en caso de guardar
@@ -70,7 +73,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   useEffect(() => {
     const tempFicha = {
       foto_url: fotoUrl,
-      ean: ean,
+      ean: eans && eans.length > 0 ? eans[0] : '',
       especificaciones_json: {
         marca,
         tipo_herramienta: tipoHerramienta,
@@ -198,7 +201,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
       foto_url: fotoUrl.trim() || null,
       template_preferido: templatePreferido,
       aprobado_por: aprobadoPor,
-      ean: ean.trim() || null,
+      eans: eans.filter(Boolean),
       estado: estado // Enviar el estado seleccionado en el editor
     };
 
@@ -339,16 +342,82 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
             </div>
           </div>
 
+          {/* Listado y Carga de EANs (Relación 1-a-N con Lector de Cámara) P1.4 */}
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1">Código de Barras / EAN</label>
-            <input
-              type="text"
-              disabled={loading || isReadOnly || isOffline}
-              value={ean}
-              onChange={(e) => setEan(e.target.value)}
-              placeholder="Ej. 7791234567890 (opcional)"
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
-            />
+            <label className="block text-xs font-bold text-gray-600 mb-1 flex items-center gap-1">
+              <QrCode className="w-3.5 h-3.5 text-gray-500" /> Códigos de Barras / EAN Asociados
+            </label>
+            
+            {/* Pills de EANs actuales */}
+            <div className="flex flex-wrap gap-1.5 mb-2.5">
+              {eans.map((code, index) => (
+                <span key={index} className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 transition-colors">
+                  <span>{code}</span>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setEans(eans.filter((_, i) => i !== index))}
+                      className="text-gray-400 hover:text-easy-red transition-colors ml-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </span>
+              ))}
+              {eans.length === 0 && (
+                <span className="text-xs text-gray-400 font-semibold italic">Sin códigos EAN asociados</span>
+              )}
+            </div>
+
+            {/* Input y Botón Scanner */}
+            {canEdit && (
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    disabled={loading || isOffline}
+                    value={newEanText}
+                    onChange={(e) => setNewEanText(e.target.value.replace(/\D/g, ''))} // Solo permitir dígitos
+                    placeholder="Escribir nuevo código EAN..."
+                    className="w-full bg-white border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newEanText.trim()) {
+                          if (!eans.includes(newEanText.trim())) {
+                            setEans([...eans, newEanText.trim()]);
+                          }
+                          setNewEanText('');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setScanActiveForEan(true)}
+                    className="absolute right-2 top-1.5 p-1 text-gray-400 hover:text-easy-red hover:bg-gray-50 rounded-md transition-colors"
+                    title="Escanear con cámara"
+                  >
+                    <QrCode className="w-4 h-4 text-easy-red" />
+                  </button>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newEanText.trim()) {
+                      if (!eans.includes(newEanText.trim())) {
+                        setEans([...eans, newEanText.trim()]);
+                      }
+                      setNewEanText('');
+                    }
+                  }}
+                  className="bg-easy-dark text-white hover:bg-gray-800 font-bold px-3.5 py-2 rounded-lg text-xs transition-colors flex items-center justify-center active:scale-95"
+                >
+                  Agregar
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -582,6 +651,22 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
           currentFotoUrl={fotoUrl}
           token={token}
           onClose={() => setIsHistoryOpen(false)}
+        />
+      )}
+
+      {/* Scanner de Cámara Local para agregar EANs (P1.4) */}
+      {scanActiveForEan && (
+        <Scanner
+          onScanSuccess={(code) => {
+            if (code) {
+              const cleanCode = code.trim();
+              if (cleanCode && !eans.includes(cleanCode)) {
+                setEans([...eans, cleanCode]);
+              }
+            }
+            setScanActiveForEan(false);
+          }}
+          onClose={() => setScanActiveForEan(false)}
         />
       )}
     </div>

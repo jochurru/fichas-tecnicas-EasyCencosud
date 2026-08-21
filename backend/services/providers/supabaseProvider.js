@@ -141,12 +141,12 @@ export class SupabaseProvider {
 
   /**
    * Consolida y aprueba una ficha técnica editada por un operador.
-   * Asocia opcionalmente un código EAN al SKU en la tabla codigos_ean.
-   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado }
+   * Sincroniza la lista de códigos EAN asociados al SKU en la tabla codigos_ean.
+   * @param {Object} data - Datos a guardar { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, eans, estado }
    * @returns {Promise<Object>} Ficha técnica aprobada
    */
   async saveFichaAprobada(data) {
-    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado } = data;
+    const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, eans, estado } = data;
     const existing = await this.getFichaBySku(sku);
     let queryResult;
 
@@ -182,17 +182,47 @@ export class SupabaseProvider {
       throw queryResult.error;
     }
 
-    // Asociar EAN de forma dinámica si se provee
-    if (ean && ean.trim()) {
-      const { error: eanError } = await supabase
+    // Sincronizar EANs de forma dinámica (relación 1-a-N)
+    try {
+      // 1. Obtener EANs actuales de la DB para este SKU
+      const { data: currentEansDb } = await supabase
         .from('codigos_ean')
-        .upsert({ ean: ean.trim(), sku }, { onConflict: 'ean' });
+        .select('ean')
+        .eq('sku', sku);
 
-      if (eanError) {
-        console.error(`[SupabaseProvider] Error al asociar EAN ${ean} a SKU ${sku}:`, eanError);
-      } else {
-        console.log(`[SupabaseProvider] EAN ${ean} asociado exitosamente a SKU ${sku}`);
+      const dbEanList = (currentEansDb || []).map(item => item.ean);
+      const newEanList = Array.isArray(eans) 
+        ? eans.map(e => e.trim()).filter(Boolean) 
+        : [];
+
+      // 2. Determinar EANs que el usuario eliminó
+      const eansToDelete = dbEanList.filter(e => !newEanList.includes(e));
+      if (eansToDelete.length > 0) {
+        const { error: delError } = await supabase
+          .from('codigos_ean')
+          .delete()
+          .in('ean', eansToDelete);
+        
+        if (delError) {
+          console.error(`[SupabaseProvider] Error al eliminar EANs obsoletos:`, delError);
+        }
       }
+
+      // 3. Upsertar todos los EANs activos en la nueva lista
+      if (newEanList.length > 0) {
+        const upsertRows = newEanList.map(ean => ({ ean, sku }));
+        const { error: upsertError } = await supabase
+          .from('codigos_ean')
+          .upsert(upsertRows, { onConflict: 'ean' });
+        
+        if (upsertError) {
+          console.error(`[SupabaseProvider] Error al upsertar nuevos EANs:`, upsertError);
+        } else {
+          console.log(`[SupabaseProvider] ${newEanList.length} códigos EAN sincronizados para SKU ${sku}`);
+        }
+      }
+    } catch (eanSyncErr) {
+      console.error(`[SupabaseProvider] Excepción al sincronizar EANs:`, eanSyncErr);
     }
 
     return queryResult.data;

@@ -550,11 +550,25 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
     // 1. Obtener todos los productos y realizar left join con sus fichas_tecnicas
     const { data: records, error } = await supabaseDb
       .from('productos')
-      .select('sku, descripcion, ean, fichas_tecnicas(especificaciones_json, foto_url, estado, ean)');
+      .select('sku, descripcion, fichas_tecnicas(especificaciones_json, foto_url, estado)');
 
     if (error) {
       throw error;
     }
+
+    // 2. Obtener todos los códigos EAN mapeados para asociarlos en memoria
+    const { data: eanMappings, error: eanErr } = await supabaseDb
+      .from('codigos_ean')
+      .select('sku, ean');
+
+    if (eanErr) {
+      throw eanErr;
+    }
+
+    const eanMapBySku = {};
+    (eanMappings || []).forEach(m => {
+      if (m.sku) eanMapBySku[m.sku] = m.ean;
+    });
 
     const safeRecords = records || [];
 
@@ -583,21 +597,22 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
     // Recolectar todos los EANs para chequear duplicados
     const allEans = [];
     safeRecords.forEach(r => {
-      // fichas_tecnicas podría venir como array o objeto simple
-      const f = Array.isArray(r.fichas_tecnicas) ? r.fichas_tecnicas[0] : r.fichas_tecnicas;
-      const ean = f?.ean || r.ean;
+      const ean = eanMapBySku[r.sku];
       if (ean) allEans.push(ean);
     });
 
     safeRecords.forEach(r => {
       const f = Array.isArray(r.fichas_tecnicas) ? r.fichas_tecnicas[0] : r.fichas_tecnicas;
       
-      const completeness = calculateCompleteness(r, f);
+      // Inject EAN into a temporary ficha object for consistency evaluation
+      const tempFicha = f ? { ...f, ean: eanMapBySku[r.sku] } : null;
+
+      const completeness = calculateCompleteness(r, tempFicha);
       
       // Filtrar el EAN actual de la lista global para chequear duplicidad
-      const currentEan = f?.ean || r.ean;
+      const currentEan = eanMapBySku[r.sku];
       const otherEans = allEans.filter(e => e !== currentEan);
-      const inconsistencies = detectInconsistencies(r, f, otherEans);
+      const inconsistencies = detectInconsistencies(r, tempFicha, otherEans);
       
       const estado = f?.estado || 'SIN_FICHA';
       
@@ -621,7 +636,7 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
         sinImagen++;
       }
 
-      const specsList = f?.especificaciones_json?.especificaciones || [];
+      const specsList = f?.especificaciones_json?.specifications || f?.especificaciones_json?.especificaciones || [];
       if (specsList.length === 0) {
         sinEspecificaciones++;
       }

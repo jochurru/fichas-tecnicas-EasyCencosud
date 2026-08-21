@@ -104,17 +104,12 @@ export const approveFichaSchema = z.object({
     .trim()
     .min(1, 'El nombre de aprobador es obligatorio.')
     .max(255),
-  ean: z.string()
-    .trim()
-    .nullable()
-    .or(z.literal(''))
-    .refine(
-      (val) => {
-        if (!val) return true;
-        return /^\d+$/.test(val) && val.length <= 20;
-      },
-      { message: 'El código EAN debe ser una cadena numérica limpia.' }
-    ),
+  eans: z.array(
+    z.string()
+      .trim()
+      .regex(/^\d+$/, 'El código EAN debe ser una cadena numérica.')
+      .max(20, 'El código EAN es demasiado largo.')
+  ).optional().default([]),
   estado: z.enum([
     'SIN_FICHA',
     'BORRADOR',

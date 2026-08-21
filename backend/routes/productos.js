@@ -182,7 +182,7 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
 router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), async (req, res, next) => {
-  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, ean, estado } = req.body;
+  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, eans, estado } = req.body;
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
@@ -212,7 +212,7 @@ router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), 
       foto_url,
       template_preferido,
       aprobado_por,
-      ean,
+      eans,
       estado
     });
 
