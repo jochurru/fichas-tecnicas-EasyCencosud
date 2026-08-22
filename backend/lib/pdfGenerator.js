@@ -7,6 +7,51 @@ import { dataService } from '../services/dataService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let sharedBrowser = null;
+let launchPromise = null;
+
+async function getBrowser() {
+  if (sharedBrowser) {
+    try {
+      await sharedBrowser.version();
+      return sharedBrowser;
+    } catch (err) {
+      console.warn('[Puppeteer] Shared browser is disconnected, recreating...', err.message);
+      try {
+        await sharedBrowser.close();
+      } catch (closeErr) {}
+      sharedBrowser = null;
+    }
+  }
+
+  if (!launchPromise) {
+    launchPromise = (async () => {
+      console.log('[Puppeteer] Launching shared browser instance...');
+      return await puppeteer.launch({
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process'
+        ]
+      });
+    })();
+  }
+
+  try {
+    sharedBrowser = await launchPromise;
+  } finally {
+    launchPromise = null;
+  }
+
+  return sharedBrowser;
+}
+
 /**
  * Genera un buffer de PDF a partir de una ficha técnica y su producto usando la plantilla seleccionada.
  * 
@@ -174,20 +219,12 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     }
   }
 
-  // Lanzar Puppeteer para generar el PDF
-  const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  });
+  // Obtener instancia compartida de Puppeteer para generar el PDF
+  const browser = await getBrowser();
+  let page = null;
 
   try {
-    const page = await browser.newPage();
+    page = await browser.newPage();
     
     // Setear contenido HTML
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -208,7 +245,13 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     return pdfBuffer;
 
   } finally {
-    await browser.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch (pageErr) {
+        console.error('[Puppeteer] Error closing page:', pageErr.message);
+      }
+    }
   }
 }
 
@@ -584,19 +627,11 @@ export async function generateBatchPdf(items, dataService) {
   const finalHtml = baseHtml.replace('{{content}}', finalPages.join('\n'));
 
   // 4. Compilar con Puppeteer
-  const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  });
+  const browser = await getBrowser();
+  let page = null;
 
   try {
-    const page = await browser.newPage();
+    page = await browser.newPage();
     await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
     
     const pdfBuffer = await page.pdf({
@@ -613,6 +648,12 @@ export async function generateBatchPdf(items, dataService) {
 
     return pdfBuffer;
   } finally {
-    await browser.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch (pageErr) {
+        console.error('[Puppeteer] Error closing page:', pageErr.message);
+      }
+    }
   }
 }

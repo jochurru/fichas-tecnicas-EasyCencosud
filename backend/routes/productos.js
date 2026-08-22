@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { dataService } from '../services/dataService.js';
 import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
@@ -10,19 +9,14 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 
-const geminiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
-  keyGenerator: (req) => req.user?.email || req.ip,
-  message: { error: 'Too many requests', message: 'Límite de solicitudes Gemini superado. Intente de nuevo más tarde.' }
-});
+const geminiUserRequests = new Map();
 
 /**
  * @route   GET /api/producto/:identificador
  * @desc    Busca un producto por SKU o código EAN.
  *          Si el producto existe pero no tiene ficha técnica, crea un borrador_ia inicial.
  */
-router.get('/producto/:identificador', requireAuth, geminiLimiter, validateSchema(searchSchema, 'params'), async (req, res, next) => {
+router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema, 'params'), async (req, res, next) => {
   const { identificador } = req.params;
   const cleanedId = identificador.trim().replace(/[^a-zA-Z0-9-]/g, '');
 
@@ -73,6 +67,34 @@ router.get('/producto/:identificador', requireAuth, geminiLimiter, validateSchem
     if (existingFicha && !hasExtractionError) {
       ficha = existingFicha;
     } else {
+      // Gemini Rate Limiting manual por usuario (evita falsos positivos en búsquedas estándar cached)
+      const email = req.user.email;
+      const now = Date.now();
+      const windowMs = 15 * 60 * 1000; // 15 minutos
+      const maxRequests = 30;
+
+      let userRecord = geminiUserRequests.get(email);
+      if (!userRecord || now > userRecord.resetTime) {
+        userRecord = { count: 0, resetTime: now + windowMs };
+      }
+
+      if (userRecord.count >= maxRequests) {
+        logAuditEvent(req, {
+          accion: 'GEMINI_RATE_LIMIT_EXCEEDED',
+          entidad: 'PRODUCTO',
+          sku: producto.sku,
+          valores_nuevos: { email },
+          resultado: 'FAILURE'
+        });
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          message: 'Límite de solicitudes Gemini superado. Intente de nuevo más tarde.'
+        });
+      }
+
+      userRecord.count += 1;
+      geminiUserRequests.set(email, userRecord);
+
       // Si no existe o tiene errores de extracción, gatillar en paralelo el extractor IA con Gemini y la búsqueda de foto en Easy
       console.log(`[Pipeline Trigger] SKU ${producto.sku} requiere extracción. Iniciando extracción paralela (Gemini + Easy Scraper)...`);
       
