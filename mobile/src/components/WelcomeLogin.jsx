@@ -16,7 +16,6 @@ export default function WelcomeLogin({ onLoginSuccess }) {
     setErrorMsg('');
 
     try {
-      console.log('[Auth] Autenticando credenciales estándar...');
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -30,8 +29,6 @@ export default function WelcomeLogin({ onLoginSuccess }) {
       if (!response.ok) {
         throw new Error(data.message || 'Credenciales inválidas o error de conexión.');
       }
-
-      console.log('[Auth] ✓ Login exitoso:', data.user.email);
       
       // Persistir token y datos de usuario en localStorage
       localStorage.setItem('userToken', data.token);
@@ -41,7 +38,6 @@ export default function WelcomeLogin({ onLoginSuccess }) {
       onLoginSuccess(data.token, data.user);
 
     } catch (err) {
-      console.error('[Auth] Error de login:', err.message);
       setErrorMsg(err.message);
     } finally {
       setLoading(false);
@@ -114,6 +110,8 @@ export default function WelcomeLogin({ onLoginSuccess }) {
                       placeholder="ej: usuario@easy.com.ar"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="username"
+                      spellCheck="false"
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:bg-white focus:border-transparent transition-all"
                     />
                   </div>
@@ -132,6 +130,8 @@ export default function WelcomeLogin({ onLoginSuccess }) {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      spellCheck="false"
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:bg-white focus:border-transparent transition-all"
                     />
                     <button
