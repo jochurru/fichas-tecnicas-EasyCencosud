@@ -812,10 +812,9 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
           <input
             type="text"
             required
-            disabled={isReadOnly || isOffline}
+            disabled={true}
             value={aprobadoPor}
-            onChange={(e) => setAprobadoPor(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
+            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 focus:outline-none cursor-not-allowed select-none"
           />
         </div>
 

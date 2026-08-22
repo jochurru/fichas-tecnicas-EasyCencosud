@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { dataService } from '../services/dataService.js';
 import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
-import { requireAuth } from '../middlewares/authMiddleware.js';
+import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { validateSchema, searchSchema, approveFichaSchema } from '../middlewares/validation.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -181,8 +181,9 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
  * @route   POST /api/fichas/aprobar
  * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
  */
-router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), async (req, res, next) => {
-  const { sku, especificaciones_json, foto_url, template_preferido, aprobado_por, eans, estado } = req.body;
+router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator']), validateSchema(approveFichaSchema), async (req, res, next) => {
+  const { sku, especificaciones_json, foto_url, template_preferido, eans, estado } = req.body;
+  const verfiedEmail = req.user.email;
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
@@ -211,7 +212,7 @@ router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), 
       especificaciones_json,
       foto_url,
       template_preferido,
-      aprobado_por,
+      aprobado_por: verfiedEmail,
       eans,
       estado
     });
@@ -234,10 +235,10 @@ router.post('/fichas/aprobar', requireAuth, validateSchema(approveFichaSchema), 
         version: nextVersion,
         especificaciones_json,
         foto_url,
-        origen_cambio: aprobado_por.includes('coord') || aprobado_por.includes('admin')
+        origen_cambio: req.user.role === 'admin' || req.user.role === 'coordinator'
           ? 'APROBACION_COORDINADOR'
           : 'EDICION_LOCAL',
-        modificado_por: aprobado_por
+        modificado_por: verfiedEmail
       }]);
 
     if (insertHistError) {

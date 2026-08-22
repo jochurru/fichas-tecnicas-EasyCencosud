@@ -27,6 +27,15 @@ export async function requireAuth(req, res, next) {
       });
     }
 
+    // Resolver rol a partir del correo verificado (admin, coordinator, operator)
+    let role = 'operator';
+    if (user.email === 'admin@easy.com.ar' || user.email.includes('admin')) {
+      role = 'admin';
+    } else if (user.email.includes('coord')) {
+      role = 'coordinator';
+    }
+    user.role = role;
+
     // Inyectar el usuario en la request para controladores posteriores
     req.user = user;
     next();
@@ -38,6 +47,21 @@ export async function requireAuth(req, res, next) {
       message: err.message
     });
   }
+}
+
+/**
+ * Middleware para requerir roles específicos.
+ */
+export function requireRoles(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: `Acceso denegado: Se requiere uno de los siguientes roles: ${allowedRoles.join(', ')}.`
+      });
+    }
+    next();
+  };
 }
 
 /**

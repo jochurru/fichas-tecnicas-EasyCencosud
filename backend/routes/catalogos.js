@@ -147,7 +147,7 @@ router.post('/catalogos/importar', requireAdmin, validateSchema(excelUploadSchem
 
     // 5. Registrar tarea asíncrona y responder inmediatamente (Status 202)
     const totalItems = uniqueProducts.length + uniqueEans.length;
-    const taskId = taskManager.createTask(totalItems);
+    const taskId = await taskManager.createTask(totalItems);
 
     console.log(`[Catalogos] Creando tarea asíncrona ${taskId}. Total items a procesar: ${totalItems}`);
 
@@ -169,7 +169,7 @@ router.post('/catalogos/importar', requireAdmin, validateSchema(excelUploadSchem
           const newInBatch = batch.filter(p => newSkusImported.includes(p.sku)).length;
           nuevosCargados += newInBatch;
 
-          taskManager.updateProgress(taskId, processedCount, {
+          await taskManager.updateProgress(taskId, processedCount, {
             totalProcesados: processedCount,
             nuevosCargados,
             actualizados: processedCount - nuevosCargados,
@@ -184,7 +184,7 @@ router.post('/catalogos/importar', requireAdmin, validateSchema(excelUploadSchem
           processedCount += batch.length;
           eansCargados += batch.length;
 
-          taskManager.updateProgress(taskId, processedCount, {
+          await taskManager.updateProgress(taskId, processedCount, {
             totalProcesados: processedCount - eansCargados,
             nuevosCargados,
             actualizados: (processedCount - eansCargados) - nuevosCargados,
@@ -222,7 +222,7 @@ router.post('/catalogos/importar', requireAdmin, validateSchema(excelUploadSchem
 
       } catch (bgError) {
         console.error(`[Catalogos] ❌ Error en segundo plano en tarea ${taskId}:`, bgError);
-        taskManager.failTask(taskId, bgError.message || 'Error durante el procesamiento del lote.');
+        await taskManager.failTask(taskId, bgError.message || 'Error durante el procesamiento del lote.');
         
         logAuditEvent(req, {
           accion: 'SAP_IMPORT_COMPLETE',
@@ -701,8 +701,8 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
  * @desc    Obtiene el estado de progreso de una tarea de procesamiento de Excel en segundo plano.
  * @access  Privado (requiere privilegios de Administrador)
  */
-router.get('/catalogos/tareas/:id', requireAdmin, (req, res) => {
-  const task = taskManager.getTask(req.params.id);
+router.get('/catalogos/tareas/:id', requireAdmin, async (req, res) => {
+  const task = await taskManager.getTask(req.params.id);
   if (!task) {
     return res.status(404).json({ error: 'Tarea no encontrada' });
   }
