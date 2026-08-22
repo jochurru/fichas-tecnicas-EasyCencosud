@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { dataService } from '../services/dataService.js';
 import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
@@ -9,12 +10,19 @@ import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 
+const geminiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  keyGenerator: (req) => req.user?.email || req.ip,
+  message: { error: 'Too many requests', message: 'Límite de solicitudes Gemini superado. Intente de nuevo más tarde.' }
+});
+
 /**
  * @route   GET /api/producto/:identificador
  * @desc    Busca un producto por SKU o código EAN.
  *          Si el producto existe pero no tiene ficha técnica, crea un borrador_ia inicial.
  */
-router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema, 'params'), async (req, res, next) => {
+router.get('/producto/:identificador', requireAuth, geminiLimiter, validateSchema(searchSchema, 'params'), async (req, res, next) => {
   const { identificador } = req.params;
   const cleanedId = identificador.trim().replace(/[^a-zA-Z0-9-]/g, '');
 

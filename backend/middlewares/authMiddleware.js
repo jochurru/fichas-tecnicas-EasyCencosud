@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { supabase, supabaseDb } from '../lib/supabase.js';
 
 /**
  * Middleware para requerir autenticación de Supabase Auth.
@@ -27,13 +27,22 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Resolver rol a partir del correo verificado (admin, coordinator, operator)
+    // Resolver rol a partir del lookup exacto en usuarios_roles
     let role = 'operator';
-    if (user.email === 'admin@easy.com.ar' || user.email.includes('admin')) {
-      role = 'admin';
-    } else if (user.email.includes('coord')) {
-      role = 'coordinator';
+    try {
+      const { data: roleRow, error: roleError } = await supabaseDb
+        .from('usuarios_roles')
+        .select('role')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (!roleError && roleRow) {
+        role = roleRow.role;
+      }
+    } catch (dbErr) {
+      console.error('[AuthMiddleware] Error buscando rol en base de datos:', dbErr.message);
     }
+    
     user.role = role;
 
     // Inyectar el usuario en la request para controladores posteriores
@@ -62,50 +71,4 @@ export function requireRoles(allowedRoles) {
     }
     next();
   };
-}
-
-/**
- * Middleware para requerir privilegios de administrador.
- * Valida el token JWT y se asegura de que pertenezca al correo de administrador.
- */
-export async function requireAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ 
-      error: 'Unauthorized', 
-      message: 'Se requiere un token de autorización Bearer válido en el encabezado.' 
-    });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return res.status(401).json({ 
-        error: 'Unauthorized', 
-        message: 'El token de acceso es inválido o ha expirado.' 
-      });
-    }
-
-    // Validar rol de administrador por correo
-    if (user.email !== 'admin@easy.com.ar') {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Acceso denegado: Se requieren privilegios de administrador para realizar esta acción.'
-      });
-    }
-
-    req.user = user;
-    next();
-
-  } catch (err) {
-    console.error('[AuthMiddleware] Error crítico al verificar privilegios de Admin:', err.message);
-    return res.status(500).json({ 
-      error: 'Error interno de autorización',
-      message: err.message
-    });
-  }
 }

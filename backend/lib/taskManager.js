@@ -23,6 +23,18 @@ class TaskManager {
       }
     };
 
+    // 1. Limpieza preventiva de tareas con más de 48 horas de antigüedad
+    try {
+      const boundary = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      await supabaseDb
+        .from('tareas_importacion')
+        .delete()
+        .lt('created_at', boundary);
+    } catch (cleanErr) {
+      console.warn('[TaskManager] Error limpiando tareas obsoletas:', cleanErr.message);
+    }
+
+    // 2. Crear nueva tarea en base de datos
     try {
       const { error } = await supabaseDb
         .from('tareas_importacion')
@@ -67,6 +79,7 @@ class TaskManager {
     }
 
     if (task) {
+      const prevPercentage = task.percentage;
       task.processed = processed;
       task.percentage = Math.min(Math.round((processed / task.total) * 100), 100);
       task.estadisticas = { ...task.estadisticas, ...stats };
@@ -75,20 +88,28 @@ class TaskManager {
       }
 
       if (isDbTask) {
-        try {
-          const { error } = await supabaseDb
-            .from('tareas_importacion')
-            .update({
-              processed: task.processed,
-              percentage: task.percentage,
-              estadisticas: task.estadisticas,
-              status: task.status,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', id);
-          if (error) throw error;
-        } catch (err) {
-          console.error('[TaskManager] Error actualizando progreso en DB:', err.message);
+        // Reducir escrituras a DB: escribir solo si completó, en múltiplos de 200, o si el porcentaje avanzó en al menos 5%
+        const percentDiff = task.percentage - prevPercentage;
+        const shouldWriteDb = task.status === 'completed' || 
+                             processed % 200 === 0 || 
+                             percentDiff >= 5;
+
+        if (shouldWriteDb) {
+          try {
+            const { error } = await supabaseDb
+              .from('tareas_importacion')
+              .update({
+                processed: task.processed,
+                percentage: task.percentage,
+                estadisticas: task.estadisticas,
+                status: task.status,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', id);
+            if (error) throw error;
+          } catch (err) {
+            console.error('[TaskManager] Error actualizando progreso en DB:', err.message);
+          }
         }
       } else {
         this.memoryTasks[id] = task;
@@ -152,9 +173,7 @@ class TaskManager {
       if (!error && data) {
         return data;
       }
-    } catch (err) {
-      // Fallback silencioso
-    }
+    } catch (err) {}
     return this.memoryTasks[id] || null;
   }
 }
