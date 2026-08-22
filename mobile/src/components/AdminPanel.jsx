@@ -957,167 +957,167 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
 
                   </div>
                 )}
+              </div>
+            )}
 
-                {/* Pestaña: Gestión de Marcas Dinámicas */}
-                {!loading && activeTab === 'brands' && (
-                  <div className="space-y-5 animate-fade-in">
-                    {/* Formulario Crear/Editar */}
-                    <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm space-y-3.5">
-                      <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                        <Award className="w-4 h-4 text-easy-red" />
-                        <span>Registrar / Actualizar Marca</span>
-                      </h4>
-                      
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Nombre de la Marca</label>
-                          <input
-                            type="text"
-                            placeholder="Ej: DAEWOO"
-                            value={newBrandNombre}
-                            onChange={(e) => {
-                              setNewBrandNombre(e.target.value);
-                              setNewBrandSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''));
-                            }}
-                            className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-easy-red"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Slug (Automático)</label>
-                          <input
-                            type="text"
-                            disabled
-                            placeholder="ej: daewoo"
-                            value={newBrandSlug}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-gray-400 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Logotipo de la Marca</label>
-                        <div className="flex items-center gap-3">
-                          <label className="bg-easy-dark hover:bg-gray-800 text-white font-bold px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 select-none disabled:opacity-50">
-                            {brandLogoUploading ? (
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <UploadCloud className="w-3.5 h-3.5" />
-                            )}
-                            <span>{brandLogoUploading ? 'Guardando...' : 'Cargar Imagen y Registrar'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={brandLogoUploading || !newBrandSlug || !newBrandNombre}
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setBrandLogoUploading(true);
-                                setErrorMsg('');
-                                setSuccessMsg('');
-                                try {
-                                  await compressAndUploadBrandLogo(file, newBrandSlug, newBrandNombre);
-                                  setSuccessMsg(`✓ Marca "${newBrandNombre.toUpperCase()}" registrada con éxito.`);
-                                  setNewBrandNombre('');
-                                  setNewBrandSlug('');
-                                  await loadBrands();
-                                  try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
-                                } catch (err) {
-                                  setErrorMsg(err.message);
-                                } finally {
-                                  setBrandLogoUploading(false);
-                                }
-                              }}
-                            />
-                          </label>
-                          {(!newBrandSlug || !newBrandNombre) && (
-                            <span className="text-[10px] text-gray-400 italic font-semibold">Ingresá el nombre para habilitar la carga</span>
-                          )}
-                        </div>
-                      </div>
+            {/* Pestaña: Gestión de Marcas Dinámicas */}
+            {!loading && activeTab === 'brands' && (
+              <div className="space-y-5 animate-fade-in">
+                {/* Formulario Crear/Editar */}
+                <div className="bg-white p-4 rounded-2xl border border-gray-150 shadow-sm space-y-3.5">
+                  <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-easy-red" />
+                    <span>Registrar / Actualizar Marca</span>
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Nombre de la Marca</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: DAEWOO"
+                        value={newBrandNombre}
+                        onChange={(e) => {
+                          setNewBrandNombre(e.target.value);
+                          setNewBrandSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''));
+                        }}
+                        className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-easy-red"
+                      />
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Slug (Automático)</label>
+                      <input
+                        type="text"
+                        disabled
+                        placeholder="ej: daewoo"
+                        value={newBrandSlug}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-gray-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
 
-                    {/* Tabla Listado de Marcas */}
-                    <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-700">Catálogo de Marcas Dinámicas</span>
-                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">Total: {brands.length}</span>
-                      </div>
-
-                      {brandsLoading ? (
-                        <div className="flex justify-center items-center py-10 text-gray-400 gap-1.5 text-xs font-bold">
-                          <RefreshCw className="w-4 h-4 animate-spin text-easy-red" /> Cargando marcas...
-                        </div>
-                      ) : brands.length === 0 ? (
-                        <div className="py-12 text-center text-gray-400 text-xs font-bold">
-                          No hay marcas dinámicas registradas en la DB.<br/>Se utilizará el fallback de Wikimedia Commons.
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
-                                <th className="px-4 py-2">Nombre</th>
-                                <th className="px-4 py-2">Slug (ID)</th>
-                                <th className="px-4 py-2">Logotipo</th>
-                                <th className="px-4 py-2 text-right">Acciones</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-[11px]">
-                              {brands.map((brand, idx) => (
-                                <tr key={brand.id || idx} className="hover:bg-gray-50/45">
-                                  <td className="px-4 py-3.5 font-bold text-gray-700 uppercase">
-                                    {brand.nombre}
-                                  </td>
-                                  <td className="px-4 py-3.5 font-mono text-gray-500">
-                                    {brand.slug}
-                                  </td>
-                                  <td className="px-4 py-3.5">
-                                    <div className="bg-easy-dark/95 w-16 h-8 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-gray-200">
-                                      <img
-                                        src={brand.logo_url}
-                                        alt={brand.nombre}
-                                        className="max-w-full max-h-full object-contain"
-                                        onError={(e) => {
-                                          e.target.onerror = null;
-                                          e.target.src = 'https://placehold.co/60x30?text=Err';
-                                        }}
-                                      />
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3.5 text-right">
-                                    <label className="text-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1">
-                                      <span>✏️ Sobreescribir</span>
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={async (e) => {
-                                          const file = e.target.files?.[0];
-                                          if (!file) return;
-                                          setErrorMsg('');
-                                          setSuccessMsg('');
-                                          try {
-                                            await compressAndUploadBrandLogo(file, brand.slug, brand.nombre);
-                                            setSuccessMsg(`✓ Logotipo de la marca "${brand.nombre.toUpperCase()}" actualizado.`);
-                                            await loadBrands();
-                                            try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
-                                          } catch (err) {
-                                            setErrorMsg(err.message);
-                                          }
-                                        }}
-                                      />
-                                    </label>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Logotipo de la Marca</label>
+                    <div className="flex items-center gap-3">
+                      <label className="bg-easy-dark hover:bg-gray-800 text-white font-bold px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 select-none disabled:opacity-50">
+                        {brandLogoUploading ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <UploadCloud className="w-3.5 h-3.5" />
+                        )}
+                        <span>{brandLogoUploading ? 'Guardando...' : 'Cargar Imagen y Registrar'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={brandLogoUploading || !newBrandSlug || !newBrandNombre}
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBrandLogoUploading(true);
+                            setErrorMsg('');
+                            setSuccessMsg('');
+                            try {
+                              await compressAndUploadBrandLogo(file, newBrandSlug, newBrandNombre);
+                              setSuccessMsg(`✓ Marca "${newBrandNombre.toUpperCase()}" registrada con éxito.`);
+                              setNewBrandNombre('');
+                              setNewBrandSlug('');
+                              await loadBrands();
+                              try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                            } catch (err) {
+                              setErrorMsg(err.message);
+                            } finally {
+                              setBrandLogoUploading(false);
+                            }
+                          }}
+                        />
+                      </label>
+                      {(!newBrandSlug || !newBrandNombre) && (
+                        <span className="text-[10px] text-gray-400 italic font-semibold">Ingresá el nombre para habilitar la carga</span>
                       )}
                     </div>
                   </div>
-                )}
+                </div>
+
+                {/* Tabla Listado de Marcas */}
+                <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
+                    <span className="text-xs font-bold text-gray-700">Catálogo de Marcas Dinámicas</span>
+                    <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">Total: {brands.length}</span>
+                  </div>
+
+                  {brandsLoading ? (
+                    <div className="flex justify-center items-center py-10 text-gray-400 gap-1.5 text-xs font-bold">
+                      <RefreshCw className="w-4 h-4 animate-spin text-easy-red" /> Cargando marcas...
+                    </div>
+                  ) : brands.length === 0 ? (
+                    <div className="py-12 text-center text-gray-400 text-xs font-bold">
+                      No hay marcas dinámicas registradas en la DB.<br/>Se utilizará el fallback de Wikimedia Commons.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                            <th className="px-4 py-2">Nombre</th>
+                            <th className="px-4 py-2">Slug (ID)</th>
+                            <th className="px-4 py-2">Logotipo</th>
+                            <th className="px-4 py-2 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 text-[11px]">
+                          {brands.map((brand, idx) => (
+                            <tr key={brand.id || idx} className="hover:bg-gray-50/45">
+                              <td className="px-4 py-3.5 font-bold text-gray-700 uppercase">
+                                {brand.nombre}
+                              </td>
+                              <td className="px-4 py-3.5 font-mono text-gray-500">
+                                {brand.slug}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <div className="bg-easy-dark/95 w-16 h-8 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-gray-200">
+                                  <img
+                                    src={brand.logo_url}
+                                    alt={brand.nombre}
+                                    className="max-w-full max-h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = 'https://placehold.co/60x30?text=Err';
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-4 py-3.5 text-right">
+                                <label className="text-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1">
+                                  <span>✏️ Sobreescribir</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      setErrorMsg('');
+                                      setSuccessMsg('');
+                                      try {
+                                        await compressAndUploadBrandLogo(file, brand.slug, brand.nombre);
+                                        setSuccessMsg(`✓ Logotipo de la marca "${brand.nombre.toUpperCase()}" actualizado.`);
+                                        await loadBrands();
+                                        try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                                      } catch (err) {
+                                        setErrorMsg(err.message);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
