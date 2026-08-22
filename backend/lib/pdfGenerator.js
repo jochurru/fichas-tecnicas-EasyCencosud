@@ -36,8 +36,7 @@ async function getBrowser() {
           '--disable-dev-shm-usage',
           '--disable-gpu',
           '--no-first-run',
-          '--no-zygote',
-          '--single-process'
+          '--no-zygote'
         ]
       });
     })();
@@ -50,6 +49,28 @@ async function getBrowser() {
   }
 
   return sharedBrowser;
+}
+
+// Semáforo nativo para limitar la concurrencia de pestañas activas en el navegador compartido
+let activePagesCount = 0;
+const pageQueue = [];
+const MAX_CONCURRENT_PAGES = 3;
+
+async function acquirePageSlot() {
+  if (activePagesCount < MAX_CONCURRENT_PAGES) {
+    activePagesCount++;
+    return;
+  }
+  return new Promise(resolve => pageQueue.push(resolve));
+}
+
+function releasePageSlot() {
+  activePagesCount--;
+  if (pageQueue.length > 0) {
+    activePagesCount++;
+    const nextResolve = pageQueue.shift();
+    nextResolve();
+  }
 }
 
 /**
@@ -219,6 +240,9 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     }
   }
 
+  // Adquirir un slot del semáforo de concurrencia antes de abrir la pestaña
+  await acquirePageSlot();
+
   // Obtener instancia compartida de Puppeteer para generar el PDF
   const browser = await getBrowser();
   let page = null;
@@ -252,6 +276,7 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
         console.error('[Puppeteer] Error closing page:', pageErr.message);
       }
     }
+    releasePageSlot();
   }
 }
 
@@ -626,6 +651,9 @@ export async function generateBatchPdf(items, dataService) {
   // Remplazar contenido
   const finalHtml = baseHtml.replace('{{content}}', finalPages.join('\n'));
 
+  // Adquirir un slot del semáforo de concurrencia antes de abrir la pestaña
+  await acquirePageSlot();
+
   // 4. Compilar con Puppeteer
   const browser = await getBrowser();
   let page = null;
@@ -655,5 +683,6 @@ export async function generateBatchPdf(items, dataService) {
         console.error('[Puppeteer] Error closing page:', pageErr.message);
       }
     }
+    releasePageSlot();
   }
 }

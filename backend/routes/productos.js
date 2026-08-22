@@ -73,12 +73,35 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
       const windowMs = 15 * 60 * 1000; // 15 minutos
       const maxRequests = 30;
 
-      let userRecord = geminiUserRequests.get(email);
-      if (!userRecord || now > userRecord.resetTime) {
-        userRecord = { count: 0, resetTime: now + windowMs };
+      let currentCount = 0;
+      let dbSuccess = false;
+
+      try {
+        // Ejecutar el incremento de cuota atómico en Supabase vía RPC
+        const { data, error } = await supabaseDb.rpc('increment_gemini_rate_limit', { p_email: email });
+        
+        if (!error && data && data.length > 0) {
+          currentCount = data[0].count;
+          dbSuccess = true;
+        } else if (error) {
+          console.warn('[RateLimit] Error llamando a RPC increment_gemini_rate_limit, usando fallback de memoria:', error.message);
+        }
+      } catch (err) {
+        console.warn('[RateLimit] Excepción al ejecutar RPC, usando fallback de memoria:', err.message);
       }
 
-      if (userRecord.count >= maxRequests) {
+      // Fallback a memoria local si Supabase falla o la tabla/función no está creada aún
+      if (!dbSuccess) {
+        let userRecord = geminiUserRequests.get(email);
+        if (!userRecord || now > userRecord.resetTime) {
+          userRecord = { count: 0, resetTime: now + windowMs };
+        }
+        userRecord.count += 1;
+        geminiUserRequests.set(email, userRecord);
+        currentCount = userRecord.count;
+      }
+
+      if (currentCount > maxRequests) {
         logAuditEvent(req, {
           accion: 'GEMINI_RATE_LIMIT_EXCEEDED',
           entidad: 'PRODUCTO',
@@ -91,9 +114,6 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
           message: 'Límite de solicitudes Gemini superado. Intente de nuevo más tarde.'
         });
       }
-
-      userRecord.count += 1;
-      geminiUserRequests.set(email, userRecord);
 
       // Si no existe o tiene errores de extracción, gatillar en paralelo el extractor IA con Gemini y la búsqueda de foto en Easy
       console.log(`[Pipeline Trigger] SKU ${producto.sku} requiere extracción. Iniciando extracción paralela (Gemini + Easy Scraper)...`);
