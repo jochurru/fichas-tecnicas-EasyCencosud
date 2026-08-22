@@ -112,3 +112,18 @@ El backend se compila en un contenedor Docker y se despliega en Google Cloud Run
     ```sql
     SELECT version, especificaciones_json, modificado_por FROM fichas_historial WHERE sku = '1367504' ORDER BY version DESC;
     ```
+
+### H. Alerta: Falta logotipo oficial de la marca / completitud menor al 100%
+*   **Síntoma:** Al editar la ficha técnica, la barra de completitud no sube del 95% y se lee la alerta `"Falta registrar el logotipo oficial para la marca."`
+*   **Causa:** Se introdujo una regla de calidad donde la marca otorga un 15% del score (10% por el nombre y 5% por el logo). Si la marca no tiene un logotipo registrado estáticamente en `brandLogoMap` o dinámicamente en la tabla de Supabase `marcas`, se restará el 5% y saltará la alerta.
+*   **Solución:** Si tienes rol de Administrador o Coordinador, arrastra o sube el logotipo WebP correspondiente utilizando el widget en la pantalla principal del editor de fichas. Al subirse, la alerta se desactivará automáticamente.
+
+### I. El botón de vaciar cola de impresión en móviles no da respuesta
+*   **Síntoma:** Presionas el botón para vaciar la cola de impresión y no responde o se queda colgado.
+*   **Causa:** Previamente se utilizaba un diálogo nativo bloqueante `window.confirm`. Si el navegador bloquea las ventanas emergentes o los permisos de vibración háptica fallan, la interfaz no responde.
+*   **Solución:** El botón ahora utiliza la API local `IndexedDB` y responde de forma no bloqueante con un Toast flotante autocerrable y una vibración háptica corta (`navigator.vibrate(40)`). Asegura que el navegador soporte IndexedDB y no esté en modo navegación privada ultra restrictiva.
+
+### J. La primera página de la cola de impresión A4 se ve diferente a las siguientes
+*   **Síntoma:** Al generar el PDF masivo con la cola de impresión en tamaño A4, la primera página respeta el diseño pero las siguientes desplazan los textos o quedan recortadas.
+*   **Causa:** Estilos CSS asimétricos o reglas `@page` y márgenes forzados de Puppeteer que no se alinean correctamente entre páginas continuas.
+*   **Solución:** Asegurar que el backend mantenga las plantillas HTML (`template_a4.html`) utilizando la regla `page-break-after: always;` para cada ficha encolada de manera limpia y sin anidar contenedores con estilos flexbox rotos que desborden los límites físicos del papel.
