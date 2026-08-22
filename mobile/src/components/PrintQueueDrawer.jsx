@@ -9,6 +9,7 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
+  const [showClearToast, setShowClearToast] = useState(false);
 
   // Cargar cola desde IndexedDB al iniciar y al abrir el cajón
   const loadQueue = async () => {
@@ -67,12 +68,24 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
     loadQueue();
   };
 
-  // Vaciar la cola
+  // Vaciar la cola (Sin confirmaciones bloqueantes)
   const handleClearAll = async () => {
-    if (window.confirm('¿Seguro que querés vaciar la cola de impresión?')) {
-      await clearPrintQueue();
-      loadQueue();
-    }
+    await clearPrintQueue();
+    loadQueue();
+    setIsOpen(false);
+    
+    // Alertas táctiles
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+    } catch (e) {}
+
+    // Mostrar Toast flotante inferior por 2 segundos
+    setShowClearToast(true);
+    setTimeout(() => {
+      setShowClearToast(false);
+    }, 2000);
   };
 
   // Despachar lote para impresión
@@ -370,6 +383,14 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
           templateName={previewItem.template || 'fleje3'}
           onClose={() => setPreviewItem(null)}
         />
+      )}
+
+      {/* Toast no bloqueante al vaciar la cola P1.21 */}
+      {showClearToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-easy-dark/95 backdrop-blur-sm text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2.5 z-50 animate-fade-in border border-white/10 select-none">
+          <span className="text-green-500 text-sm">✓</span>
+          <span>Cola de impresión vaciada</span>
+        </div>
       )}
     </>
   );
