@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Save, FileText, CheckCircle, AlertCircle, 
   Image, Layers, Eye, Printer, RefreshCw, GitCommit, ShieldAlert,
-  HelpCircle, QrCode, X
+  HelpCircle, QrCode, X, Award
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import CompletenessBar from './CompletenessBar';
