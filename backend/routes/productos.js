@@ -314,7 +314,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
       resultado: 'SUCCESS'
     });
 
-    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${aprobado_por}`);
+    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${verfiedEmail}`);
 
     return res.json({
       message: 'Ficha técnica aprobada y consolidada exitosamente.',

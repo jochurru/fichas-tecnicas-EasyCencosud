@@ -23,10 +23,10 @@ export const validateSchema = (schema, targetKey = 'body') => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errorMessages = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+        const errorMessages = (error.errors ?? []).map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
         return res.status(400).json({
           error: 'Error de Validación',
-          message: errorMessages
+          message: errorMessages || error.message
         });
       }
       next(error);
@@ -102,8 +102,9 @@ export const approveFichaSchema = z.object({
     ),
   aprobado_por: z.string()
     .trim()
-    .min(1, 'El nombre de aprobador es obligatorio.')
-    .max(255),
+    .max(255)
+    .optional()
+    .default(''),
   eans: z.array(
     z.string()
       .trim()
