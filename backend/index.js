@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import productosRouter from './routes/productos.js';
 import impresionRouter from './routes/impresion.js';
 import catalogosRouter from './routes/catalogos.js';
+import storageRouter from './routes/storage.js';
 import { supabase, supabaseDb } from './lib/supabase.js';
 
 // Cargar variables de entorno
@@ -128,6 +129,7 @@ app.get('/api/debug/db', async (req, res) => {
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
 app.use('/api', catalogosRouter);
+app.use('/api', storageRouter);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
@@ -183,10 +185,10 @@ const createDefaultUsers = async () => {
   }
 };
 
-// Asegurar que el bucket publico 'fichas-pdf' existe en Supabase Storage
+// Asegurar que los buckets públicos existen en Supabase Storage
 const initializeStorageBucket = async () => {
   try {
-    console.log('[Startup] Verificando existencia de bucket de almacenamiento "fichas-pdf"...');
+    console.log('[Startup] Verificando existencia de buckets de almacenamiento...');
     const { data: buckets, error: listError } = await supabaseDb.storage.listBuckets();
     
     if (listError) {
@@ -194,22 +196,40 @@ const initializeStorageBucket = async () => {
       return;
     }
 
-    const bucketExists = buckets.some(b => b.name === 'fichas-pdf');
-    if (!bucketExists) {
+    // 1. Verificar 'fichas-pdf'
+    const pdfExists = buckets.some(b => b.name === 'fichas-pdf');
+    if (!pdfExists) {
       console.log('[Startup] El bucket "fichas-pdf" no existe. Creándolo...');
       const { error: createError } = await supabaseDb.storage.createBucket('fichas-pdf', {
         public: true,
         fileSizeLimit: 1024 * 1024 * 5, // Límite de 5MB
         allowedMimeTypes: ['application/pdf']
       });
-
       if (createError) {
         console.error('[Startup] ❌ Error al crear el bucket "fichas-pdf":', createError.message);
       } else {
-        console.log('[Startup] ★ Bucket "fichas-pdf" creado con éxito en Supabase.');
+        console.log('[Startup] ★ Bucket "fichas-pdf" creado con éxito.');
       }
     } else {
-      console.log('[Startup] ✓ Bucket "fichas-pdf" verificado en Supabase.');
+      console.log('[Startup] ✓ Bucket "fichas-pdf" verificado.');
+    }
+
+    // 2. Verificar 'imagenes-catalogo'
+    const imgExists = buckets.some(b => b.name === 'imagenes-catalogo');
+    if (!imgExists) {
+      console.log('[Startup] El bucket "imagenes-catalogo" no existe. Creándolo...');
+      const { error: createError } = await supabaseDb.storage.createBucket('imagenes-catalogo', {
+        public: true,
+        fileSizeLimit: 1024 * 1024 * 10, // Límite de 10MB
+        allowedMimeTypes: ['image/webp', 'image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
+      });
+      if (createError) {
+        console.error('[Startup] ❌ Error al crear el bucket "imagenes-catalogo":', createError.message);
+      } else {
+        console.log('[Startup] ★ Bucket "imagenes-catalogo" creado con éxito.');
+      }
+    } else {
+      console.log('[Startup] ✓ Bucket "imagenes-catalogo" verificado.');
     }
   } catch (err) {
     console.error('[Startup] ❌ Error al inicializar almacenamiento:', err.message);

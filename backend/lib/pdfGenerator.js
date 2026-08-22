@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { dataService } from '../services/dataService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,10 +79,24 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   };
 
   let logoUrl = null;
-  for (const key of Object.keys(brandLogoMap)) {
-    if (brandLower.includes(key)) {
-      logoUrl = brandLogoMap[key];
-      break;
+
+  // 1. Intentar resolver de la base de datos de marcas (Supabase)
+  try {
+    const dbBrand = await dataService.getMarcaBySlug(brandLower);
+    if (dbBrand && dbBrand.logo_url) {
+      logoUrl = dbBrand.logo_url;
+    }
+  } catch (dbErr) {
+    console.warn(`[pdfGenerator] No se pudo consultar la marca "${brandLower}" en DB:`, dbErr.message);
+  }
+
+  // 2. Fallback a mapeo estático si no se encuentra en DB
+  if (!logoUrl) {
+    for (const key of Object.keys(brandLogoMap)) {
+      if (brandLower.includes(key)) {
+        logoUrl = brandLogoMap[key];
+        break;
+      }
     }
   }
 
@@ -278,10 +293,24 @@ export async function generateBatchPdf(items, dataService) {
     const destacado = potenciaSpec ? potenciaSpec.valor : '';
 
     let logoUrl = null;
-    for (const key of Object.keys(brandLogoMap)) {
-      if (brandLower.includes(key)) {
-        logoUrl = brandLogoMap[key];
-        break;
+
+    // 1. Intentar resolver de la base de datos de marcas (Supabase)
+    try {
+      const dbBrand = await dataService.getMarcaBySlug(brandLower);
+      if (dbBrand && dbBrand.logo_url) {
+        logoUrl = dbBrand.logo_url;
+      }
+    } catch (dbErr) {
+      console.warn(`[pdfGenerator] No se pudo consultar la marca "${brandLower}" en DB para lote:`, dbErr.message);
+    }
+
+    // 2. Fallback a mapeo estático si no se encuentra en DB
+    if (!logoUrl) {
+      for (const key of Object.keys(brandLogoMap)) {
+        if (brandLower.includes(key)) {
+          logoUrl = brandLogoMap[key];
+          break;
+        }
       }
     }
 

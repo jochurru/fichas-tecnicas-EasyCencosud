@@ -317,4 +317,66 @@ export class SupabaseProvider {
       throw error;
     }
   }
+
+  /**
+   * Obtiene la configuración de una marca por su slug.
+   * @param {string} slug - El slug identificador de la marca (ej: 'einhell')
+   * @returns {Promise<Object|null>} Registro de marca o null
+   */
+  async getMarcaBySlug(slug) {
+    const { data, error } = await supabase
+      .from('marcas')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en getMarcaBySlug para ${slug}:`, error);
+      throw error;
+    }
+    return data;
+  }
+
+  /**
+   * Obtiene la lista completa de marcas registradas.
+   * @returns {Promise<Array>} Listado de marcas
+   */
+  async getAllMarcas() {
+    const { data, error } = await supabase
+      .from('marcas')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en getAllMarcas:`, error);
+      throw error;
+    }
+    return data || [];
+  }
+
+  /**
+   * Crea o actualiza una marca (upsert).
+   * @param {string} slug - El slug identificador
+   * @param {string} nombre - El nombre visible de la marca
+   * @param {string} logoUrl - URL del logotipo en storage
+   * @returns {Promise<Object>} Registro creado/actualizado
+   */
+  async upsertMarca(slug, nombre, logoUrl) {
+    const { data, error } = await supabase
+      .from('marcas')
+      .upsert({
+        slug: slug.toLowerCase().trim(),
+        nombre: nombre.toUpperCase().trim(),
+        logo_url: logoUrl,
+        updated_at: new Date()
+      }, { onConflict: 'slug' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en upsertMarca para ${slug}:`, error);
+      throw error;
+    }
+    return data;
+  }
 }

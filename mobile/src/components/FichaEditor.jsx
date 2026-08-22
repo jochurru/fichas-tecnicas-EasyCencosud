@@ -39,12 +39,78 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [addedToQueueStatus, setAddedToQueueStatus] = useState(false);
   const [showQueueToast, setShowQueueToast] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [brandLogoUploading, setBrandLogoUploading] = useState(false);
   
   // Feedback
   const [loading, setLoading] = useState(false);
   const [pdfLoadingState, setPdfLoadingState] = useState('idle'); // 'idle' | 'preview' | 'print'
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Comprimir y subir imagen a Supabase Storage via backend WebP Canvas
+  const compressAndUploadImage = async (file, tipo, targetId) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convertir a WebP con calidad 0.8
+          const dataUrl = canvas.toDataURL('image/webp', 0.8);
+          
+          fetch(`${API_BASE_URL}/upload/imagen`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              tipo,
+              id: targetId,
+              fileBase64: dataUrl,
+              nombre: tipo === 'marca' ? targetId : undefined
+            })
+          })
+          .then(async (res) => {
+            const resData = await res.json();
+            if (!res.ok) {
+              throw new Error(resData.error || 'Error al subir la imagen');
+            }
+            resolve(resData.url);
+          })
+          .catch(reject);
+        };
+        img.onerror = () => reject(new Error('Error al procesar la imagen'));
+      };
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+    });
+  };
 
   // Sincronizar estados cuando los datos de entrada cambien
   useEffect(() => {
@@ -320,7 +386,39 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1">Marca</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold text-gray-600">Marca</label>
+                {marca.trim() && !isReadOnly && !isOffline && (
+                  <label className="text-[10px] font-bold text-easy-red hover:underline flex items-center gap-0.5 cursor-pointer select-none">
+                    {brandLogoUploading ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <span>✏️ Cambiar Logo</span>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={brandLogoUploading}
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setBrandLogoUploading(true);
+                        try {
+                          const cleanSlug = marca.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
+                          await compressAndUploadImage(file, 'marca', cleanSlug);
+                          alert(`✓ Logotipo para la marca "${marca.toUpperCase()}" actualizado con éxito.`);
+                          try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                        } catch (err) {
+                          alert(err.message);
+                        } finally {
+                          setBrandLogoUploading(false);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
               <input
                 type="text"
                 required
@@ -427,14 +525,46 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
             <label className="block text-xs font-bold text-gray-600 mb-1 flex items-center gap-1">
               <Image className="w-3.5 h-3.5 text-gray-500" /> URL de Imagen / Foto
             </label>
-            <input
-              type="url"
-              disabled={loading || isReadOnly || isOffline}
-              value={fotoUrl}
-              onChange={(e) => setFotoUrl(e.target.value)}
-              placeholder="https://ejemplo.com/foto.jpg"
-              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
-            />
+            <div className="flex gap-2">
+              <input
+                type="url"
+                disabled={loading || isReadOnly || isOffline || imageUploading}
+                value={fotoUrl}
+                onChange={(e) => setFotoUrl(e.target.value)}
+                placeholder="https://ejemplo.com/foto.jpg"
+                className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
+              />
+              {!isReadOnly && !isOffline && (
+                <label className="bg-easy-dark hover:bg-gray-800 text-white font-bold px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer active:scale-95 select-none shrink-0">
+                  {imageUploading ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5" />
+                  )}
+                  <span>{imageUploading ? 'Subiendo...' : 'Cargar Foto'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={imageUploading}
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setImageUploading(true);
+                      try {
+                        const url = await compressAndUploadImage(file, 'producto', producto.sku);
+                        setFotoUrl(url);
+                        try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                      } catch (err) {
+                        alert(err.message);
+                      } finally {
+                        setImageUploading(false);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
             {fotoUrl && (
               <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden w-28 h-28 bg-gray-50 flex items-center justify-center">
                 <img 
