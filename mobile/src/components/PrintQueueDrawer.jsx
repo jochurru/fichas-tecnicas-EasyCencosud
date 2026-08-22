@@ -156,18 +156,20 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
 
   return (
     <>
-      {/* Botón Acción Flotante (FAB) P1.21 - Circular y compacto */}
-      <button
-        onClick={toggleDrawer}
-        className="fixed bottom-5 right-5 z-40 w-14 h-14 bg-easy-red hover:bg-red-700 text-white rounded-full shadow-2xl shadow-easy-red/35 flex items-center justify-center active:scale-95 hover:scale-105 transition-all duration-200 select-none relative"
-      >
-        <Printer className="w-6 h-6 text-white" />
-        {queue.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 bg-white text-easy-red text-[10px] font-black rounded-full h-5.5 w-5.5 flex items-center justify-center shadow-lg border border-red-150 animate-bounce">
-            {totalLabelsCount}
-          </span>
-        )}
-      </button>
+      {/* Contenedor flotante alineado con el layout centrado del smartphone */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 max-w-md w-full px-5 flex justify-end z-40 pointer-events-none">
+        <button
+          onClick={toggleDrawer}
+          className="pointer-events-auto w-14 h-14 bg-easy-red hover:bg-red-700 text-white rounded-full shadow-2xl shadow-easy-red/35 flex items-center justify-center active:scale-95 hover:scale-105 transition-all duration-200 select-none relative"
+        >
+          <Printer className="w-6 h-6 text-white" />
+          {queue.length > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-white text-easy-red text-[10px] font-black rounded-full h-5.5 w-5.5 flex items-center justify-center shadow-lg border border-red-150 animate-bounce">
+              {totalLabelsCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Drawer Overlay */}
       {isOpen && (
