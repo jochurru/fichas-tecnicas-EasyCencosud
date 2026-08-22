@@ -385,116 +385,185 @@
             width: 100%;
         }
 
-        /* DISEÑO DE FICHA A4 (Multipágina Concatenada) */
+        /* DISEÑO DE FICHA A4 (Multipágina Concatenada Oficial) */
         .page-a4 {
             display: flex;
             flex-direction: column;
             background: #ffffff;
             padding: 0;
+            overflow: hidden;
+            width: 210mm;
+            height: 297mm;
         }
-        .page-a4 .top-red-bar {
-            height: 12px;
-            background: #e30613;
-            width: 100%;
-        }
-        .page-a4 .header-a4 {
-            padding: 20px 25px;
-            border-b: 1px solid #cbd5e1;
+        .page-a4 .header {
+            background: #222222;
+            color: #ffffff;
+            height: 58mm;
+            padding: 11mm 15mm;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
         }
-        .page-a4 .header-a4-left {
-            max-width: 60%;
+        .page-a4 .header-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 72%;
         }
-        .page-a4 .header-a4-title {
-            font-family: 'Arial Black', Impact, sans-serif;
-            font-size: 22pt;
+        .page-a4 .header-title {
+            font-family: 'Arial Black', 'Arial Bold', Impact, sans-serif;
+            font-size: 30pt;
             font-weight: 900;
-            color: #222222;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             line-height: 1.1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-        .page-a4 .header-a4-brand {
-            font-size: 14pt;
+        .page-a4 .header-subtitle {
+            font-size: 24pt;
             font-weight: 800;
-            color: #e30613;
-            text-transform: uppercase;
-            margin-top: 5px;
+            color: #ffed00; /* Amarillo Easy */
+            margin-top: 2mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .page-a4 .header-a4-right {
-            max-width: 38%;
+        .page-a4 .header-right {
             text-align: right;
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            max-width: 26%;
             align-items: flex-end;
         }
-        .page-a4 .header-a4-sku {
-            font-size: 11pt;
-            color: #94a3b8;
-            margin-top: 5px;
-            font-weight: 600;
+        .page-a4 .header-brand {
+            font-size: 28pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.1;
         }
-        .page-a4 .image-section-a4 {
-            height: 120mm;
+        .page-a4 .header-sku {
+            font-size: 18pt;
+            color: #94a3b8;
+            margin-top: 2mm;
+        }
+
+        /* Body Grid */
+        .page-a4 .body-grid {
+            flex: 1;
+            display: flex;
+            height: 170mm;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        
+        /* Columna Izquierda (Specs) */
+        .page-a4 .specs-column {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .page-a4 .spec-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 4mm;
+            text-align: center;
+        }
+        .page-a4 .spec-cell:last-child {
+            border-bottom: none;
+        }
+        .page-a4 .spec-label {
+            font-size: 15pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5mm;
+        }
+        .page-a4 .spec-value {
+            font-size: 26pt;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        /* Columna Derecha (Foto) */
+        .page-a4 .image-column {
+            width: 60%;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid #cbd5e1;
+            padding: 10mm;
+            background: #ffffff;
         }
-        .page-a4 .product-image-a4 {
-            max-height: 100%;
+        .page-a4 .product-image {
             max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
         }
-        .page-a4 .specs-section-a4 {
-            flex: 1;
-            padding: 25px;
-            background: #f8fafc;
-        }
-        .page-a4 .specs-title-a4 {
-            font-size: 12pt;
-            font-weight: 800;
-            color: #1e293b;
-            text-transform: uppercase;
-            border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        .page-a4 .specs-grid-a4 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-column-gap: 30px;
-            grid-row-gap: 12px;
-        }
-        .page-a4 .spec-row-a4 {
+
+        /* Footer Grid */
+        .page-a4 .footer-grid {
+            height: 55mm;
             display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 4px;
-            font-size: 10pt;
+            background: #f1f5f9;
         }
-        .page-a4 .spec-label-a4 {
+        .page-a4 .footer-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 2px solid #cbd5e1;
+            padding: 4mm;
+            text-align: center;
+        }
+        .page-a4 .footer-cell:last-child {
+            border-right: none;
+        }
+        .page-a4 .footer-label {
+            font-size: 15pt;
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5mm;
         }
-        .page-a4 .spec-value-a4 {
+        .page-a4 .footer-value {
+            font-size: 26pt;
             font-weight: 700;
             color: #0f172a;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 100%;
         }
-        .page-a4 .footer-a4 {
-            height: 20mm;
-            background: #f1f5f9;
-            padding: 0 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #cbd5e1;
-            font-size: 9pt;
-            font-weight: 700;
-            color: #64748b;
+
+        /* Bottom Bar */
+        .page-a4 .bottom-bar {
+            height: 14mm;
+            background: #e30613; /* Rojo Easy */
+            width: 100%;
         }
     </style>
 </head>

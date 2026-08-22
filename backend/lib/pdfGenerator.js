@@ -320,42 +320,77 @@ export async function generateBatchPdf(items, dataService) {
 
     // Compilar segun la plantilla
     if (templateName === 'a4') {
-      let specsRowsHtml = '';
-      specs.forEach(s => {
-        specsRowsHtml += `
-        <div class="spec-row-a4">
-          <span class="spec-label-a4">${s.clave || '-'}</span>
-          <span class="spec-value-a4">${s.valor || '-'}</span>
-        </div>`;
-      });
+      const spec1_label = specs[0]?.clave || '-';
+      const spec1_value = specs[0]?.valor || '-';
+      const spec2_label = specs[1]?.clave || '-';
+      const spec2_value = specs[1]?.valor || '-';
+      const spec3_label = specs[2]?.clave || '-';
+      const spec3_value = specs[2]?.valor || '-';
+      const spec4_label = specs[3]?.clave || '-';
+      const spec4_value = specs[3]?.valor || '-';
+      const spec5_label = specs[4]?.clave || '-';
+      const spec5_value = specs[4]?.valor || '-';
 
       const a4PageHtml = `
       <div class="page page-a4">
-        <div class="top-red-bar"></div>
-        <div class="header-a4">
-          <div class="header-a4-left">
-            <span class="header-a4-title">${tipo_herramienta}</span>
-            <span class="header-a4-brand">${brandName}</span>
-          </div>
-          <div class="header-a4-right">
-            ${headerBrandHtml}
-            <span class="header-a4-sku">SAP ${producto.sku}</span>
-          </div>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <span class="header-title">${tipo_herramienta}</span>
+                <span class="header-subtitle">${destacado}</span>
+            </div>
+            <div class="header-right">
+                <span class="header-brand">${headerBrandHtml}</span>
+                <span class="header-sku">SAP ${producto.sku}</span>
+            </div>
         </div>
-        <div class="image-section-a4">
-          <img class="product-image-a4" src="${foto_url}" />
+
+        <!-- Body Grid -->
+        <div class="body-grid">
+            <!-- Columna Izquierda (4 especificaciones principales) -->
+            <div class="specs-column">
+                <div class="spec-cell">
+                    <span class="spec-label">${spec1_label}</span>
+                    <span class="spec-value">${spec1_value}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">${spec2_label}</span>
+                    <span class="spec-value">${spec2_value}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">${spec3_label}</span>
+                    <span class="spec-value">${spec3_value}</span>
+                </div>
+                <div class="spec-cell">
+                    <span class="spec-label">${spec4_label}</span>
+                    <span class="spec-value">${spec4_value}</span>
+                </div>
+            </div>
+
+            <!-- Columna Derecha (Foto del Producto) -->
+            <div class="image-column">
+                <img class="product-image" src="${foto_url}" alt="Foto Producto" />
+            </div>
         </div>
-        <div class="specs-section-a4">
-          <div class="specs-title-a4">Especificaciones Técnicas</div>
-          <div class="specs-grid-a4">
-            ${specsRowsHtml}
-          </div>
+
+        <!-- Footer Grid (3 especificaciones complementarias/origen/garantia) -->
+        <div class="footer-grid">
+            <div class="footer-cell">
+                <span class="footer-label">${spec5_label}</span>
+                <span class="footer-value">${spec5_value}</span>
+            </div>
+            <div class="footer-cell">
+                <span class="footer-label">Origen</span>
+                <span class="footer-value">${origen}</span>
+            </div>
+            <div class="footer-cell">
+                <span class="footer-label">Garantía</span>
+                <span class="footer-value">${garantia}</span>
+            </div>
         </div>
-        <div class="footer-a4">
-          <span>ORIGEN: ${origen}</span>
-          <span>GARANTÍA: ${garantia}</span>
-          <span>CENCOSUD S.A.</span>
-        </div>
+
+        <!-- Franja Inferior -->
+        <div class="bottom-bar"></div>
       </div>`;
 
       // Agregar copias
