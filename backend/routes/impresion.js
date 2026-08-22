@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { dataService } from '../services/dataService.js';
-import { generatePdfFromFicha } from '../lib/pdfGenerator.js';
+import { generatePdfFromFicha, generateBatchPdf } from '../lib/pdfGenerator.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
-import { validateSchema, printGetParamsSchema, printGetQuerySchema, printPostSchema } from '../middlewares/validation.js';
+import { validateSchema, printGetParamsSchema, printGetQuerySchema, printPostSchema, printBatchPostSchema } from '../middlewares/validation.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
@@ -211,5 +211,50 @@ router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), as
     next(error);
   }
 });
+
+/**
+ * @route   POST /api/fichas/imprimir-lote
+ * @desc    Genera un archivo PDF compilado en lote a partir de una lista de SKUs, plantillas y copias.
+ */
+router.post(
+  '/fichas/imprimir-lote',
+  requireAuth,
+  validateSchema(printBatchPostSchema),
+  async (req, res, next) => {
+    const { items } = req.body;
+    
+    // Registrar auditoría de inicio de impresión por lote (PRINT_REQUESTED)
+    logAuditEvent(req, {
+      accion: 'PRINT_REQUESTED',
+      entidad: 'FICHA_TECNICA',
+      sku: items[0]?.sku || 'LOTE',
+      valores_nuevos: {
+        total_items: items.length,
+        total_cant: items.reduce((acc, curr) => acc + curr.cantidad, 0),
+        items: items.map(i => ({ sku: i.sku, qty: i.cantidad, template: i.template }))
+      }
+    });
+
+    try {
+      // Generar el lote usando nuestra nueva función de compilación A4
+      const pdfBuffer = await generateBatchPdf(items, dataService);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="lote_impresion_${Date.now()}.pdf"`);
+      return res.send(pdfBuffer);
+    } catch (error) {
+      logAuditEvent(req, {
+        accion: 'PRINT_REQUESTED',
+        entidad: 'FICHA_TECNICA',
+        sku: 'LOTE',
+        valores_nuevos: { error: error.message },
+        resultado: 'FAILURE'
+      });
+
+      console.error(`[BATCH PDF] Error al generar PDF por lote:`, error);
+      next(error);
+    }
+  }
+);
 
 export default router;

@@ -178,3 +178,16 @@ export const excelUploadSchema = z.object({
       { message: 'Tipo de archivo no permitido. Debe ser un archivo válido Excel (.xlsx o .xls)' }
     )
 });
+
+// 6. Esquema: Impresión por lote (/api/fichas/imprimir-lote) P1.22
+export const printBatchPostSchema = z.object({
+  items: z.array(
+    z.object({
+      sku: z.string()
+        .trim()
+        .regex(/^[a-zA-Z0-9-]+$/, 'El SKU debe ser alfanumérico.'),
+      template: z.enum(['a4', 'fleje3', 'fleje2']),
+      cantidad: z.number().int().positive().default(1)
+    })
+  ).min(1, 'El lote debe contener al menos un ítem a imprimir.')
+});

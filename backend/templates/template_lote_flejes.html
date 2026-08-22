@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Impresión de Flejes por Lote</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+        
+        /* Contenedores de Página A4 */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            padding: 15mm;
+            box-sizing: border-box;
+            page-break-after: always;
+            display: grid;
+            justify-content: center;
+            align-content: start;
+            overflow: hidden;
+        }
+        .page:last-child {
+            page-break-after: avoid !important;
+        }
+
+        /* DISEÑO DE GRILLA: FLEJE 3 (90x74mm) - 2x3 (6 por hoja) */
+        .page-fleje3 {
+            grid-template-columns: repeat(2, 90mm);
+            grid-gap: 5mm;
+        }
+
+        /* DISEÑO DE GRILLA: FLEJE 2 (80x40mm) - 2x6 (12 por hoja) */
+        .page-fleje2 {
+            grid-template-columns: repeat(2, 80mm);
+            grid-gap: 5mm 8mm;
+            padding: 15mm 20mm;
+        }
+
+        /* ESTILOS DE TARJETA: FLEJE 3 (90x74mm) */
+        .card-fleje3 {
+            width: 90mm;
+            height: 74mm;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .card-fleje3 .header {
+            background: #222222;
+            color: #ffffff;
+            height: 17mm;
+            padding: 2.5mm 3.5mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-fleje3 .header-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 60%;
+        }
+        .card-fleje3 .header-title {
+            font-family: 'Arial Black', 'Arial Bold', Impact, sans-serif;
+            font-size: 11pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+            line-height: 1.05;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-fleje3 .header-subtitle {
+            font-size: 9pt;
+            font-weight: 700;
+            color: #ffed00; /* Amarillo Easy */
+            margin-top: 0.5mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-fleje3 .header-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 38%;
+            align-items: flex-end;
+        }
+        .card-fleje3 .header-brand {
+            font-size: 10pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.05;
+        }
+        .card-fleje3 .header-sku {
+            font-size: 7.5pt;
+            color: #94a3b8;
+            margin-top: 0.5mm;
+        }
+        .card-fleje3 .body-grid {
+            flex: 1;
+            display: flex;
+            height: 40mm;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .card-fleje3 .specs-column {
+            width: 42%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .card-fleje3 .spec-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.5mm 1mm;
+            text-align: center;
+        }
+        .card-fleje3 .spec-cell:last-child {
+            border-bottom: none;
+        }
+        .card-fleje3 .spec-label {
+            font-size: 6pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            margin-bottom: 0.2mm;
+        }
+        .card-fleje3 .spec-value {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .card-fleje3 .image-column {
+            width: 58%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2mm;
+            background: #ffffff;
+        }
+        .card-fleje3 .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .card-fleje3 .footer-grid {
+            height: 14mm;
+            display: flex;
+            background: #f1f5f9;
+        }
+        .card-fleje3 .footer-cell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #cbd5e1;
+            padding: 0.5mm 1mm;
+            text-align: center;
+        }
+        .card-fleje3 .footer-cell:last-child {
+            border-right: none;
+        }
+        .card-fleje3 .footer-label {
+            font-size: 6pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            margin-bottom: 0.2mm;
+        }
+        .card-fleje3 .footer-value {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .card-fleje3 .bottom-bar {
+            height: 3mm;
+            background: #e30613; /* Rojo Easy */
+            width: 100%;
+        }
+
+        /* ESTILOS DE TARJETA: FLEJE 2 (80x40mm) */
+        .card-fleje2 {
+            width: 80mm;
+            height: 40mm;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .card-fleje2 .header {
+            background: #222222;
+            color: #ffffff;
+            height: 11.5mm;
+            padding: 1.5mm 2.5mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-fleje2 .header-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 60%;
+        }
+        .card-fleje2 .header-title {
+            font-family: 'Arial Black', 'Arial Bold', Impact, sans-serif;
+            font-size: 7.5pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05px;
+            line-height: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-fleje2 .header-subtitle {
+            font-size: 6pt;
+            font-weight: 700;
+            color: #ffed00; /* Amarillo Easy */
+            margin-top: 0.2mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-fleje2 .header-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 38%;
+            align-items: flex-end;
+        }
+        .card-fleje2 .header-brand {
+            font-size: 7pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffffff;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.05;
+        }
+        .card-fleje2 .header-sku {
+            font-size: 5.5pt;
+            color: #94a3b8;
+            margin-top: 0.2mm;
+        }
+        .card-fleje2 .body-grid {
+            flex: 1;
+            display: flex;
+            height: 20.5mm;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .card-fleje2 .specs-column {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .card-fleje2 .spec-cell {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.2mm 1.5mm;
+        }
+        .card-fleje2 .spec-cell:last-child {
+            border-bottom: none;
+        }
+        .card-fleje2 .spec-label {
+            font-size: 5pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            max-width: 45%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .card-fleje2 .spec-value {
+            font-size: 7.5pt;
+            font-weight: 700;
+            color: #0f172a;
+            max-width: 50%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: right;
+        }
+        .card-fleje2 .image-column {
+            width: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1mm;
+            background: #ffffff;
+        }
+        .card-fleje2 .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .card-fleje2 .footer-grid {
+            height: 6mm;
+            display: flex;
+            background: #f1f5f9;
+        }
+        .card-fleje2 .footer-cell {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-right: 1px solid #cbd5e1;
+            padding: 0.2mm 1.5mm;
+        }
+        .card-fleje2 .footer-cell:last-child {
+            border-right: none;
+        }
+        .card-fleje2 .footer-label {
+            font-size: 5pt;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        .card-fleje2 .footer-value {
+            font-size: 7.5pt;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .card-fleje2 .bottom-bar {
+            height: 2mm;
+            background: #e30613; /* Rojo Easy */
+            width: 100%;
+        }
+
+        /* DISEÑO DE FICHA A4 (Multipágina Concatenada) */
+        .page-a4 {
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            padding: 0;
+        }
+        .page-a4 .top-red-bar {
+            height: 12px;
+            background: #e30613;
+            width: 100%;
+        }
+        .page-a4 .header-a4 {
+            padding: 20px 25px;
+            border-b: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .page-a4 .header-a4-left {
+            max-width: 60%;
+        }
+        .page-a4 .header-a4-title {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 22pt;
+            font-weight: 900;
+            color: #222222;
+            text-transform: uppercase;
+            line-height: 1.1;
+        }
+        .page-a4 .header-a4-brand {
+            font-size: 14pt;
+            font-weight: 800;
+            color: #e30613;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        .page-a4 .header-a4-right {
+            max-width: 38%;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .page-a4 .header-a4-sku {
+            font-size: 11pt;
+            color: #94a3b8;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+        .page-a4 .image-section-a4 {
+            height: 120mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .page-a4 .product-image-a4 {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .page-a4 .specs-section-a4 {
+            flex: 1;
+            padding: 25px;
+            background: #f8fafc;
+        }
+        .page-a4 .specs-title-a4 {
+            font-size: 12pt;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .page-a4 .specs-grid-a4 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-column-gap: 30px;
+            grid-row-gap: 12px;
+        }
+        .page-a4 .spec-row-a4 {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            font-size: 10pt;
+        }
+        .page-a4 .spec-label-a4 {
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        .page-a4 .spec-value-a4 {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .page-a4 .footer-a4 {
+            height: 20mm;
+            background: #f1f5f9;
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #cbd5e1;
+            font-size: 9pt;
+            font-weight: 700;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    {{content}}
+</body>
+</html>

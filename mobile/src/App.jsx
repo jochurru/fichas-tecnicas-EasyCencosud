@@ -4,6 +4,7 @@ import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
 import WelcomeLogin from './components/WelcomeLogin';
+import PrintQueueDrawer from './components/PrintQueueDrawer';
 import { API_BASE_URL } from './config';
 import { saveProduct, getProduct } from './lib/indexedDb';
 
@@ -351,6 +352,7 @@ export default function App() {
         {/* Modal del Escáner de Cámara */}
         {activeScanner && (
           <Scanner 
+            token={token}
             onScanSuccess={handleScanSuccess} 
             onClose={() => setActiveScanner(false)} 
           />
@@ -362,10 +364,15 @@ export default function App() {
         )}
 
         {/* Footer simple de marca */}
-        <footer className="text-center text-[10px] text-gray-400 py-3 border-t border-gray-100 bg-white absolute bottom-0 w-full">
-          Easy Cencosud © 2026 - Módulo de Punto de Venta
+        <footer className="text-center text-[10px] text-gray-400 py-3.5 border-t border-gray-100 bg-white absolute bottom-0 w-full leading-relaxed select-none">
+          <div className="font-bold text-gray-500">Easy Cencosud © 2026 - Fichas Técnicas</div>
+          <div className="text-[9px] text-gray-400">Desarrollado por Jonatan Churruarin • Soluciones Digitales Retail</div>
         </footer>
 
+        {/* Cola de Impresión Flotante (FAB) P1.21 */}
+        {token && (
+          <PrintQueueDrawer token={token} />
+        )}
       </div>
     </div>
   );

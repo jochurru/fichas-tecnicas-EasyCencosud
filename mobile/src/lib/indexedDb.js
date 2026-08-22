@@ -1,6 +1,7 @@
 const DB_NAME = 'fichas-easy-offline-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'productos';
+const QUEUE_STORE_NAME = 'print_queue';
 
 export function openDB() {
   return new Promise((resolve, reject) => {
@@ -16,6 +17,10 @@ export function openDB() {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'producto.sku' });
         // Crear un índice secundario multi-entrada para buscar por EAN
         store.createIndex('eans', 'producto.eans', { unique: false, multiEntry: true });
+      }
+      if (!db.objectStoreNames.contains(QUEUE_STORE_NAME)) {
+        // Guardamos ítems de la cola de impresión: { sku, descripcion, template, cantidad, foto_url, marca, tipo_herramienta, especificaciones_json }
+        db.createObjectStore(QUEUE_STORE_NAME, { keyPath: 'sku' });
       }
     };
   });
@@ -64,5 +69,69 @@ export async function getProduct(identificador) {
   } catch (err) {
     console.error('[IndexedDB] Error al buscar producto:', err);
     return null;
+  }
+}
+
+// Utilitarios para la Cola de Impresión (FAB P1.21)
+export async function getPrintQueue() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(QUEUE_STORE_NAME, 'readonly');
+      const store = transaction.objectStore(QUEUE_STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('[IndexedDB] Error al obtener cola de impresión:', err);
+    return [];
+  }
+}
+
+export async function savePrintQueueItem(item) {
+  if (!item || !item.sku) return;
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(QUEUE_STORE_NAME);
+      const request = store.put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('[IndexedDB] Error al guardar en cola:', err);
+  }
+}
+
+export async function removePrintQueueItem(sku) {
+  if (!sku) return;
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(QUEUE_STORE_NAME);
+      const request = store.delete(sku);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('[IndexedDB] Error al eliminar de cola:', err);
+  }
+}
+
+export async function clearPrintQueue() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(QUEUE_STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(QUEUE_STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('[IndexedDB] Error al vaciar la cola:', err);
   }
 }

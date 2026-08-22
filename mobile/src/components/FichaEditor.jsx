@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config';
 import CompletenessBar from './CompletenessBar';
 import VersionComparatorModal from './VersionComparatorModal';
 import Scanner from './Scanner';
+import { savePrintQueueItem } from '../lib/indexedDb';
 import { calculateCompleteness, detectInconsistencies, getEstadoMetadata } from '../lib/dataQuality';
 
 export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onTokenExpired }) {
@@ -640,6 +641,41 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
             {pdfLoadingState === 'print' ? 'Descargando...' : 'Imprimir Ficha'}
           </button>
         </div>
+
+        {/* Botón para agregar a la cola local P1.21 */}
+        {!isOffline && (
+          <button
+            type="button"
+            onClick={async () => {
+              const cleanSpecs = especificaciones.filter(
+                (spec) => spec.clave.trim() !== '' || spec.valor.trim() !== ''
+              );
+              
+              const item = {
+                sku: producto.sku,
+                descripcion: producto.descripcion,
+                foto_url: fotoUrl || '',
+                marca: marca || 'GENERICA',
+                tipo_herramienta: tipoHerramienta || 'HERRAMIENTA',
+                especificaciones_json: {
+                  marca,
+                  tipo_herramienta: tipoHerramienta,
+                  especificaciones: cleanSpecs
+                },
+                template: templatePreferido === 1 ? 'a4' : templatePreferido === 2 ? 'fleje3' : 'fleje2',
+                cantidad: 1
+              };
+              
+              await savePrintQueueItem(item);
+              window.dispatchEvent(new Event('print-queue-updated'));
+              alert(`¡Producto ${producto.sku} agregado a la cola de impresión!`);
+            }}
+            className="w-full bg-easy-dark hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm mt-3 active:scale-[0.98] select-none"
+          >
+            <Plus className="w-4 h-4 text-white" />
+            <span>Agregar a Cola de Impresión</span>
+          </button>
+        )}
 
       </form>
 
