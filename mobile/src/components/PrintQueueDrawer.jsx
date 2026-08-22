@@ -99,13 +99,20 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
       });
 
       if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error || 'Error al generar el PDF del lote');
+        const errorText = await response.text();
+        let errorMsg = 'Error al generar el PDF del lote';
+        try {
+          const errJson = JSON.parse(errorText);
+          errorMsg = errJson.error || errorMsg;
+        } catch (e) {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       // Descargar el PDF retornado
       const blob = await response.blob();
-      const fileUrl = window.URL.createObjectURL(blob);
+      const fileUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = fileUrl;
       link.setAttribute('download', `lote_impresion_${new Date().toISOString().slice(0, 10)}.pdf`);

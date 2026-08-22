@@ -240,8 +240,9 @@ router.post(
       const pdfBuffer = await generateBatchPdf(items, dataService);
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="lote_impresion_${Date.now()}.pdf"`);
-      return res.send(pdfBuffer);
+      res.setHeader('Content-Disposition', `attachment; filename="lote_impresion_${Date.now()}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      return res.end(pdfBuffer, 'binary');
     } catch (error) {
       logAuditEvent(req, {
         accion: 'PRINT_REQUESTED',
