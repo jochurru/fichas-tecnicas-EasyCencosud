@@ -594,6 +594,19 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
 
     const productosAtencion = [];
 
+    // Recolectar todas las marcas registradas en Supabase con logos dinámicos
+    let brandSlugsWithLogos = [];
+    try {
+      const { data: dbBrands } = await supabaseDb
+        .from('marcas')
+        .select('slug');
+      if (dbBrands) {
+        brandSlugsWithLogos = dbBrands.map(b => b.slug);
+      }
+    } catch (err) {
+      console.error('[Quality API] Error al recuperar marcas para reporte de calidad:', err.message);
+    }
+
     // Recolectar todos los EANs para chequear duplicados
     const allEans = [];
     safeRecords.forEach(r => {
@@ -607,12 +620,12 @@ router.get('/admin/calidad-catalogo', requireAdmin, async (req, res, next) => {
       // Inject EAN into a temporary ficha object for consistency evaluation
       const tempFicha = f ? { ...f, ean: eanMapBySku[r.sku] } : null;
 
-      const completeness = calculateCompleteness(r, tempFicha);
+      const completeness = calculateCompleteness(r, tempFicha, brandSlugsWithLogos);
       
       // Filtrar el EAN actual de la lista global para chequear duplicidad
       const currentEan = eanMapBySku[r.sku];
       const otherEans = allEans.filter(e => e !== currentEan);
-      const inconsistencies = detectInconsistencies(r, tempFicha, otherEans);
+      const inconsistencies = detectInconsistencies(r, tempFicha, otherEans, brandSlugsWithLogos);
       
       const estado = f?.estado || 'SIN_FICHA';
       

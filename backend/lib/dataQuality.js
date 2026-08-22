@@ -17,7 +17,7 @@
  * @param {Object} ficha - Ficha técnica consolidada o borrador
  * @returns {number} Porcentaje de completitud (entero de 0 a 100)
  */
-export function calculateCompleteness(producto, ficha) {
+export function calculateCompleteness(producto, ficha, brandSlugsWithLogos = []) {
   let score = 0;
   
   if (producto?.sku) score += 15;
@@ -27,7 +27,21 @@ export function calculateCompleteness(producto, ficha) {
   const specsList = specsObj.especificaciones || [];
   const marca = specsObj.marca || '';
   
-  if (marca && marca.trim().length > 0) score += 15;
+  if (marca && marca.trim().length > 0) {
+    const brandLower = marca.trim().toLowerCase();
+    const brandLogoMap = {
+      'einhell': true, 'bosch': true, 'dewalt': true, 'stanley': true,
+      'black & decker': true, 'black and decker': true, 'b&d': true,
+      'makita': true, 'karcher': true, 'dremel': true, 'skil': true,
+      'gamma': true, 'kushiro': true, 'dowen pagio': true
+    };
+    const hasLogo = Object.keys(brandLogoMap).some(key => brandLower.includes(key)) || 
+                    brandSlugsWithLogos.includes(brandLower.replace(/[^a-z0-9-_]/g, ''));
+    
+    score += 10;
+    if (hasLogo) score += 5;
+  }
+  
   if (ficha?.foto_url && ficha.foto_url.trim().length > 0) score += 20;
   if (producto?.descripcion && producto.descripcion.trim().length > 0) score += 15;
   
@@ -49,7 +63,7 @@ export function calculateCompleteness(producto, ficha) {
  * @param {Array<string>} [eanList] - Opcional. Lista de EANs ya mapeados para chequear duplicados.
  * @returns {Array<Object>} Inconsistencias detectadas [{ tipo, mensaje, gravedad }]
  */
-export function detectInconsistencies(producto, ficha, eanList = []) {
+export function detectInconsistencies(producto, ficha, eanList = [], brandSlugsWithLogos = []) {
   const alerts = [];
   const specsObj = ficha?.especificaciones_json || {};
   const specsList = specsObj.especificaciones || [];
@@ -57,6 +71,32 @@ export function detectInconsistencies(producto, ficha, eanList = []) {
   const fotoUrl = ficha?.foto_url || '';
   const desc = producto?.descripcion || '';
   const marca = specsObj.marca || '';
+
+  // 0. Marca Faltante o Logo de Marca Faltante
+  if (!marca || marca.trim().length === 0) {
+    alerts.push({
+      tipo: 'BRAND_MISSING',
+      mensaje: 'Falta ingresar la marca del producto.',
+      gravedad: 'media'
+    });
+  } else {
+    const brandLower = marca.trim().toLowerCase();
+    const brandLogoMap = {
+      'einhell': true, 'bosch': true, 'dewalt': true, 'stanley': true,
+      'black & decker': true, 'black and decker': true, 'b&d': true,
+      'makita': true, 'karcher': true, 'dremel': true, 'skil': true,
+      'gamma': true, 'kushiro': true, 'dowen pagio': true
+    };
+    const hasLogo = Object.keys(brandLogoMap).some(key => brandLower.includes(key)) || 
+                    brandSlugsWithLogos.includes(brandLower.replace(/[^a-z0-9-_]/g, ''));
+    if (!hasLogo) {
+      alerts.push({
+        tipo: 'BRAND_LOGO_MISSING',
+        mensaje: 'Falta registrar el logotipo oficial para la marca.',
+        gravedad: 'baja'
+      });
+    }
+  }
 
   // 1. EAN Faltante o Duplicado
   if (!ean) {

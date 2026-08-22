@@ -47,6 +47,25 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   const [pdfLoadingState, setPdfLoadingState] = useState('idle'); // 'idle' | 'preview' | 'print'
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [brandSlugsWithLogos, setBrandSlugsWithLogos] = useState([]);
+  const [brandsList, setBrandsList] = useState([]);
+
+  // Cargar las marcas con logos dinámicos registrados
+  useEffect(() => {
+    if (token) {
+      fetch(`${API_BASE_URL}/marcas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setBrandsList(data);
+          setBrandSlugsWithLogos(data.map(b => b.slug));
+        }
+      })
+      .catch(err => console.error('Error fetching brands for validation:', err));
+    }
+  }, [token, brandLogoUploading]); // Se recarga si se sube un nuevo logo de marca al vuelo
 
   // Comprimir y subir imagen a Supabase Storage via backend WebP Canvas
   const compressAndUploadImage = async (file, tipo, targetId) => {
@@ -149,12 +168,12 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
         especificaciones
       }
     };
-    const score = calculateCompleteness(producto, tempFicha);
-    const alerts = detectInconsistencies(producto, tempFicha);
+    const score = calculateCompleteness(producto, tempFicha, brandSlugsWithLogos);
+    const alerts = detectInconsistencies(producto, tempFicha, [], brandSlugsWithLogos);
     
     setCompleteness(score);
     setInconsistencies(alerts);
-  }, [marca, tipoHerramienta, especificaciones, fotoUrl, eans, producto]);
+  }, [marca, tipoHerramienta, especificaciones, fotoUrl, eans, producto, brandSlugsWithLogos]);
 
   // Manejo de cambios en las especificaciones dinámicas
   const handleSpecChange = (index, field, value) => {
@@ -386,39 +405,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-bold text-gray-600">Marca</label>
-                {marca.trim() && !isReadOnly && !isOffline && (
-                  <label className="text-[10px] font-bold text-easy-red hover:underline flex items-center gap-0.5 cursor-pointer select-none">
-                    {brandLogoUploading ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <span>✏️ Cambiar Logo</span>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={brandLogoUploading}
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setBrandLogoUploading(true);
-                        try {
-                          const cleanSlug = marca.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
-                          await compressAndUploadImage(file, 'marca', cleanSlug);
-                          alert(`✓ Logotipo para la marca "${marca.toUpperCase()}" actualizado con éxito.`);
-                          try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
-                        } catch (err) {
-                          alert(err.message);
-                        } finally {
-                          setBrandLogoUploading(false);
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Marca</label>
               <input
                 type="text"
                 required
@@ -442,6 +429,121 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
               />
             </div>
           </div>
+
+          {/* Caja Destacada: Gestor de Logotipo de Marca P1.21 */}
+          {canEdit && !isOffline && (() => {
+            const cleanBrandSlug = marca.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
+            const currentBrandObj = brandsList.find(b => b.slug === cleanBrandSlug);
+            const brandLogoMap = {
+              'einhell': 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Einhell_Germany_logo.svg',
+              'bosch': 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Bosch-Logo.svg',
+              'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/8/89/DeWalt_Logo.svg',
+              'stanley': 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Stanley_Hand_Tools_logo.svg',
+              'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+              'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+              'b&d': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
+              'makita': 'https://upload.wikimedia.org/wikipedia/commons/7/71/Makita_Logo.svg',
+              'karcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
+              'dremel': 'https://upload.wikimedia.org/wikipedia/commons/7/79/Dremel_logo.svg',
+              'skil': 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Skil_logo_2019.svg',
+              'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
+              'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
+              'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
+            };
+
+            let resolvedLogoUrl = null;
+            if (currentBrandObj) {
+              resolvedLogoUrl = currentBrandObj.logo_url;
+            } else {
+              for (const key of Object.keys(brandLogoMap)) {
+                if (cleanBrandSlug.includes(key)) {
+                  resolvedLogoUrl = brandLogoMap[key];
+                  break;
+                }
+              }
+            }
+
+            return (
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                    <Award className="w-4 h-4 text-easy-red" />
+                    <span>Logotipo para "{marca.toUpperCase() || 'MARCA SIN ESPECIFICAR'}"</span>
+                  </div>
+                  {resolvedLogoUrl ? (
+                    <span className="text-[9px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase">
+                      Logo Registrado
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-bold uppercase">
+                      Logo Faltante (Texto)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3.5">
+                  <div className="bg-easy-dark/95 w-20 h-10 rounded-xl overflow-hidden flex items-center justify-center p-1.5 border border-gray-200 shrink-0">
+                    {resolvedLogoUrl ? (
+                      <img
+                        src={resolvedLogoUrl}
+                        alt={marca}
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://placehold.co/60x30?text=Logo';
+                        }}
+                      />
+                    ) : (
+                      <span className="text-[9px] text-gray-400 font-extrabold uppercase select-none text-center">Sin Logo</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-gray-400 font-semibold leading-relaxed">
+                      {resolvedLogoUrl 
+                        ? 'Los carteles generados para esta marca mostrarán el logotipo que se ve a la izquierda.' 
+                        : 'Esta marca no posee logotipo. Se imprimirá el nombre en texto plano en la cabecera.'}
+                    </p>
+                    
+                    {marca.trim() ? (
+                      <label className="text-[10.5px] font-bold text-easy-red hover:text-red-700 flex items-center gap-1 cursor-pointer select-none w-fit">
+                        {brandLogoUploading ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <span>✏️ {resolvedLogoUrl ? 'Sobreestablecer Logotipo' : 'Cargar Logotipo Oficial'}</span>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={brandLogoUploading}
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBrandLogoUploading(true);
+                            try {
+                              const cleanSlug = marca.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
+                              await compressAndUploadImage(file, 'marca', cleanSlug);
+                              alert(`✓ Logotipo para la marca "${marca.toUpperCase()}" actualizado con éxito.`);
+                              try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                            } catch (err) {
+                              alert(err.message);
+                            } finally {
+                              setBrandLogoUploading(false);
+                            }
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <p className="text-[10px] text-amber-600 font-bold italic">
+                        Ingresá un nombre de marca arriba para cargar su logo
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Listado y Carga de EANs (Relación 1-a-N con Lector de Cámara) P1.4 */}
           <div>
