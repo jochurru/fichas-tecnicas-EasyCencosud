@@ -115,7 +115,18 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
       const fileUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = fileUrl;
-      link.setAttribute('download', `lote_impresion_${new Date().toISOString().slice(0, 10)}.pdf`);
+
+      // Generar timestamp con fecha y hora local: lote_impresion_YYYY-MM-DD_HH-mm-ss.pdf
+      const now = new Date();
+      const YYYY = now.getFullYear();
+      const MM = String(now.getMonth() + 1).padStart(2, '0');
+      const DD = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      const timestamp = `${YYYY}-${MM}-${DD}_${hh}-${mm}-${ss}`;
+
+      link.setAttribute('download', `lote_impresion_${timestamp}.pdf`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -139,17 +150,20 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
 
   const totalLabelsCount = queue.reduce((acc, curr) => acc + (curr.cantidad || 1), 0);
 
+  if (queue.length === 0 && !isOpen) {
+    return null;
+  }
+
   return (
     <>
-      {/* Botón Acción Flotante (FAB) P1.21 */}
+      {/* Botón Acción Flotante (FAB) P1.21 - Circular y compacto */}
       <button
         onClick={toggleDrawer}
-        className="fixed bottom-6 right-6 z-40 bg-easy-red hover:bg-red-700 text-white font-bold px-4 py-3.5 rounded-full shadow-lg shadow-easy-red/30 flex items-center gap-2 active:scale-95 transition-all select-none"
+        className="fixed bottom-5 right-5 z-40 w-14 h-14 bg-easy-red hover:bg-red-700 text-white rounded-full shadow-2xl shadow-easy-red/35 flex items-center justify-center active:scale-95 hover:scale-105 transition-all duration-200 select-none relative"
       >
-        <Printer className="w-5 h-5 text-white" />
-        <span className="text-xs uppercase tracking-wider">Cola de Impresión</span>
+        <Printer className="w-6 h-6 text-white" />
         {queue.length > 0 && (
-          <span className="bg-white text-easy-red text-[10px] font-black rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center shadow-inner border border-red-100">
+          <span className="absolute -top-1.5 -right-1.5 bg-white text-easy-red text-[10px] font-black rounded-full h-5.5 w-5.5 flex items-center justify-center shadow-lg border border-red-150 animate-bounce">
             {totalLabelsCount}
           </span>
         )}

@@ -37,6 +37,8 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
   const [completeness, setCompleteness] = useState(0);
   const [inconsistencies, setInconsistencies] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [addedToQueueStatus, setAddedToQueueStatus] = useState(false);
+  const [showQueueToast, setShowQueueToast] = useState(false);
   
   // Feedback
   const [loading, setLoading] = useState(false);
@@ -668,12 +670,34 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
               
               await savePrintQueueItem(item);
               window.dispatchEvent(new Event('print-queue-updated'));
-              alert(`¡Producto ${producto.sku} agregado a la cola de impresión!`);
+              
+              // Alertas táctiles
+              try {
+                if (navigator.vibrate) {
+                  navigator.vibrate(50);
+                }
+              } catch (e) {}
+
+              // Mostrar Toast inferior y transición de estado del botón
+              setAddedToQueueStatus(true);
+              setShowQueueToast(true);
+              
+              setTimeout(() => {
+                setAddedToQueueStatus(false);
+              }, 1500);
+              
+              setTimeout(() => {
+                setShowQueueToast(false);
+              }, 2500);
             }}
-            className="w-full bg-easy-dark hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm mt-3 active:scale-[0.98] select-none"
+            className={`w-full text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-1.5 text-xs shadow-sm mt-3 active:scale-[0.98] select-none ${
+              addedToQueueStatus 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-easy-dark hover:bg-gray-800'
+            }`}
           >
             <Plus className="w-4 h-4 text-white" />
-            <span>Agregar a Cola de Impresión</span>
+            <span>{addedToQueueStatus ? '✓ ¡Agregado!' : 'Agregar a Cola de Impresión'}</span>
           </button>
         )}
 
@@ -704,6 +728,14 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
           }}
           onClose={() => setScanActiveForEan(false)}
         />
+      )}
+
+      {/* Toast no bloqueante P1.21 */}
+      {showQueueToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-easy-dark/95 backdrop-blur-sm text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2.5 z-50 animate-fade-in border border-white/10 select-none">
+          <span className="text-green-500 text-sm">✓</span>
+          <span>Producto {producto.sku} agregado a la cola</span>
+        </div>
       )}
     </div>
   );

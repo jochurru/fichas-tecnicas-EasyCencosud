@@ -239,8 +239,17 @@ router.post(
       // Generar el lote usando nuestra nueva función de compilación A4
       const pdfBuffer = await generateBatchPdf(items, dataService);
 
+      const now = new Date();
+      const YYYY = now.getFullYear();
+      const MM = String(now.getMonth() + 1).padStart(2, '0');
+      const DD = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      const timestamp = `${YYYY}-${MM}-${DD}_${hh}-${mm}-${ss}`;
+
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="lote_impresion_${Date.now()}.pdf"`);
+      res.setHeader('Content-Disposition', `attachment; filename="lote_impresion_${timestamp}.pdf"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       return res.end(pdfBuffer, 'binary');
     } catch (error) {
