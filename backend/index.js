@@ -53,13 +53,21 @@ const pdfLimiter = rateLimit({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargas de recursos cruzados entre Firebase y Cloud Run
 }));
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://easy-fichas-tecnicas.web.app',
+    'https://fichastecnicas-abdb5.web.app',
+    'http://localhost:5173' // Desarrollo local con Vite
+  ],
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Aplicar Rate Limiters a rutas críticas antes de cargar las rutas de negocio
 app.use('/api/auth/login', authLimiter);
-app.use('/api/impresion/imprimir', pdfLimiter);
+app.use('/api/fichas/imprimir', pdfLimiter);
+app.use('/api/fichas/imprimir-lote', pdfLimiter);
 app.use('/api/', generalLimiter);
 
 // Endpoint de salud básico
@@ -70,6 +78,9 @@ app.get('/health', (req, res) => {
     env: process.env.NODE_ENV || 'development'
   });
 });
+
+// Endpoints de depuración: SOLO disponibles en entorno de desarrollo
+if (process.env.NODE_ENV !== 'production') {
 
 // Endpoint de depuración seguro para variables de entorno
 app.get('/api/debug/env', (req, res) => {
@@ -125,6 +136,8 @@ app.get('/api/debug/db', async (req, res) => {
   }
 });
 
+} // Fin de bloque de endpoints de depuración (solo desarrollo)
+
 // Rutas API
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
@@ -150,12 +163,12 @@ const createDefaultUsers = async () => {
     },
     {
       email: 'coordinador@easy.com.ar',
-      password: 'CoordinadorIT2026!',
+      password: process.env.COORD_PASSWORD || 'CoordinadorIT2026!',
       label: 'coordinador de carteleria'
     },
     {
       email: 'usuario@easy.com.ar',
-      password: 'UsuarioIT2026!',
+      password: process.env.USER_PASSWORD || 'UsuarioIT2026!',
       label: 'operador / usuario'
     }
   ];

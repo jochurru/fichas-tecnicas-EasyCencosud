@@ -1,0 +1,26 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Control de versiones
+.git
+.gitignore
+
+# Dependencias del host (se instalan dentro del container)
+node_modules
+
+# Scripts de migración y testing (no necesarios en runtime)
+migrations*.sql
+test_*.js
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Herramientas de desarrollo
+.vscode
+.idea
+scratch/
+.gemini/
