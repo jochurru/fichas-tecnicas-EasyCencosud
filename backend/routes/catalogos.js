@@ -43,7 +43,7 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
       return res.status(400).json({ error: 'El archivo Excel está vacío.' });
     }
 
-    // 3. Detectar dinámicamente las columnas usando mapeo flexible (robusto a caracteres especiales)
+    // 3. Detectar dinámicamente las columnas usando mapeo flexible
     let firstRow = rows[0];
     let colMapping = {};
 
@@ -51,32 +51,34 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
       const keyStr = String(key).trim();
       const keyLower = keyStr.toLowerCase();
 
-      if (keyLower === 'material') {
+      if (keyLower === 'material' || keyLower === 'sku' || keyLower.includes('codigo sap') || keyLower.includes('código sap')) {
         colMapping[key] = 'sku';
-      } else if (keyLower.includes('texto breve')) {
+      } else if (keyLower.includes('texto breve') || keyLower.includes('descrip') || keyLower.includes('denominac') || keyLower === 'nombre' || keyLower === 'producto') {
         colMapping[key] = 'descripcion';
-      } else if (keyLower.includes('raz') && keyLower.includes('social')) {
+      } else if ((keyLower.includes('raz') && keyLower.includes('social')) || keyLower.includes('proveedor') || keyLower.includes('vendor')) {
         colMapping[key] = 'proveedor';
-      } else if (keyLower.includes('grupo de compras')) {
+      } else if (keyLower.includes('compras') || keyLower.includes('grp.comp') || keyLower.includes('grp comp') || keyLower.includes('gpo') || keyLower === 'gc' || keyLower === 'g/c') {
         colMapping[key] = 'grupo_compras';
-      } else if (keyLower.includes('grupo de art')) {
+      } else if (keyLower.includes('grupo de art') || keyLower.includes('grupo art') || keyLower.includes('rubro') || keyLower.includes('categor')) {
         colMapping[key] = 'grupo_articulos';
-      } else if (keyLower.includes('ean') || keyLower.includes('codigo de barra') || keyLower.includes('código de barra') || keyLower.includes('upc')) {
+      } else if (keyLower.includes('ean') || keyLower.includes('codigo de barra') || keyLower.includes('código de barra') || keyLower.includes('upc') || keyLower.includes('barras')) {
         colMapping[key] = 'ean';
       }
     }
 
-    // Validar columnas requeridas
-    const requiredKeys = ['sku', 'descripcion', 'grupo_compras'];
+    // Validar columnas críticas mínimas (SKU y Descripción son indispensables)
+    const requiredKeys = ['sku', 'descripcion'];
     const foundKeys = Object.values(colMapping);
     const missingKeys = requiredKeys.filter(k => !foundKeys.includes(k));
 
     if (missingKeys.length > 0) {
       return res.status(400).json({ 
         error: 'Estructura de Excel inválida', 
-        message: `No se encontraron las columnas críticas: ${missingKeys.join(', ')}. Asegúrate de subir el reporte de logística SAP correcto.`
+        message: `No se encontraron las columnas críticas: ${missingKeys.join(', ')}. Asegúrate de que el Excel tenga las columnas de Material/SKU y Descripción.`
       });
     }
+
+    const hasGCColumn = foundKeys.includes('grupo_compras');
 
     // 4. Filtrar y limpiar registros
     const cleanedProducts = [];
@@ -91,7 +93,7 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
       let rawSku = '';
       let rawDesc = '';
       let rawProv = 'DESCONOCIDO';
-      let rawGC = '';
+      let rawGC = '45'; // Valor por defecto si no existe columna en la planilla
       let rawGA = null;
       let rawEan = null;
 
@@ -114,9 +116,11 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
 
       if (!rawSku) continue;
 
-      // Filtrar estrictamente por Grupo de compras === 45
-      const isGC45 = rawGC === '45' || rawGC === '45.0' || rawGC === '045' || rawGC.startsWith('45');
-      if (!isGC45) continue;
+      // Si la columna Grupo de compras existe en la planilla, filtrar estrictamente por GC 45
+      if (hasGCColumn) {
+        const isGC45 = rawGC === '45' || rawGC === '45.0' || rawGC === '045' || rawGC.startsWith('45');
+        if (!isGC45) continue;
+      }
 
       cleanedProducts.push({
         sku: rawSku,
