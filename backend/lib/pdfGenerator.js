@@ -160,13 +160,25 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     'blackdecker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg'
   };
 
-  let logoUrl = brandLogoMap[brandLower] || null;
+  let logoUrl = null;
 
+  // 1. Intentar resolver de la base de datos de marcas (Supabase) donde el usuario sube nuevos logos
+  try {
+    const dbBrand = await dataService.getMarcaBySlug(brandLower);
+    if (dbBrand && dbBrand.logo_url) {
+      logoUrl = dbBrand.logo_url;
+    }
+  } catch (dbErr) {
+    console.warn(`[pdfGenerator] No se pudo consultar la marca "${brandLower}" en DB:`, dbErr.message);
+  }
+
+  // 2. Fallback a mapeo estático de Wikimedia solo si no existe logo subido en DB
   if (!logoUrl) {
-    try {
-      logoUrl = await dataService.getMarcaLogoUrl(brandName);
-    } catch (err) {
-      console.warn(`[pdfGenerator] Error al buscar logo dinámico para ${brandName}:`, err.message);
+    for (const key of Object.keys(brandLogoMap)) {
+      if (brandLower.includes(key)) {
+        logoUrl = brandLogoMap[key];
+        break;
+      }
     }
   }
 
