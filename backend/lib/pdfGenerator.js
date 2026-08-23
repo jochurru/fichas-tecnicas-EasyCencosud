@@ -176,40 +176,48 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     }
 
     try {
-      // Intentar descargar y optimizar el SVG al vuelo para mayor velocidad e incrustación inline
-      const response = await fetch(logoUrl, { 
-        headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' } 
-      });
-      
-      if (response.ok) {
-        let svgText = await response.text();
-        
-        // Optimizar DeWalt: ocultar fondo amarillo y colorear letras negras a amarillo institucional DeWalt (#febd18)
-        if (brandLower.includes('dewalt')) {
-          svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
-          svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
-          svgText = svgText.replace(/fill="#000000"/g, 'fill="#febd18"');
-        } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
-          // Kärcher utiliza letras sin atributo fill (negras por defecto) y un rectángulo de clase .f
-          svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
-        } else {
-          // Convertir rellenos y trazos negros a blanco para legibilidad en el fondo oscuro
-          svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
-          svgText = svgText.replace(/fill="#000000"/g, 'fill="#ffffff"');
-          svgText = svgText.replace(/fill="#000"/g, 'fill="#ffffff"');
-          svgText = svgText.replace(/fill="black"/g, 'fill="white"');
-          
-          svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
-          svgText = svgText.replace(/stroke="#000000"/g, 'stroke="#ffffff"');
-          svgText = svgText.replace(/stroke="#000"/g, 'stroke="#ffffff"');
-          svgText = svgText.replace(/stroke="black"/g, 'stroke="white"');
-        }
+      // Detectar si el logo es rasterizado (WebP/PNG/JPG subido por usuario) o vectorial (SVG del mapa estático)
+      const isRaster = /\.(webp|png|jpg|jpeg|gif)(\?.*)?$/i.test(logoUrl);
 
-        const base64Svg = Buffer.from(svgText).toString('base64');
-        headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
-      } else {
-        // Fallback a URL externa directa en caso de error HTTP en la descarga
+      if (isRaster) {
+        // Logo rasterizado: incrustar directamente como <img> con la URL pública de Supabase Storage
         headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      } else {
+        // Logo vectorial (SVG): descargar, invertir colores para fondo oscuro y embeber inline en base64
+        const response = await fetch(logoUrl, {
+          headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' }
+        });
+
+        if (response.ok) {
+          let svgText = await response.text();
+
+          // Optimizar DeWalt: ocultar fondo amarillo y colorear letras negras a amarillo institucional DeWalt (#febd18)
+          if (brandLower.includes('dewalt')) {
+            svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
+            svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
+            svgText = svgText.replace(/fill="#000000"/g, 'fill="#febd18"');
+          } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
+            // Kärcher utiliza letras sin atributo fill (negras por defecto) y un rectángulo de clase .f
+            svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
+          } else {
+            // Convertir rellenos y trazos negros a blanco para legibilidad en el fondo oscuro
+            svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
+            svgText = svgText.replace(/fill="#000000"/g, 'fill="#ffffff"');
+            svgText = svgText.replace(/fill="#000"/g, 'fill="#ffffff"');
+            svgText = svgText.replace(/fill="black"/g, 'fill="white"');
+
+            svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
+            svgText = svgText.replace(/stroke="#000000"/g, 'stroke="#ffffff"');
+            svgText = svgText.replace(/stroke="#000"/g, 'stroke="#ffffff"');
+            svgText = svgText.replace(/stroke="black"/g, 'stroke="white"');
+          }
+
+          const base64Svg = Buffer.from(svgText).toString('base64');
+          headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+        } else {
+          // Fallback a URL externa directa en caso de error HTTP en la descarga
+          headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+        }
       }
     } catch (fetchErr) {
       console.warn(`[pdfGenerator] Error al descargar/procesar logo para ${brandName}:`, fetchErr.message);
@@ -386,26 +394,35 @@ export async function generateBatchPdf(items, dataService) {
     if (logoUrl) {
       const logoHeight = templateName === 'a4' ? '40px' : templateName === 'fleje2' ? '16px' : '24px';
       try {
-        const response = await fetch(logoUrl, { 
-          headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' } 
-        });
-        if (response.ok) {
-          let svgText = await response.text();
-          if (brandLower.includes('dewalt')) {
-            svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
-            svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
-          } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
-            svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
-          } else {
-            svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
-            svgText = svgText.replace(/fill="#000000"/g, 'fill="#ffffff"');
-            svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
-            svgText = svgText.replace(/stroke="#000000"/g, 'stroke="#ffffff"');
-          }
-          const base64Svg = Buffer.from(svgText).toString('base64');
-          headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain;" />`;
-        } else {
+        // Detectar si el logo es rasterizado (WebP/PNG/JPG subido por usuario) o vectorial (SVG del mapa estático)
+        const isRaster = /\.(webp|png|jpg|jpeg|gif)(\?.*)?$/i.test(logoUrl);
+
+        if (isRaster) {
+          // Logo rasterizado: incrustar directamente como <img> con la URL pública de Supabase Storage
           headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain;" />`;
+        } else {
+          // Logo vectorial (SVG): descargar, invertir colores para fondo oscuro y embeber inline en base64
+          const response = await fetch(logoUrl, {
+            headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' }
+          });
+          if (response.ok) {
+            let svgText = await response.text();
+            if (brandLower.includes('dewalt')) {
+              svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
+              svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
+            } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
+              svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
+            } else {
+              svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
+              svgText = svgText.replace(/fill="#000000"/g, 'fill:#ffffff');
+              svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
+              svgText = svgText.replace(/stroke="#000000"/g, 'stroke:#ffffff');
+            }
+            const base64Svg = Buffer.from(svgText).toString('base64');
+            headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain;" />`;
+          } else {
+            headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain;" />`;
+          }
         }
       } catch (err) {
         headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain;" />`;
