@@ -290,9 +290,9 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
       const keyStr = String(key).trim();
       const keyLower = keyStr.toLowerCase();
 
-      if (keyLower === 'material' || keyLower === 'sku' || keyLower.includes('art') || keyLower.includes('código sap') || keyLower.includes('codigo sap')) {
+      if (keyLower === 'material' || keyLower === 'sku' || keyLower === 'sap' || keyLower.includes('sap') || keyLower.includes('art') || keyLower.includes('código') || keyLower.includes('codigo')) {
         colMapping[key] = 'sku';
-      } else if (keyLower.includes('ean') || keyLower.includes('codigo de barra') || keyLower.includes('código de barra') || keyLower.includes('upc') || keyLower.includes('barras')) {
+      } else if (keyLower.includes('ean') || keyLower.includes('barra') || keyLower.includes('upc')) {
         colMapping[key] = 'ean';
       }
     }
