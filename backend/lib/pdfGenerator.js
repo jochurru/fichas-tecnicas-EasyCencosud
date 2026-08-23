@@ -168,11 +168,11 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
 
   let headerBrandHtml = brandName;
   if (logoUrl) {
-    let logoHeight = '24px'; // Por defecto para Fleje 3 (90x74mm)
+    let logoHeight = '36px'; // Por defecto para Fleje 3 (90x74mm)
     if (templateName === 'a4') {
-      logoHeight = '50px';
+      logoHeight = '65px';
     } else if (templateName === 'fleje2') {
-      logoHeight = '16px'; // Para Fleje 2 (80x40mm)
+      logoHeight = '22px'; // Para Fleje 2 (80x40mm)
     }
 
     try {
@@ -392,7 +392,7 @@ export async function generateBatchPdf(items, dataService) {
 
     let headerBrandHtml = brandName;
     if (logoUrl) {
-      const logoHeight = templateName === 'a4' ? '40px' : templateName === 'fleje2' ? '16px' : '24px';
+      const logoHeight = templateName === 'a4' ? '65px' : templateName === 'fleje2' ? '22px' : '36px';
       try {
         // Detectar si el logo es rasterizado (WebP/PNG/JPG subido por usuario) o vectorial (SVG del mapa estático)
         const isRaster = /\.(webp|png|jpg|jpeg|gif)(\?.*)?$/i.test(logoUrl);
