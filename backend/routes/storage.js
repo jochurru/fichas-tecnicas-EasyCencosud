@@ -115,17 +115,23 @@ router.post('/upload/imagen', requireAuth, requireRoles(['admin', 'coordinator']
       });
     }
 
-    // Invalida caché de PDF para que la nueva imagen/logo se dibuje
-    if (tipo === 'producto') {
-      const cacheFile = `ficha_${id}_a4.pdf`;
-      const cacheFileF3 = `ficha_${id}_fleje3.pdf`;
-      const cacheFileF2 = `ficha_${id}_fleje2.pdf`;
-      try {
-        await supabaseDb.storage.from('fichas-pdf').remove([cacheFile, cacheFileF3, cacheFileF2]);
+    // Invalida caché de PDF para que la nueva imagen/logo se dibuje en las fichas
+    try {
+      if (tipo === 'producto') {
+        const cacheFiles = [`${id}_a4.pdf`, `${id}_fleje3.pdf`, `${id}_fleje2.pdf`];
+        await supabaseDb.storage.from('fichas-pdf').remove(cacheFiles);
         console.log(`[Storage Upload] Caché de PDF invalidada para SKU ${id}`);
-      } catch (err) {
-        console.warn(`[Storage Upload] Error al invalidar caché de PDF para SKU ${id}:`, err.message);
+      } else if (tipo === 'marca') {
+        // Al actualizar un logotipo de marca, vaciar la caché de PDFs para forzar regeneración con el nuevo logo
+        const { data: cachedPdfs } = await supabaseDb.storage.from('fichas-pdf').list('', { limit: 100 });
+        if (cachedPdfs && cachedPdfs.length > 0) {
+          const filesToRemove = cachedPdfs.map(f => f.name);
+          await supabaseDb.storage.from('fichas-pdf').remove(filesToRemove);
+          console.log(`[Storage Upload] Vaciada caché de PDFs (${filesToRemove.length} archivos) al actualizar marca ${id}`);
+        }
       }
+    } catch (err) {
+      console.warn(`[Storage Upload] Advertencia al invalidar caché de PDF:`, err.message);
     }
 
     return res.json({

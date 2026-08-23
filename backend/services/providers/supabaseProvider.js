@@ -324,17 +324,55 @@ export class SupabaseProvider {
    * @returns {Promise<Object|null>} Registro de marca o null
    */
   async getMarcaBySlug(slug) {
-    const { data, error } = await supabase
+    const rawSlug = (slug || '').trim().toLowerCase();
+    const cleanSlug = rawSlug.replace(/[^a-z0-9]/g, '');
+
+    // 1. Búsqueda directa por slug exacto
+    const { data: exact, error } = await supabase
       .from('marcas')
       .select('*')
-      .eq('slug', slug)
+      .eq('slug', rawSlug)
       .maybeSingle();
 
-    if (error) {
-      console.error(`[SupabaseProvider] Error en getMarcaBySlug para ${slug}:`, error);
-      throw error;
+    if (!error && exact) return exact;
+
+    // 2. Búsqueda por slug limpio (sin espacios ni caracteres especiales)
+    if (cleanSlug && cleanSlug !== rawSlug) {
+      const { data: cleaned } = await supabase
+        .from('marcas')
+        .select('*')
+        .eq('slug', cleanSlug)
+        .maybeSingle();
+
+      if (cleaned) return cleaned;
     }
-    return data;
+
+    // 3. Búsqueda flexible comparando la lista de marcas (ej: "black & decker" vs "blackdecker" vs "black and decker")
+    try {
+      const { data: allMarcas } = await supabase.from('marcas').select('*');
+      if (allMarcas && allMarcas.length > 0) {
+        const match = allMarcas.find(m => {
+          const mSlugClean = (m.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const mNameClean = (m.nombre || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+          const normClean = cleanSlug.replace(/and/g, '');
+          const normMSlug = mSlugClean.replace(/and/g, '');
+          const normMName = mNameClean.replace(/and/g, '');
+
+          return (
+            mSlugClean === cleanSlug ||
+            mNameClean === cleanSlug ||
+            normMSlug === normClean ||
+            normMName === normClean
+          );
+        });
+        if (match) return match;
+      }
+    } catch (err) {
+      console.warn(`[SupabaseProvider] Error en fallback flexible de marcas:`, err.message);
+    }
+
+    return null;
   }
 
   /**
