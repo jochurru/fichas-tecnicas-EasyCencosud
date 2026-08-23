@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cartela Robust Fleje 3 (90x74mm)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            width: 210mm;
+            height: 297mm;
+            background: #f8fafc;
+            overflow: hidden;
+            display: block;
+            padding: 15mm;
+        }
+        
+        @media print {
+            body {
+                background: #fff;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+
+        .card {
+            width: 90mm;
+            height: 74mm;
+            background: #464d53; /* Fondo gris oscuro característico de Robust */
+            border: 1.5px dashed #6c757d;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.15);
+            padding: 4mm 4mm 3mm 4.5mm;
+        }
+        @media print {
+            .card {
+                box-shadow: none;
+            }
+        }
+
+        /* Columna Izquierda: Marca, Título, Specs, SKU */
+        .left-content {
+            width: 58%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 2;
+        }
+
+        /* Logo Robust */
+        .brand-container {
+            margin-bottom: 1.5mm;
+        }
+        .brand-logo-text {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 14pt;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .brand-logo-img {
+            max-height: 7mm;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        /* Título del producto */
+        .title-container {
+            margin-bottom: 2mm;
+        }
+        .product-title {
+            font-size: 9.5pt;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Badge Destacado (Pill 18V Brushless) */
+        .highlight-pill {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 3px;
+            padding: 0.5mm 2mm;
+            font-size: 6.5pt;
+            font-weight: 700;
+            margin-bottom: 2mm;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pill-text-white {
+            color: #ffffff;
+        }
+        .pill-text-cyan {
+            color: #00c3e6;
+            margin-left: 1mm;
+        }
+
+        /* Lista de Especificaciones */
+        .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1mm;
+            margin-bottom: 2mm;
+        }
+        .spec-item {
+            font-size: 6.5pt;
+            font-weight: 600;
+            color: #e2e8f0;
+            line-height: 1.15;
+            display: flex;
+            align-items: flex-start;
+        }
+        .spec-bullet {
+            color: #ffffff;
+            font-weight: bold;
+            margin-right: 1.2mm;
+            font-size: 7pt;
+            line-height: 1;
+        }
+        .spec-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* SKU Box al pie izquierdo */
+        .sku-box {
+            border-top: 1px solid rgba(255, 255, 255, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 0.6mm 0;
+            margin-top: auto;
+            width: fit-content;
+            min-width: 28mm;
+        }
+        .sku-text {
+            font-size: 6.5pt;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.4px;
+        }
+
+        /* Columna Derecha: Foto e Sello de Garantía */
+        .right-content {
+            width: 42%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Foto del Producto */
+        .image-container {
+            width: 100%;
+            height: 42mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        /* Sello Circular de Garantía (Bottom Right) */
+        .warranty-seal {
+            width: 13mm;
+            height: 13mm;
+            border: 1.2px solid #ffffff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            background: rgba(70, 77, 83, 0.85);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+        }
+        .warranty-label {
+            font-size: 3pt;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            line-height: 1;
+        }
+        .warranty-number {
+            font-size: 9pt;
+            font-weight: 900;
+            color: #ffffff;
+            line-height: 0.95;
+            font-family: 'Arial Black', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Columna Izquierda -->
+        <div class="left-content">
+            <div>
+                <div class="brand-container">
+                    <span class="brand-logo-text">ROBUST</span>
+                </div>
+
+                <div class="title-container">
+                    <div class="product-title">{{descripcion}}</div>
+                </div>
+
+                <div class="highlight-pill">
+                    <span class="pill-text-white">{{destacado}}</span>
+                    <span class="pill-text-cyan">MOTOR BRUSHLESS</span>
+                </div>
+
+                <ul class="specs-list">
+                    <li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">{{spec1_label}}: {{spec1_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">{{spec2_label}}: {{spec2_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">{{spec3_label}}: {{spec3_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">{{spec4_label}}: {{spec4_value}}</span></li>
+                </ul>
+            </div>
+
+            <div class="sku-box">
+                <span class="sku-text">SKU: {{sku}}</span>
+            </div>
+        </div>
+
+        <!-- Columna Derecha -->
+        <div class="right-content">
+            <div class="image-container">
+                <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
+            </div>
+
+            <div class="warranty-seal">
+                <span class="warranty-label">AÑOS DE GARANTÍA</span>
+                <span class="warranty-number">{{garantia_numero}}</span>
+                <span class="warranty-label">AÑOS DE GARANTÍA</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

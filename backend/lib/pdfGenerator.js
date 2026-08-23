@@ -99,13 +99,26 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   const { producto, ficha_tecnica, ean = 'SIN EAN' } = data;
   const specData = ficha_tecnica.especificaciones_json || {};
   const specs = specData.especificaciones || [];
+  const brandName = (specData.marca || 'GENERICA').trim();
+  const brandLower = brandName.toLowerCase();
+  const isRobust = brandLower.includes('robust') || templateName.toLowerCase().includes('robust');
 
   // 1. Determinar plantilla y dimensiones físicas (todas se renderizan en un lienzo A4 para evitar recortes físicos en impresoras)
   let templateFileName = 'template_fleje_3.html';
-  if (templateName === 'a4') {
-    templateFileName = 'template_a4.html';
-  } else if (templateName === 'fleje2') {
-    templateFileName = 'template_fleje_2.html';
+  if (isRobust) {
+    if (templateName === 'a4' || templateName === 'robust_a4') {
+      templateFileName = 'template_robust_a4.html';
+    } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
+      templateFileName = 'template_robust_fleje_2.html';
+    } else {
+      templateFileName = 'template_robust_fleje_3.html';
+    }
+  } else {
+    if (templateName === 'a4') {
+      templateFileName = 'template_a4.html';
+    } else if (templateName === 'fleje2') {
+      templateFileName = 'template_fleje_2.html';
+    }
   }
 
   const width = '210mm';
@@ -131,16 +144,15 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   const origen = origenSpec ? origenSpec.valor.toUpperCase() : 'CHINA';
 
   const garantiaSpec = specs.find(s => s.clave.toLowerCase().includes('garant'));
-  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '1 AÑO';
+  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '5 AÑOS';
+  const garantiaMatch = garantia.match(/(\d+)/);
+  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : '5';
 
   const aprobado_por = ficha_tecnica.aprobado_por || 'OPERADOR_LOCAL';
 
   // Remplazos básicos globales en el HTML usando Regex
   html = html.replace(/\{\{tipo_herramienta\}\}/g, escapeHtml(specData.tipo_herramienta || 'HERRAMIENTA'));
   html = html.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
-  // Resolver el logo de la marca (si está disponible en nuestra base de logotipos oficiales vectoriales)
-  const brandName = (specData.marca || 'GENERICA').trim();
-  const brandLower = brandName.toLowerCase();
   
   const brandLogoMap = {
     'einhell': 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Einhell_Germany_logo.svg',
@@ -233,6 +245,7 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   html = html.replace(/\{\{foto_url\}\}/g, ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto');
   html = html.replace(/\{\{origen\}\}/g, escapeHtml(origen));
   html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantia));
+  html = html.replace(/\{\{garantia_numero\}\}/g, escapeHtml(garantiaNumero));
   html = html.replace(/\{\{aprobado_por\}\}/g, escapeHtml(aprobado_por));
 
   // Mapear hasta 5 especificaciones principales (spec1 a spec5)

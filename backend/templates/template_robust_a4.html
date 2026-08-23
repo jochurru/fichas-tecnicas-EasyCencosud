@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha Técnica Robust A4</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            width: 210mm;
+            height: 297mm;
+            background: #464d53; /* Fondo gris oscuro característico de Robust */
+            overflow: hidden;
+            display: block;
+            padding: 15mm;
+            color: #ffffff;
+        }
+        
+        @media print {
+            body {
+                background: #464d53;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* Header Robust A4 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 5mm;
+        }
+        .brand-logo-text {
+            font-family: 'Arial Black', Impact, sans-serif;
+            font-size: 32pt;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .product-title {
+            font-size: 20pt;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            margin-top: 3mm;
+            line-height: 1.1;
+        }
+
+        .sku-badge {
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            padding: 2mm 5mm;
+            border-radius: 4px;
+            font-size: 14pt;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Body Section */
+        .body-grid {
+            display: flex;
+            flex: 1;
+            margin: 8mm 0;
+            gap: 10mm;
+        }
+
+        /* Columna Izquierda (Specs) */
+        .specs-column {
+            width: 55%;
+            display: flex;
+            flex-direction: column;
+            gap: 4mm;
+        }
+
+        .highlight-pill {
+            display: inline-flex;
+            align-items: center;
+            border: 1.5px solid rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            padding: 2mm 5mm;
+            font-size: 13pt;
+            font-weight: 700;
+            width: fit-content;
+            margin-bottom: 4mm;
+        }
+        .pill-text-white { color: #ffffff; }
+        .pill-text-cyan { color: #00c3e6; margin-left: 2mm; }
+
+        .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 3.5mm;
+        }
+        .spec-item {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1.3;
+        }
+        .spec-bullet {
+            color: #ffffff;
+            font-size: 14pt;
+            margin-right: 3mm;
+            line-height: 1;
+        }
+
+        /* Columna Derecha (Imagen y Sello) */
+        .right-column {
+            width: 45%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .image-container {
+            width: 100%;
+            height: 140mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.4));
+        }
+
+        /* Sello Circular de Garantía A4 */
+        .warranty-seal {
+            width: 32mm;
+            height: 32mm;
+            border: 2.5px solid #ffffff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: rgba(70, 77, 83, 0.9);
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.4);
+        }
+        .warranty-label {
+            font-size: 6.5pt;
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        .warranty-number {
+            font-size: 22pt;
+            font-weight: 900;
+            color: #ffffff;
+            line-height: 0.95;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        /* Footer Bar */
+        .footer {
+            border-top: 1.5px solid rgba(255, 255, 255, 0.3);
+            padding-top: 4mm;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9.5pt;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <div class="brand-logo-text">ROBUST</div>
+                <div class="product-title">{{descripcion}}</div>
+            </div>
+            <div class="sku-badge">
+                SKU: {{sku}}
+            </div>
+        </div>
+
+        <!-- Body Grid -->
+        <div class="body-grid">
+            <div class="specs-column">
+                <div class="highlight-pill">
+                    <span class="pill-text-white">{{destacado}}</span>
+                    <span class="pill-text-cyan">MOTOR BRUSHLESS</span>
+                </div>
+
+                <ul class="specs-list">
+                    <li class="spec-item"><span class="spec-bullet">·</span><span><strong>{{spec1_label}}:</strong> {{spec1_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span><strong>{{spec2_label}}:</strong> {{spec2_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span><strong>{{spec3_label}}:</strong> {{spec3_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span><strong>{{spec4_label}}:</strong> {{spec4_value}}</span></li>
+                    <li class="spec-item"><span class="spec-bullet">·</span><span><strong>{{spec5_label}}:</strong> {{spec5_value}}</span></li>
+                </ul>
+            </div>
+
+            <div class="right-column">
+                <div class="image-container">
+                    <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
+                </div>
+
+                <div class="warranty-seal">
+                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
+                    <span class="warranty-number">{{garantia_numero}}</span>
+                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <span>ORIGEN: {{origen}}</span>
+            <span>EAN: {{ean}}</span>
+            <span>APROBADO POR: {{aprobado_por}}</span>
+        </div>
+    </div>
+</body>
+</html>
