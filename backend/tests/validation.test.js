@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { loginSchema, searchSchema } from '../middlewares/validation.js';
+import { loginSchema, searchSchema, excelUploadSchema } from '../middlewares/validation.js';
 
 describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
   describe('loginSchema', () => {
@@ -32,6 +32,14 @@ describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
     test('rechace caracteres inyectables o especiales', () => {
       assert.throws(() => searchSchema.parse({ identificador: "123' OR 1=1--" }));
       assert.throws(() => searchSchema.parse({ identificador: '<script>' }));
+    });
+  });
+
+  describe('excelUploadSchema', () => {
+    test('acepte base64 con prefijo Data URL de navegador', () => {
+      // Cabecera ZIP en base64 = 'UEsDBBQ...'
+      const validZipBase64 = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,UEsDBBQAAAAIAAA=';
+      assert.doesNotThrow(() => excelUploadSchema.parse({ fileBase64: validZipBase64 }));
     });
   });
 });

@@ -147,13 +147,14 @@ export const printPostSchema = z.object({
 export const excelUploadSchema = z.object({
   fileBase64: z.string({ required_error: 'El archivo Excel codificado en Base64 es obligatorio.' })
     .min(1, 'La cadena de archivo no puede estar vacía.')
+    .transform((str) => str.includes(',') ? str.split(',')[1] : str)
     .refine(
       (base64Str) => {
         try {
           const buffer = Buffer.from(base64Str, 'base64');
           // Validar peso de archivo: Máx 10 MB
           const maxSize = 10 * 1024 * 1024;
-          return buffer.length <= maxSize;
+          return buffer.length > 0 && buffer.length <= maxSize;
         } catch {
           return false;
         }
@@ -171,7 +172,8 @@ export const excelUploadSchema = z.object({
           
           // Cabecera ZIP (.xlsx) = '504b0304' (PK..)
           // Cabecera OLE2 (.xls) = 'd0cf11e0'
-          return hex === '504b0304' || hex === 'd0cf11e0';
+          // Cabecera ZIP variante = '504b0506' / '504b0708'
+          return hex.startsWith('504b') || hex === 'd0cf11e0';
         } catch {
           return false;
         }
