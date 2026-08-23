@@ -308,6 +308,25 @@ export class SupabaseProvider {
   async upsertEansBatch(eans) {
     if (!eans || eans.length === 0) return;
 
+    // Asegurar que todos los SKUs existan previamente en productos (satisface FK codigos_ean_sku_fkey)
+    try {
+      const skus = Array.from(new Set(eans.map(e => e.sku)));
+      if (skus.length > 0) {
+        const stubProducts = skus.map(sku => ({
+          sku,
+          descripcion: 'PRODUCTO PENDIENTE SAP',
+          proveedor: 'DESCONOCIDO',
+          grupo_compras: '45'
+        }));
+
+        await supabase
+          .from('productos')
+          .upsert(stubProducts, { onConflict: 'sku', ignoreDuplicates: true });
+      }
+    } catch (stubErr) {
+      console.warn(`[SupabaseProvider] Advertencia al verificar/crear productos stubs para EANs:`, stubErr.message);
+    }
+
     const { error } = await supabase
       .from('codigos_ean')
       .upsert(eans, { onConflict: 'ean' });
