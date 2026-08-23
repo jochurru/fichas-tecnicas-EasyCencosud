@@ -664,7 +664,7 @@ router.get('/admin/calidad-catalogo', requireAuth, requireRoles(['admin']), asyn
           estado,
           completitud: completeness,
           inconsistenciasCount: inconsistencies.length,
-          inconsistencias
+          inconsistencias: inconsistencies
         });
       }
     });
