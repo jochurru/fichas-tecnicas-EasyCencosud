@@ -7,6 +7,21 @@ import { dataService } from '../services/dataService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Escapa caracteres HTML peligrosos para prevenir inyección XSS en plantillas Puppeteer.
+ * @param {string} str - Texto a sanitizar
+ * @returns {string} Texto con entidades HTML escapadas
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let sharedBrowser = null;
 let launchPromise = null;
 
@@ -121,8 +136,8 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   const aprobado_por = ficha_tecnica.aprobado_por || 'OPERADOR_LOCAL';
 
   // Remplazos básicos globales en el HTML usando Regex
-  html = html.replace(/\{\{tipo_herramienta\}\}/g, specData.tipo_herramienta || 'HERRAMIENTA');
-  html = html.replace(/\{\{destacado\}\}/g, destacado);
+  html = html.replace(/\{\{tipo_herramienta\}\}/g, escapeHtml(specData.tipo_herramienta || 'HERRAMIENTA'));
+  html = html.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
   // Resolver el logo de la marca (si está disponible en nuestra base de logotipos oficiales vectoriales)
   const brandName = (specData.marca || 'GENERICA').trim();
   const brandLower = brandName.toLowerCase();
@@ -141,107 +156,79 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     'skil': 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Skil_logo_2019.svg',
     'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
     'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
-    'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
+    'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png',
+    'blackdecker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg'
   };
 
-  let logoUrl = null;
+  let logoUrl = brandLogoMap[brandLower] || null;
 
-  // 1. Intentar resolver de la base de datos de marcas (Supabase)
-  try {
-    const dbBrand = await dataService.getMarcaBySlug(brandLower);
-    if (dbBrand && dbBrand.logo_url) {
-      logoUrl = dbBrand.logo_url;
-    }
-  } catch (dbErr) {
-    console.warn(`[pdfGenerator] No se pudo consultar la marca "${brandLower}" en DB:`, dbErr.message);
-  }
-
-  // 2. Fallback a mapeo estático si no se encuentra en DB
   if (!logoUrl) {
-    for (const key of Object.keys(brandLogoMap)) {
-      if (brandLower.includes(key)) {
-        logoUrl = brandLogoMap[key];
-        break;
-      }
+    try {
+      logoUrl = await dataService.getMarcaLogoUrl(brandName);
+    } catch (err) {
+      console.warn(`[pdfGenerator] Error al buscar logo dinámico para ${brandName}:`, err.message);
     }
   }
 
-  let headerBrandHtml = brandName;
+  let headerBrandHtml = `<span style="font-weight: 900; font-size: 1.4rem; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase;">${escapeHtml(brandName)}</span>`;
+
   if (logoUrl) {
-    let logoHeight = '36px'; // Por defecto para Fleje 3 (90x74mm)
-    if (templateName === 'a4') {
-      logoHeight = '65px';
-    } else if (templateName === 'fleje2') {
-      logoHeight = '22px'; // Para Fleje 2 (80x40mm)
-    }
+    let logoHeight = '65px';
+    if (templateName === 'fleje3') logoHeight = '36px';
+    if (templateName === 'fleje2') logoHeight = '22px';
+
+    const isRaster = logoUrl.match(/\.(webp|png|jpg|jpeg)(\?.*)?$/i);
 
     try {
-      // Detectar si el logo es rasterizado (WebP/PNG/JPG subido por usuario) o vectorial (SVG del mapa estático)
-      const isRaster = /\.(webp|png|jpg|jpeg|gif)(\?.*)?$/i.test(logoUrl);
-
       if (isRaster) {
-        // Logo rasterizado: incrustar directamente como <img> con la URL pública de Supabase Storage
-        headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+        headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
       } else {
-        // Logo vectorial (SVG): descargar, invertir colores para fondo oscuro y embeber inline en base64
-        const response = await fetch(logoUrl, {
-          headers: { 'User-Agent': 'FichasEasyAgent/1.0 (contact@easy.com.ar)' }
-        });
-
+        const response = await fetch(logoUrl);
         if (response.ok) {
           let svgText = await response.text();
 
-          // Optimizar DeWalt: ocultar fondo amarillo y colorear letras negras a amarillo institucional DeWalt (#febd18)
-          if (brandLower.includes('dewalt')) {
-            svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
-            svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
-            svgText = svgText.replace(/fill="#000000"/g, 'fill="#febd18"');
-          } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
-            // Kärcher utiliza letras sin atributo fill (negras por defecto) y un rectángulo de clase .f
+          if (brandLower.includes('karcher')) {
             svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
           } else {
-            // Convertir rellenos y trazos negros a blanco para legibilidad en el fondo oscuro
             svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
-            svgText = svgText.replace(/fill="#000000"/g, 'fill="#ffffff"');
-            svgText = svgText.replace(/fill="#000"/g, 'fill="#ffffff"');
+            svgText = svgText.replace(/fill="#000000"/g, 'fill:#ffffff');
+            svgText = svgText.replace(/fill="#000"/g, 'fill:#ffffff');
             svgText = svgText.replace(/fill="black"/g, 'fill="white"');
 
             svgText = svgText.replace(/stroke:#000000/g, 'stroke:#ffffff');
-            svgText = svgText.replace(/stroke="#000000"/g, 'stroke="#ffffff"');
-            svgText = svgText.replace(/stroke="#000"/g, 'stroke="#ffffff"');
+            svgText = svgText.replace(/stroke="#000000"/g, 'stroke:#ffffff');
+            svgText = svgText.replace(/stroke="#000"/g, 'stroke:#ffffff');
             svgText = svgText.replace(/stroke="black"/g, 'stroke="white"');
           }
 
           const base64Svg = Buffer.from(svgText).toString('base64');
-          headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+          headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
         } else {
-          // Fallback a URL externa directa en caso de error HTTP en la descarga
-          headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+          headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
         }
       }
     } catch (fetchErr) {
       console.warn(`[pdfGenerator] Error al descargar/procesar logo para ${brandName}:`, fetchErr.message);
-      // Fallback a URL externa directa en caso de error de red
-      headerBrandHtml = `<img src="${logoUrl}" alt="${brandName}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
     }
   }
 
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
-  html = html.replace(/\{\{sku\}\}/g, producto.sku);
-  html = html.replace(/\{\{ean\}\}/g, ean);
-  html = html.replace(/\{\{descripcion\}\}/g, producto.descripcion || '');
-  html = html.replace(/\{\{proveedor\}\}/g, producto.proveedor || 'DESCONOCIDO');
+  html = html.replace(/\{\{sku\}\}/g, escapeHtml(producto.sku));
+  html = html.replace(/\{\{ean\}\}/g, escapeHtml(ean));
+  html = html.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
+  html = html.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
   html = html.replace(/\{\{foto_url\}\}/g, ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto');
-  html = html.replace(/\{\{origen\}\}/g, origen);
-  html = html.replace(/\{\{garantia\}\}/g, garantia);
-  html = html.replace(/\{\{aprobado_por\}\}/g, aprobado_por);
+  html = html.replace(/\{\{origen\}\}/g, escapeHtml(origen));
+  html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantia));
+  html = html.replace(/\{\{aprobado_por\}\}/g, escapeHtml(aprobado_por));
 
   // Mapear hasta 5 especificaciones principales (spec1 a spec5)
   for (let i = 0; i < 5; i++) {
     const spec = specs[i];
     if (spec) {
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), spec.clave || '-');
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), spec.valor || '-');
+      html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), escapeHtml(spec.clave || '-'));
+      html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), escapeHtml(spec.valor || '-'));
     } else {
       html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), '-');
       html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), '-');

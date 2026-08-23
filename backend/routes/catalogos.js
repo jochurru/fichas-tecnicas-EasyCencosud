@@ -440,11 +440,12 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
  */
 router.get('/catalogos/metricas', requireAuth, requireRoles(['admin']), async (req, res, next) => {
   try {
-    // 1. Obtener todos los registros de auditoría
+    // 1. Obtener los últimos 2500 registros de auditoría para procesar métricas de forma segura
     const { data: logs, error } = await supabaseDb
       .from('audit_logs')
       .select('accion, sku, usuario_email, rol, timestamp')
-      .order('timestamp', { ascending: false });
+      .order('timestamp', { ascending: false })
+      .limit(2500);
 
     if (error) {
       throw error;
