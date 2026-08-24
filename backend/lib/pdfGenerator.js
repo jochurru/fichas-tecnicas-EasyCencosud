@@ -240,6 +240,16 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   }
 
   if (brandLower.includes('robust')) {
+    let robustLogoHeight = '8mm';
+    let robustLogoWidth = '38mm';
+    if (templateName === 'a4') {
+      robustLogoHeight = '28mm';
+      robustLogoWidth = '110mm';
+    } else if (templateName === 'fleje2') {
+      robustLogoHeight = '5.5mm';
+      robustLogoWidth = '26mm';
+    }
+
     if (logoUrl) {
       const isSvg = logoUrl.toLowerCase().includes('.svg');
       if (isSvg) {
@@ -252,15 +262,15 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
                              .replace(/fill="#000"/g, 'fill="#ffffff"')
                              .replace(/fill="black"/g, 'fill="white"');
             const base64Svg = Buffer.from(svgText).toString('base64');
-            headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+            headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="ROBUST" style="max-height: ${robustLogoHeight}; max-width: ${robustLogoWidth}; object-fit: contain; display: block;" />`;
           } else {
-            headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+            headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: ${robustLogoHeight}; max-width: ${robustLogoWidth}; object-fit: contain; display: block;" />`;
           }
         } catch (e) {
-          headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+          headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: ${robustLogoHeight}; max-width: ${robustLogoWidth}; object-fit: contain; display: block;" />`;
         }
       } else {
-        headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block; mix-blend-mode: screen;" />`;
+        headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: ${robustLogoHeight}; max-width: ${robustLogoWidth}; object-fit: contain; display: block; mix-blend-mode: screen;" />`;
       }
     }
   }
