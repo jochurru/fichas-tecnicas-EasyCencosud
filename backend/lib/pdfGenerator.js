@@ -211,7 +211,9 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
         if (response.ok) {
           let svgText = await response.text();
 
-          if (brandLower.includes('karcher')) {
+          if (brandLower.includes('dewalt') || brandLower.includes('stanley') || brandLower.includes('bosch') || brandLower.includes('einhell') || brandLower.includes('makita') || brandLower.includes('gamma')) {
+            // Preservar colores oficiales originales (ej: DeWalt fondo amarillo #febd18 con letras negras)
+          } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
             svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
           } else {
             svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff');
@@ -236,6 +238,34 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
       headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
     }
   }
+
+  // Manejo de títulos divididos y especificaciones formateadas para plantilla Máster ROBUST
+  const descUpper = (producto.descripcion || '').toUpperCase();
+  const descWords = descUpper.split(' ');
+  const tituloLinea1 = descWords.length > 0 ? descWords[0] : 'TALADRO';
+  const tituloLinea2 = descWords.slice(1).join(' ') || 'PERCUTOR';
+
+  let destacadoVal = '18V';
+  let destacadoLbl = 'BRUSHLESS';
+  if (destacado) {
+    const parts = destacado.split(' ');
+    if (parts.length > 1) {
+      destacadoVal = parts[0];
+      destacadoLbl = parts.slice(1).join(' ');
+    } else {
+      destacadoVal = destacado;
+    }
+  }
+
+  const specsListHtml = specs.slice(0, 4).map(s => 
+    `<li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
+  ).join('');
+
+  html = html.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
+  html = html.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+  html = html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
+  html = html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
+  html = html.replace(/\{\{specs_html\}\}/g, specsListHtml);
 
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
   html = html.replace(/\{\{sku\}\}/g, escapeHtml(producto.sku));
@@ -419,9 +449,8 @@ export async function generateBatchPdf(items, dataService) {
           });
           if (response.ok) {
             let svgText = await response.text();
-            if (brandLower.includes('dewalt')) {
-              svgText = svgText.replace(/fill:#febd18/g, 'fill:none;display:none');
-              svgText = svgText.replace(/fill:#000000/g, 'fill:#febd18');
+            if (brandLower.includes('dewalt') || brandLower.includes('stanley') || brandLower.includes('bosch') || brandLower.includes('einhell') || brandLower.includes('makita') || brandLower.includes('gamma')) {
+              // Preservar colores oficiales originales (ej: DeWalt fondo amarillo #febd18 con letras negras)
             } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
               svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
             } else {
