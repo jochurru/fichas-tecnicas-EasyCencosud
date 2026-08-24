@@ -81,38 +81,57 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
           {/* PLANTILLA: FLEJE 3 (90x74mm) */}
           {templateName === 'fleje3' && (
             brandLower.includes('robust') ? (
-              /* ROBUST TEMPLATE PREVIEW */
-              <div className={`${widthClass} ${heightClass} bg-[#464d53] text-white shadow-lg border border-dashed border-gray-500 flex p-3 text-left relative font-sans select-none overflow-hidden justify-between`}>
-                <div className="w-[58%] flex flex-col justify-between z-10">
+              /* ROBUST MASTER TEMPLATE PREVIEW */
+              <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-t border-b border-dashed border-white flex p-4 text-left relative font-sans select-none overflow-hidden justify-between`}>
+                <div className="w-[52%] flex flex-col justify-between z-10">
                   <div>
-                    <div className="font-black text-sm uppercase tracking-wider text-white mb-1">ROBUST</div>
-                    <div className="font-extrabold text-[10px] uppercase text-white leading-tight mb-1 truncate">{tipo_herramienta}</div>
-                    <div className="inline-flex items-center border border-white/70 rounded px-1.5 py-0.5 text-[7.5px] font-bold mb-1.5 max-w-full truncate">
-                      <span className="text-white">{destacado || '18V'}</span>
-                      <span className="text-[#00c3e6] ml-1">MOTOR BRUSHLESS</span>
+                    {/* SVG Logo ROBUST */}
+                    <div className="mb-2">
+                      <svg className="w-24 h-4 fill-white" viewBox="0 0 300 50">
+                        <path d="M0 0h25c10 0 16 4 16 12 0 6-4 10-10 11l11 17H28l-9-15h-7v15H0V0zm12 10v10h12c3 0 5-1 5-5s-2-5-5-5H12zM48 0h32c10 0 16 7 16 20s-6 20-16 20H48V0zm12 10v20h18c4 0 6-3 6-10s-2-10-6-10H60zM102 0h12v28c0 4 3 6 7 6s7-2 7-6V0h12v28c0 10-7 16-19 16s-19-6-19-16V0zM148 0h28c8 0 13 4 13 11 0 5-3 8-7 10 6 1 9 5 9 11 0 8-6 12-15 12h-28V0zm12 9v8h14c2 0 4-1 4-4s-2-4-4-4h-14zm0 16v10h15c2 0 4-1 4-5s-2-5-4-5h-15zM196 0h32v10h-20v6h18v9h-18v9h20v10h-32V0zM236 7v33h12V25h12v15h12V7H236z"/>
+                      </svg>
                     </div>
-                    <ul className="space-y-0.5 text-[7px] text-gray-200 font-semibold">
+
+                    {/* Título en 2 líneas */}
+                    <div className="mb-2">
+                      <div className="font-black text-sm uppercase leading-none tracking-tight">TALADRO</div>
+                      <div className="font-medium text-xs uppercase leading-tight">PERCUTOR</div>
+                    </div>
+
+                    {/* Recuadro Destacado */}
+                    <div className="inline-flex items-center border border-white/90 rounded px-2 py-0.5 text-[8px] font-bold mb-2 bg-transparent">
+                      <span className="text-white">{destacado || '18V'}</span>
+                      <span className="text-white mx-1 text-[7px]">⚡</span>
+                      <span className="text-[#00c3e6] font-extrabold">BRUSHLESS</span>
+                    </div>
+
+                    {/* Especificaciones */}
+                    <ul className="space-y-1 text-[8px] text-white font-semibold">
                       {especificaciones.slice(0, 4).map((spec, i) => (
-                        <li key={i} className="flex items-center truncate">
-                          <span className="text-white font-bold mr-1">·</span>
-                          <span className="truncate">{spec.clave}: {spec.valor}</span>
+                        <li key={i} className="flex items-start leading-tight">
+                          <span className="text-white font-bold mr-1.5">·</span>
+                          <span>{spec.clave}: {spec.valor}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="border-t border-b border-white/60 py-0.5 px-1 inline-block w-fit">
-                    <span className="text-[7.5px] font-bold text-white tracking-wide">SKU: {sku}</span>
+
+                  {/* SKU Inferior */}
+                  <div className="border-t border-b border-white py-0.5 w-24">
+                    <span className="text-[8px] font-bold text-white tracking-wider">SKU: {sku}</span>
                   </div>
                 </div>
 
-                <div className="w-[40%] flex flex-col justify-between items-end z-10">
-                  <div className="h-[120px] w-full flex items-center justify-center">
-                    <img src={currentFotoUrl || 'https://placehold.co/100?text=Sin+Foto'} alt="Foto" className="max-h-full max-w-full object-contain drop-shadow-md" />
-                  </div>
-                  <div className="w-8 h-8 rounded-full border border-white flex flex-col justify-center items-center text-center bg-[#464d53]/90">
-                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">GARANTÍA</span>
-                    <span className="text-[10px] font-black text-white leading-none">5</span>
-                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS</span>
+                {/* Columna Derecha con Imagen Integrada y Sello Grande */}
+                <div className="absolute right-0 top-0 bottom-0 w-[55%] flex flex-col justify-center items-center z-0">
+                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="w-full h-full object-contain scale-115 translate-x-2" />
+                </div>
+
+                <div className="absolute right-3 bottom-3 w-12 h-12 rounded-full border-2 border-white flex flex-col justify-center items-center text-center bg-transparent z-20">
+                  <div className="w-10 h-10 rounded-full border border-white/70 flex flex-col justify-center items-center">
+                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
+                    <span className="text-[12px] font-black text-white leading-none my-0.5">5</span>
+                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
                   </div>
                 </div>
               </div>
