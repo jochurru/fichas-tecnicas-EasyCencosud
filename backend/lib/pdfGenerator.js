@@ -132,26 +132,24 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     }
   }
 
-  // Determinar dimensiones de viewport en Puppeteer
-  let viewportOptions = { width: 400, height: 350 };
-  let pdfPrintOptions = { width: '90mm', height: '74mm', margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }, printBackground: true };
-
-  if (templateName === 'a4') {
-    viewportOptions = { width: 794, height: 1123 };
-    pdfPrintOptions = { format: 'A4', printBackground: true, margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } };
-  } else if (templateName === 'fleje2') {
-    viewportOptions = { width: 350, height: 200 };
-    pdfPrintOptions = { width: '80mm', height: '40mm', margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }, printBackground: true };
-  }
-
-  // Renderizar PDF con Puppeteer Browser Pool
+  // Renderizar PDF en lienzo A4 exacto (210mm x 297mm) con márgenes nulos para evitar recortes físicos en impresoras
   const browser = await getBrowser();
   const page = await browser.newPage();
 
   try {
-    await page.setViewport(viewportOptions);
+    await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf(pdfPrintOptions);
+    const pdfBuffer = await page.pdf({
+      width: '210mm',
+      height: '297mm',
+      printBackground: true,
+      margin: {
+        top: '0mm',
+        right: '0mm',
+        bottom: '0mm',
+        left: '0mm'
+      }
+    });
     return pdfBuffer;
   } finally {
     await page.close();
