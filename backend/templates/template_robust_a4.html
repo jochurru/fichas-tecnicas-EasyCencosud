@@ -95,11 +95,12 @@
         }
 
         .specs-column {
-            width: 55%;
+            width: 48%;
             display: flex;
             flex-direction: column;
             gap: 6mm;
             z-index: 10;
+            overflow: hidden;
         }
 
         .highlight-pill {
@@ -108,13 +109,16 @@
             border: 2px solid rgba(255, 255, 255, 0.9);
             border-radius: 6px;
             padding: 2mm 6mm;
-            font-size: 15pt;
+            font-size: 14pt;
             font-weight: 700;
             width: fit-content;
             margin-bottom: 4mm;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
         }
         .pill-text-white { color: #ffffff; }
-        .pill-bolt { color: #ffffff; margin: 0 2mm; font-size: 14pt; }
+        .pill-bolt { color: #ffffff; margin: 0 2mm; font-size: 13pt; }
         .pill-text-cyan { color: #00c3e6; font-weight: 800; }
 
         .specs-list {
@@ -122,9 +126,10 @@
             display: flex;
             flex-direction: column;
             gap: 4.5mm;
+            max-width: 100%;
         }
         .spec-item {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: 600;
             color: #ffffff;
             display: flex;
@@ -133,29 +138,29 @@
         }
         .spec-bullet {
             color: #ffffff;
-            font-size: 16pt;
+            font-size: 15pt;
             margin-right: 3mm;
             line-height: 1;
         }
 
         .right-column {
             position: absolute;
-            right: -5mm;
+            right: 0;
             top: 0;
             bottom: 0;
-            width: 58%;
+            width: 50%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 5;
+            padding: 5mm;
         }
 
         .product-image {
-            width: 100%;
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
-            transform: scale(1.1);
         }
 
         .sku-box {

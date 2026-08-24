@@ -240,10 +240,28 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   }
 
   // Manejo de títulos divididos y especificaciones formateadas para plantilla Máster ROBUST
-  const descUpper = (producto.descripcion || '').toUpperCase();
-  const descWords = descUpper.split(' ');
-  const tituloLinea1 = descWords.length > 0 ? descWords[0] : 'TALADRO';
-  const tituloLinea2 = descWords.slice(1).join(' ') || 'PERCUTOR';
+  const descUpper = (producto.descripcion || '').toUpperCase().trim();
+  const descWords = descUpper.split(' ').filter(Boolean);
+  
+  let tituloLinea1 = 'HERRAMIENTA';
+  let tituloLinea2 = 'ROBUST';
+
+  if (descWords.length === 1) {
+    tituloLinea1 = descWords[0];
+    tituloLinea2 = '';
+  } else if (descWords.length === 2) {
+    tituloLinea1 = descWords[0];
+    tituloLinea2 = descWords[1];
+  } else if (descWords.length > 2) {
+    // Si la primera palabra es corta (ej: "SET", "TALADRO"), tomar las primeras dos palabras para la linea 1 si no supera 14 caracteres
+    if ((descWords[0] + ' ' + descWords[1]).length <= 14) {
+      tituloLinea1 = descWords[0] + ' ' + descWords[1];
+      tituloLinea2 = descWords.slice(2).join(' ');
+    } else {
+      tituloLinea1 = descWords[0];
+      tituloLinea2 = descWords.slice(1).join(' ');
+    }
+  }
 
   let destacadoVal = '18V';
   let destacadoLbl = 'BRUSHLESS';

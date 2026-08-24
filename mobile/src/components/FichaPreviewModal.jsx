@@ -83,10 +83,10 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
             brandLower.includes('robust') ? (
               /* ROBUST MASTER TEMPLATE PREVIEW */
               <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-t border-b border-dashed border-white flex p-4 text-left relative font-sans select-none overflow-hidden justify-between`}>
-                <div className="w-[52%] flex flex-col justify-between z-10">
+                <div className="w-[46%] flex flex-col justify-between z-10 overflow-hidden">
                   <div>
                     {/* Logo ROBUST dinámico desde DB o fallback */}
-                    <div className="mb-2 max-h-6 flex items-center">
+                    <div className="mb-1.5 max-h-6 flex items-center">
                       {logoUrl ? (
                         <img src={logoUrl} alt={marca} className="h-5 object-contain" />
                       ) : (
@@ -95,38 +95,42 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     </div>
 
                     {/* Título en 2 líneas */}
-                    <div className="mb-2">
-                      <div className="font-black text-sm uppercase leading-none tracking-tight">TALADRO</div>
-                      <div className="font-medium text-xs uppercase leading-tight">PERCUTOR</div>
+                    <div className="mb-1.5 max-w-full overflow-hidden">
+                      <div className="font-black text-xs uppercase leading-none tracking-tight truncate">
+                        {(tipo_herramienta || 'HERRAMIENTA').split(' ')[0]}
+                      </div>
+                      <div className="font-medium text-[10px] uppercase leading-tight line-clamp-2">
+                        {(tipo_herramienta || '').split(' ').slice(1).join(' ') || 'ROBUST'}
+                      </div>
                     </div>
 
                     {/* Recuadro Destacado */}
-                    <div className="inline-flex items-center border border-white/90 rounded px-2 py-0.5 text-[8px] font-bold mb-2 bg-transparent">
+                    <div className="inline-flex items-center border border-white/90 rounded px-1.5 py-0.5 text-[7.5px] font-bold mb-1.5 bg-transparent max-w-full truncate">
                       <span className="text-white">{destacado || '18V'}</span>
-                      <span className="text-white mx-1 text-[7px]">⚡</span>
+                      <span className="text-white mx-1 text-[6.5px]">⚡</span>
                       <span className="text-[#00c3e6] font-extrabold">BRUSHLESS</span>
                     </div>
 
                     {/* Especificaciones */}
-                    <ul className="space-y-1 text-[8px] text-white font-semibold">
+                    <ul className="space-y-0.5 text-[7.5px] text-white font-semibold max-w-full">
                       {especificaciones.slice(0, 4).map((spec, i) => (
                         <li key={i} className="flex items-start leading-tight">
-                          <span className="text-white font-bold mr-1.5">·</span>
-                          <span>{spec.clave}: {spec.valor}</span>
+                          <span className="text-white font-bold mr-1">·</span>
+                          <span className="line-clamp-1">{spec.clave}: {spec.valor}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {/* SKU Inferior */}
-                  <div className="border-t border-b border-white py-0.5 w-24">
-                    <span className="text-[8px] font-bold text-white tracking-wider">SKU: {sku}</span>
+                  <div className="border-t border-b border-white py-0.5 w-20 mt-auto">
+                    <span className="text-[7.5px] font-bold text-white tracking-wider">SKU: {sku}</span>
                   </div>
                 </div>
 
-                {/* Columna Derecha con Imagen Integrada y Sello Grande */}
-                <div className="absolute right-0 top-0 bottom-0 w-[55%] flex flex-col justify-center items-center z-0">
-                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="w-full h-full object-contain scale-115 translate-x-2" />
+                {/* Columna Derecha con Imagen Integrada (Sin Cuadro Blanco) */}
+                <div className="absolute right-0 top-0 bottom-0 w-[52%] flex flex-col justify-center items-center z-0 p-2">
+                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain" />
                 </div>
 
                 <div className="absolute right-3 bottom-3 w-12 h-12 rounded-full border-2 border-white flex flex-col justify-center items-center text-center bg-transparent z-20">
