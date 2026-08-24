@@ -313,31 +313,31 @@ export async function generatePdfBatch(items, ds = dataService) {
 
       if (isRobust) {
         const specsListHtml = specs.slice(0, 4).map(s => 
-          `<li class="spec-item"><span class="spec-bullet">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
+          `<li style="font-size: 6.5pt; font-weight: 600; color: #ffffff; display: flex; align-items: flex-start; line-height: 1.15; margin-bottom: 0.5mm;"><span style="margin-right: 1.5mm; font-size: 7pt;">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
         ).join('');
 
         cardHtml = `
         <div class="card-robust-fleje3">
-          <div style="width: 52%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10;">
+          <div style="width: 48%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; height: 100%; overflow: hidden;">
             <div>
               <div style="margin-bottom: 2mm; max-height: 8mm; display: flex; align-items: center;">
                 ${headerBrandHtml}
               </div>
-              <div style="margin-bottom: 2.5mm;">
-                <div style="font-size: 14.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95;">${escapeHtml(tituloLinea1)}</div>
-                <div style="font-size: 14.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95;">${escapeHtml(tituloLinea2)}</div>
+              <div style="margin-bottom: 2mm; max-width: 36mm; overflow: hidden;">
+                <div style="font-size: 10pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tituloLinea1)}</div>
+                ${tituloLinea2 ? `<div style="font-size: 8pt; font-weight: 500; color: #ffffff; text-transform: uppercase; line-height: 1.05; overflow: hidden;">${escapeHtml(tituloLinea2)}</div>` : ''}
               </div>
-              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 1.5mm; background: #000000; border: 1.2px solid #ffffff; padding: 0.8mm 3mm; border-radius: 1.5mm; margin-bottom: 2.5mm;"><span style="font-size: 10pt; font-weight: 900; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #00e5ff; font-size: 8pt;">⚡</span><span style="font-size: 9.5pt; font-weight: 800; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
+              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 1mm; background: #000000; border: 1px solid rgba(255,255,255,0.9); padding: 0.8mm 2.2mm; border-radius: 4px; margin-bottom: 2mm; width: fit-content;"><span style="font-size: 6.5pt; font-weight: 700; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #ffffff; margin: 0 0.4mm; font-size: 6pt;">⚡</span><span style="font-size: 6.5pt; font-weight: 700; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
               <ul style="list-style: none; padding: 0; margin: 0;">
                 ${specsListHtml}
               </ul>
             </div>
-            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.8mm 0; width: fit-content;">
-              <span style="font-size: 8pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
+            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.5mm 0; width: fit-content; margin-top: auto;">
+              <span style="font-size: 6.5pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
             </div>
           </div>
-          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 48%; display: flex; justify-content: center; align-items: center; padding: 3mm;">
-            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain; mix-blend-mode: multiply;" />
+          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 52%; display: flex; justify-content: center; align-items: center; padding: 3mm;">
+            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
             ${esElectrico && selloGarantiaImg ? `<img src="${selloGarantiaImg}" style="position: absolute; right: 3.5mm; bottom: 3.5mm; width: 16mm; height: 16mm; object-fit: contain; z-index: 20;" />` : ''}
           </div>
         </div>`;
@@ -414,31 +414,31 @@ export async function generatePdfBatch(items, ds = dataService) {
 
       if (isRobust) {
         const specsListHtml = specs.slice(0, 3).map(s => 
-          `<li class="spec-item"><span class="spec-bullet">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
+          `<li style="font-size: 4.8pt; font-weight: 600; color: #ffffff; display: flex; align-items: flex-start; line-height: 1.1; margin-bottom: 0.3mm;"><span style="margin-right: 1mm; font-size: 5pt;">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
         ).join('');
 
         cardHtml = `
         <div class="card-robust-fleje2">
-          <div style="width: 52%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10;">
+          <div style="width: 48%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; height: 100%; overflow: hidden;">
             <div>
-              <div style="margin-bottom: 1mm; max-height: 5.5mm; display: flex; align-items: center;">
+              <div style="margin-bottom: 1.8mm; max-height: 5mm; display: flex; align-items: center;">
                 ${headerBrandHtml}
               </div>
-              <div style="margin-bottom: 1.5mm;">
-                <div style="font-size: 9.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95;">${escapeHtml(tituloLinea1)}</div>
-                <div style="font-size: 9.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95;">${escapeHtml(tituloLinea2)}</div>
+              <div style="margin-top: 1mm; margin-bottom: 1mm; max-width: 100%; overflow: hidden;">
+                <div style="font-size: 6.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tituloLinea1)}</div>
+                ${tituloLinea2 ? `<div style="font-size: 5.5pt; font-weight: 500; color: #ffffff; text-transform: uppercase; line-height: 1.05; overflow: hidden;">${escapeHtml(tituloLinea2)}</div>` : ''}
               </div>
-              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 1mm; background: #000000; border: 1px solid #ffffff; padding: 0.5mm 2mm; border-radius: 1mm; margin-bottom: 1.5mm;"><span style="font-size: 7.5pt; font-weight: 900; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #00e5ff; font-size: 6pt;">⚡</span><span style="font-size: 7pt; font-weight: 800; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
+              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 0.8mm; background: #000000; border: 0.8px solid rgba(255,255,255,0.9); padding: 0.3mm 1.2mm; border-radius: 3px; margin-bottom: 0.8mm; width: fit-content;"><span style="font-size: 4.8pt; font-weight: 700; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #ffffff; margin: 0 0.3mm; font-size: 4.2pt;">⚡</span><span style="font-size: 4.8pt; font-weight: 700; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
               <ul style="list-style: none; padding: 0; margin: 0;">
                 ${specsListHtml}
               </ul>
             </div>
-            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.5mm 0; width: fit-content;">
-              <span style="font-size: 6.5pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
+            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.4mm 0; width: fit-content; margin-top: auto;">
+              <span style="font-size: 5.5pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
             </div>
           </div>
-          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 48%; display: flex; justify-content: center; align-items: center; padding: 2mm;">
-            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain; mix-blend-mode: multiply;" />
+          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 52%; display: flex; justify-content: center; align-items: center; padding: 2mm;">
+            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
             ${esElectrico && selloGarantiaImg ? `<img src="${selloGarantiaImg}" style="position: absolute; right: 2.5mm; bottom: 2.5mm; width: 11mm; height: 11mm; object-fit: contain; z-index: 20;" />` : ''}
           </div>
         </div>`;
