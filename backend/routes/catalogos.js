@@ -300,16 +300,24 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
       }
     }
 
-    // Validar columnas requeridas
-    const requiredKeys = ['sku', 'ean'];
-    const foundKeys = Object.values(colMapping);
-    const missingKeys = requiredKeys.filter(k => !foundKeys.includes(k));
+    // Validar columnas requeridas y aplicar fallback posicional si es una planilla de 2 columnas
+    let requiredKeys = ['sku', 'ean'];
+    let foundKeys = Object.values(colMapping);
+    let missingKeys = requiredKeys.filter(k => !foundKeys.includes(k));
 
     if (missingKeys.length > 0) {
-      return res.status(400).json({ 
-        error: 'Estructura de Excel inválida', 
-        message: `No se encontraron las columnas requeridas: ${missingKeys.join(', ')}. Verifica que la planilla contenga el SKU/Material y el código EAN.`
-      });
+      const keys = Object.keys(firstRow);
+      if (keys.length >= 2) {
+        console.log('[Catalogos] Aplicando detección posicional inteligente para EAN/SKU...');
+        colMapping[keys[0]] = 'ean';
+        colMapping[keys[1]] = 'sku';
+        missingKeys = [];
+      } else {
+        return res.status(400).json({ 
+          error: 'Estructura de Excel inválida', 
+          message: `No se encontraron las columnas requeridas: ${missingKeys.join(', ')}. Verifica que la planilla contenga el SKU/Material y el código EAN.`
+        });
+      }
     }
 
     // Helper para formatear cadenas numéricas científicas
