@@ -1122,10 +1122,10 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                                       setErrorMsg('');
                                       setSuccessMsg('');
                                       try {
-                                        const token = localStorage.getItem('easy_token');
+                                        const authToken = token || localStorage.getItem('userToken');
                                         const res = await fetch(`${API_BASE_URL}/marcas/${brand.slug}`, {
                                           method: 'DELETE',
-                                          headers: { 'Authorization': `Bearer ${token}` }
+                                          headers: { 'Authorization': `Bearer ${authToken}` }
                                         });
                                         if (!res.ok) {
                                           const errData = await res.json().catch(() => ({}));
