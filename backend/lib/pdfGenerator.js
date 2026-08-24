@@ -1,12 +1,19 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getBrowser, cleanupBrowser } from './pdf/browserManager.js';
 import { loadTemplate } from './pdf/templateLoader.js';
 import { processBrandLogo } from './pdf/brandLogoProcessor.js';
 import { isElectricTool, getHighlightPill, formatSpecsListHtml, getWarrantySealBase64 } from './pdf/specFormatter.js';
+import { dataService } from '../services/dataService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
- * Escapa entidades HTML para prevenir vulnerabilidades XSS.
- * @param {string} str - Texto a escapar
- * @returns {string} Texto sanitizado
+ * Escapa entidades HTML para evitar inyecciones XSS en Puppeteer.
+ * @param {string} str - Texto a sanitizar
+ * @returns {string} Texto escapado
  */
 function escapeHtml(str) {
   if (!str) return '';
@@ -17,12 +24,6 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
-/**
- * @fileoverview Fachada principal para la generación de PDFs.
- * Coordina los módulos de Puppeteer, carga de plantillas, formateo de especificaciones
- * e inyección de logos para generar archivos PDF en alta definición.
- */
 
 /**
  * Genera un Buffer PDF a partir de una ficha técnica y su plantilla correspondiente.
@@ -157,28 +158,329 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
 }
 
 /**
- * Genera un archivo ZIP compuesto conteniendo múltiples fichas técnicas en formato PDF.
+ * Genera un PDF compilado en lote a partir de una lista de SKUs, plantillas y copias.
  * 
  * @async
- * @param {Array<Object>} fichas - Arreglo de fichas técnicas
- * @param {string} [templateName='fleje3'] - Plantilla objetivo
- * @returns {Promise<Buffer>} Buffer binario del archivo ZIP comprimido
+ * @param {Array<{sku: string, template: string, cantidad: number}>} items - Lista de items a imprimir
+ * @param {Object} [ds] - Servicio de datos (dataService)
+ * @returns {Promise<Buffer>} Buffer del PDF del lote completo
  */
-export async function generatePdfBatch(fichas, templateName = 'fleje3') {
-  const JSZip = (await import('jszip')).default;
-  const zip = new JSZip();
+export async function generatePdfBatch(items, ds = dataService) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('No se enviaron elementos para la impresión por lote.');
+  }
 
-  for (const ficha of fichas) {
-    try {
-      const pdfBuffer = await generatePdf(ficha, templateName);
-      const filename = `ficha_${ficha.producto.sku}_${templateName}.pdf`;
-      zip.file(filename, pdfBuffer);
-    } catch (err) {
-      console.error(`[pdfGenerator] Error al incluir ficha SKU ${ficha.producto?.sku} en lote:`, err.message);
+  const templatePath = path.join(__dirname, '../templates/template_lote_flejes.html');
+  if (!fs.existsSync(templatePath)) {
+    throw new Error(`La plantilla de lote no existe en: ${templatePath}`);
+  }
+  let baseHtml = fs.readFileSync(templatePath, 'utf8');
+
+  const a4Pages = [];
+  const fleje3Cards = [];
+  const fleje2Cards = [];
+
+  const resolvedItems = await Promise.all(
+    items.map(async (item) => {
+      try {
+        const [producto, ficha_tecnica, ean] = await Promise.all([
+          ds.getProductoBySku(item.sku),
+          ds.getFichaBySku(item.sku),
+          ds.getEanBySku(item.sku)
+        ]);
+        if (!producto || !ficha_tecnica) return null;
+        return { item, producto, ficha_tecnica, ean: ean || 'SIN EAN' };
+      } catch (err) {
+        console.error(`[generateBatchPdf] Error resolviendo SKU ${item.sku} en lote:`, err.message);
+        return null;
+      }
+    })
+  );
+
+  const validItems = resolvedItems.filter(Boolean);
+  if (validItems.length === 0) {
+    throw new Error('Ninguno de los SKUs del lote fue encontrado en la base de datos.');
+  }
+
+  for (const resolved of validItems) {
+    const { item, producto, ficha_tecnica, ean } = resolved;
+    const specData = ficha_tecnica.especificaciones_json || ficha_tecnica.datos_especificos || {};
+    
+    let rawSpecs = [];
+    if (Array.isArray(ficha_tecnica.especificaciones) && ficha_tecnica.especificaciones.length > 0) {
+      rawSpecs = ficha_tecnica.especificaciones;
+    } else if (Array.isArray(specData.especificaciones) && specData.especificaciones.length > 0) {
+      rawSpecs = specData.especificaciones;
+    }
+
+    const specs = rawSpecs.map(e => ({
+      clave: e.clave || e.label || e.nombre || '',
+      valor: e.valor || e.value || ''
+    }));
+
+    const brandName = producto.marca || specData.marca || ficha_tecnica.marca || 'GENERICA';
+    const templateName = item.template || 'fleje3';
+
+    const { headerBrandHtml } = await processBrandLogo(brandName, templateName);
+
+    const potenciaSpec = specs.find(s => 
+      (s.clave || '').toLowerCase().includes('potencia') || 
+      (s.clave || '').toLowerCase().includes('voltaje') ||
+      (s.clave || '').toLowerCase().includes('capacidad')
+    );
+    const destacado = potenciaSpec ? potenciaSpec.valor : '';
+
+    const origenSpec = specs.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
+    const origen = origenSpec ? origenSpec.valor.toUpperCase() : 'CHINA';
+    const garantiaSpec = specs.find(s => (s.clave || '').toLowerCase().includes('garant'));
+    const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '1 AÑO';
+
+    const tipo_herramienta = specData.tipo_herramienta || ficha_tecnica.tipo_herramienta || producto.descripcion || 'HERRAMIENTA';
+    const foto_url = ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto';
+
+    if (templateName === 'a4' || templateName === 'robust_a4') {
+      const spec1_label = specs[0]?.clave || '-';
+      const spec1_value = specs[0]?.valor || '-';
+      const spec2_label = specs[1]?.clave || '-';
+      const spec2_value = specs[1]?.valor || '-';
+      const spec3_label = specs[2]?.clave || '-';
+      const spec3_value = specs[2]?.valor || '-';
+      const spec4_label = specs[3]?.clave || '-';
+      const spec4_value = specs[3]?.valor || '-';
+      const spec5_label = specs[4]?.clave || '-';
+      const spec5_value = specs[4]?.valor || '-';
+
+      const a4PageHtml = `
+      <div class="page page-a4">
+        <div class="header">
+          <div class="header-left">
+            <span class="brand-title">${headerBrandHtml}</span>
+            <span class="product-title">${escapeHtml(producto.descripcion || '')}</span>
+            <span class="product-type">${escapeHtml(tipo_herramienta)}</span>
+          </div>
+          <div class="header-right">
+            <span class="header-sku">SAP ${escapeHtml(producto.sku)}</span>
+            <span class="header-ean">EAN ${escapeHtml(ean)}</span>
+          </div>
+        </div>
+        <div class="body-grid">
+          <div class="specs-column">
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec1_label)}</span>
+              <span class="spec-value">${escapeHtml(spec1_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec2_label)}</span>
+              <span class="spec-value">${escapeHtml(spec2_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec3_label)}</span>
+              <span class="spec-value">${escapeHtml(spec3_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec4_label)}</span>
+              <span class="spec-value">${escapeHtml(spec4_value)}</span>
+            </div>
+          </div>
+          <div class="image-column">
+            <img class="product-image" src="${foto_url}" alt="Foto Producto" />
+          </div>
+        </div>
+        <div class="footer-grid">
+          <div class="footer-cell">
+            <span class="footer-label">${escapeHtml(spec5_label)}</span>
+            <span class="footer-value">${escapeHtml(spec5_value)}</span>
+          </div>
+          <div class="footer-cell">
+            <span class="footer-label">Origen</span>
+            <span class="footer-value">${escapeHtml(origen)}</span>
+          </div>
+          <div class="footer-cell">
+            <span class="footer-label">Garantía</span>
+            <span class="footer-value">${escapeHtml(garantia)}</span>
+          </div>
+        </div>
+        <div class="bottom-bar"></div>
+      </div>`;
+
+      for (let c = 0; c < (item.cantidad || 1); c++) {
+        a4Pages.push(a4PageHtml);
+      }
+    } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
+      const spec1_label = specs[0]?.clave || '-';
+      const spec1_value = specs[0]?.valor || '-';
+      const spec2_label = specs[1]?.clave || '-';
+      const spec2_value = specs[1]?.valor || '-';
+      const spec3_label = specs[2]?.clave || '-';
+      const spec3_value = specs[2]?.valor || '-';
+      const spec4_label = specs[3]?.clave || '-';
+      const spec4_value = specs[3]?.valor || '-';
+      const spec5_label = specs[4]?.clave || '-';
+      const spec5_value = specs[4]?.valor || '-';
+
+      const cardHtml = `
+      <div class="card-fleje3">
+        <div class="header">
+          <div class="header-left">
+            <span class="header-title">${escapeHtml(tipo_herramienta)}</span>
+            <span class="header-subtitle">${escapeHtml(destacado)}</span>
+          </div>
+          <div class="header-right">
+            ${headerBrandHtml}
+            <span class="header-sku">SAP ${escapeHtml(producto.sku)}</span>
+          </div>
+        </div>
+        <div class="body-grid">
+          <div class="specs-column">
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec1_label)}</span>
+              <span class="spec-value">${escapeHtml(spec1_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec2_label)}</span>
+              <span class="spec-value">${escapeHtml(spec2_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec3_label)}</span>
+              <span class="spec-value">${escapeHtml(spec3_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec4_label)}</span>
+              <span class="spec-value">${escapeHtml(spec4_value)}</span>
+            </div>
+          </div>
+          <div class="image-column">
+            <img class="product-image" src="${foto_url}" />
+          </div>
+        </div>
+        <div class="footer-grid">
+          <div class="footer-cell">
+            <span class="footer-label">${escapeHtml(spec5_label)}</span>
+            <span class="footer-value">${escapeHtml(spec5_value)}</span>
+          </div>
+          <div class="footer-cell">
+            <span class="footer-label">Origen</span>
+            <span class="footer-value">${escapeHtml(origen)}</span>
+          </div>
+          <div class="footer-cell">
+            <span class="footer-label">Garantía</span>
+            <span class="footer-value">${escapeHtml(garantia)}</span>
+          </div>
+        </div>
+        <div class="bottom-bar"></div>
+      </div>`;
+
+      for (let c = 0; c < (item.cantidad || 1); c++) {
+        fleje3Cards.push(cardHtml);
+      }
+    } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
+      const spec1_label = specs[0]?.clave || '-';
+      const spec1_value = specs[0]?.valor || '-';
+      const spec2_label = specs[1]?.clave || '-';
+      const spec2_value = specs[1]?.valor || '-';
+      const spec3_label = specs[2]?.clave || '-';
+      const spec3_value = specs[2]?.valor || '-';
+
+      const cardHtml = `
+      <div class="card-fleje2">
+        <div class="header">
+          <div class="header-left">
+            <span class="header-title">${escapeHtml(tipo_herramienta)}</span>
+            <span class="header-subtitle">${escapeHtml(destacado)}</span>
+          </div>
+          <div class="header-right">
+            ${headerBrandHtml}
+            <span class="header-sku">SAP ${escapeHtml(producto.sku)}</span>
+          </div>
+        </div>
+        <div class="body-grid">
+          <div class="specs-column">
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec1_label)}</span>
+              <span class="spec-value">${escapeHtml(spec1_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec2_label)}</span>
+              <span class="spec-value">${escapeHtml(spec2_value)}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">${escapeHtml(spec3_label)}</span>
+              <span class="spec-value">${escapeHtml(spec3_value)}</span>
+            </div>
+          </div>
+          <div class="image-column">
+            <img class="product-image" src="${foto_url}" />
+          </div>
+        </div>
+        <div class="footer-grid">
+          <div class="footer-cell">
+            <span class="footer-label">Origen</span>
+            <span class="footer-value">${escapeHtml(origen)}</span>
+          </div>
+          <div class="footer-cell">
+            <span class="footer-label">Garantía</span>
+            <span class="footer-value">${escapeHtml(garantia)}</span>
+          </div>
+        </div>
+        <div class="bottom-bar"></div>
+      </div>`;
+
+      for (let c = 0; c < (item.cantidad || 1); c++) {
+        fleje2Cards.push(cardHtml);
+      }
     }
   }
 
-  return await zip.generateAsync({ type: 'nodebuffer' });
+  // Compilar grillas A4 paginadas
+  const finalPages = [];
+  a4Pages.forEach(p => finalPages.push(p));
+
+  // Fleje 3: 6 tarjetas por página A4
+  for (let i = 0; i < fleje3Cards.length; i += 6) {
+    const chunk = fleje3Cards.slice(i, i + 6);
+    finalPages.push(`
+    <div class="page page-fleje3">
+      ${chunk.join('\n')}
+    </div>`);
+  }
+
+  // Fleje 2: 12 tarjetas por página A4
+  for (let i = 0; i < fleje2Cards.length; i += 12) {
+    const chunk = fleje2Cards.slice(i, i + 12);
+    finalPages.push(`
+    <div class="page page-fleje2">
+      ${chunk.join('\n')}
+    </div>`);
+  }
+
+  if (finalPages.length === 0) {
+    throw new Error('No se compilaron páginas válidas para impresión por lote.');
+  }
+
+  const finalHtml = baseHtml.replace('{{content}}', finalPages.join('\n'));
+
+  // Renderizar PDF con Puppeteer Browser Pool
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
+    await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({
+      width: '210mm',
+      height: '297mm',
+      printBackground: true,
+      margin: {
+        top: '0mm',
+        right: '0mm',
+        bottom: '0mm',
+        left: '0mm'
+      }
+    });
+    return pdfBuffer;
+  } finally {
+    await page.close();
+  }
 }
 
 // Aliases de exportación para compatibilidad con las rutas de impresion.js
