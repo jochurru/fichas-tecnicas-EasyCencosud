@@ -133,11 +133,15 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     }
   }
 
+  // Adquirir un slot del semáforo de concurrencia antes de abrir la pestaña
+  await acquirePageSlot();
+
   // Renderizar PDF en lienzo A4 exacto (210mm x 297mm) con márgenes nulos para evitar recortes físicos en impresoras
   const browser = await getBrowser();
-  const page = await browser.newPage();
+  let page = null;
 
   try {
+    page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
@@ -153,7 +157,14 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     });
     return pdfBuffer;
   } finally {
-    await page.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch (pageErr) {
+        console.error('[Puppeteer] Error al cerrar pestaña:', pageErr.message);
+      }
+    }
+    releasePageSlot();
   }
 }
 
@@ -459,11 +470,15 @@ export async function generatePdfBatch(items, ds = dataService) {
 
   const finalHtml = baseHtml.replace('{{content}}', finalPages.join('\n'));
 
+  // Adquirir un slot del semáforo de concurrencia antes de abrir la pestaña
+  await acquirePageSlot();
+
   // Renderizar PDF con Puppeteer Browser Pool
   const browser = await getBrowser();
-  const page = await browser.newPage();
+  let page = null;
 
   try {
+    page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
     await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
@@ -479,7 +494,14 @@ export async function generatePdfBatch(items, ds = dataService) {
     });
     return pdfBuffer;
   } finally {
-    await page.close();
+    if (page) {
+      try {
+        await page.close();
+      } catch (pageErr) {
+        console.error('[Puppeteer] Error al cerrar pestaña en lote:', pageErr.message);
+      }
+    }
+    releasePageSlot();
   }
 }
 

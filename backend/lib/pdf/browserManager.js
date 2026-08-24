@@ -2,11 +2,41 @@ import puppeteer from 'puppeteer';
 
 /**
  * @fileoverview Singleton para la gestión de la instancia de navegador Puppeteer.
- * Proporciona reutilización de navegador, reconexión automática ante caídas y apagado limpio.
+ * Proporciona reutilización de navegador, semáforo de concurrencia, reconexión automática ante caídas y apagado limpio.
  */
 
 let sharedBrowser = null;
 let launchPromise = null;
+
+// Semáforo nativo para limitar la concurrencia de pestañas activas en Cloud Run (máximo 3 pestañas simultáneas)
+let activePagesCount = 0;
+const pageQueue = [];
+const MAX_CONCURRENT_PAGES = 3;
+
+/**
+ * Adquiere un slot para abrir una pestaña en Puppeteer.
+ * Si el límite de concurrencia se alcanza (3 pestañas), encola la solicitud.
+ * @returns {Promise<void>}
+ */
+export async function acquirePageSlot() {
+  if (activePagesCount < MAX_CONCURRENT_PAGES) {
+    activePagesCount++;
+    return;
+  }
+  return new Promise(resolve => pageQueue.push(resolve));
+}
+
+/**
+ * Libera un slot de pestaña en Puppeteer y despacha la siguiente solicitud en cola.
+ */
+export function releasePageSlot() {
+  activePagesCount--;
+  if (pageQueue.length > 0) {
+    activePagesCount++;
+    const nextResolve = pageQueue.shift();
+    nextResolve();
+  }
+}
 
 /**
  * Obtiene la instancia activa del navegador Puppeteer.
