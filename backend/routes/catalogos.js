@@ -264,10 +264,10 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
   try {
     console.log('[Catalogos] Decodificando archivo XLSX de EANs...');
     const buffer = Buffer.from(fileBase64, 'base64');
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer, { type: 'buffer', raw: false, cellText: true });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(worksheet);
+    const rows = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' });
 
     console.log(`[Catalogos] Filas totales en Excel de EANs: ${rows.length}`);
 
@@ -290,10 +290,13 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
       const keyStr = String(key).trim();
       const keyLower = keyStr.toLowerCase();
 
-      if (keyLower === 'material' || keyLower === 'sku' || keyLower === 'sap' || keyLower.includes('sap') || keyLower.includes('art') || keyLower.includes('código') || keyLower.includes('codigo')) {
-        colMapping[key] = 'sku';
-      } else if (keyLower.includes('ean') || keyLower.includes('barra') || keyLower.includes('upc')) {
+      // PRIORIDAD 1: EAN / Barras / UPC / GTIN (debe evaluarse ANTES de 'código' para evitar falsos positivos con 'Código EAN')
+      if (keyLower.includes('ean') || keyLower.includes('barra') || keyLower.includes('upc') || keyLower.includes('gtin')) {
         colMapping[key] = 'ean';
+      } 
+      // PRIORIDAD 2: SKU / Material / SAP / Código
+      else if (keyLower === 'material' || keyLower === 'sku' || keyLower === 'sap' || keyLower.includes('sap') || keyLower.includes('art') || keyLower.includes('código') || keyLower.includes('codigo')) {
+        colMapping[key] = 'sku';
       }
     }
 
@@ -309,6 +312,23 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
       });
     }
 
+    // Helper para formatear cadenas numéricas científicas
+    const formatCleanString = (val) => {
+      if (val === undefined || val === null) return '';
+      let str = String(val).trim();
+      if (/^\d+(\.\d+)?e\+\d+$/i.test(str)) {
+        try {
+          str = BigInt(Math.round(Number(val))).toString();
+        } catch (e) {
+          str = Number(val).toLocaleString('fullwide', { useGrouping: false });
+        }
+      }
+      if (str.endsWith('.0')) {
+        str = str.slice(0, -2);
+      }
+      return str;
+    };
+
     // Filtrar y limpiar
     const cleanedEans = [];
     
@@ -319,14 +339,10 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
       for (let [origKey, mappedKey] of Object.entries(colMapping)) {
         const val = row[origKey];
         if (val !== undefined && val !== null) {
-          if (mappedKey === 'sku') rawSku = String(val).trim();
-          if (mappedKey === 'ean') rawEan = String(val).trim();
+          if (mappedKey === 'sku') rawSku = formatCleanString(val);
+          if (mappedKey === 'ean') rawEan = formatCleanString(val);
         }
       }
-
-      // Limpiar decimales flotantes
-      if (rawSku.endsWith('.0')) rawSku = rawSku.split('.')[0];
-      if (rawEan.endsWith('.0')) rawEan = rawEan.split('.')[0];
 
       if (!rawSku || !rawEan) continue;
 
