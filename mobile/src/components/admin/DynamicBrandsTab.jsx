@@ -1,0 +1,272 @@
+import React, { useEffect } from 'react';
+import { RefreshCw, UploadCloud } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
+
+/**
+ * @fileoverview Sub-pestaña para la gestión del catálogo dinámico de marcas y logotipos.
+ * Permite cargar nuevas marcas, sobreescribir imágenes con compresión WebP y eliminar registros.
+ */
+
+export default function DynamicBrandsTab({
+  brands,
+  setBrands,
+  brandsLoading,
+  setBrandsLoading,
+  newBrandSlug,
+  setNewBrandSlug,
+  newBrandNombre,
+  setNewBrandNombre,
+  setErrorMsg,
+  setSuccessMsg,
+  token
+}) {
+  const loadBrands = async () => {
+    setBrandsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/marcas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`Error ${res.status} al cargar marcas`);
+      const data = await res.json();
+      setBrands(data);
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setBrandsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBrands();
+  }, []);
+
+  const compressAndUploadBrandLogo = async (file, slug, nombre) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/webp', 0.8);
+          
+          fetch(`${API_BASE_URL}/upload/imagen`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              tipo: 'marca',
+              id: slug,
+              fileBase64: dataUrl,
+              nombre
+            })
+          })
+          .then(async (res) => {
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || `Error ${res.status} al subir logo`);
+            }
+            return res.json();
+          })
+          .then(resolve)
+          .catch(reject);
+        };
+        img.onerror = () => reject(new Error('No se pudo procesar la imagen seleccionada'));
+      };
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Formulario Nueva Marca */}
+      <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-150 space-y-4">
+        <h4 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Cargar Nueva Marca</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 block mb-1">Nombre Visible (ej: DEWALT)</label>
+            <input 
+              type="text" 
+              placeholder="Nombre de la Marca" 
+              value={newBrandNombre}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewBrandNombre(val);
+                setNewBrandSlug(val.toLowerCase().replace(/[^a-z0-9]/g, ''));
+              }}
+              className="w-full text-xs font-semibold px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-easy-red bg-white"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-500 block mb-1">Slug / ID (Auto)</label>
+            <input 
+              type="text" 
+              readOnly 
+              value={newBrandSlug}
+              className="w-full text-xs font-mono font-bold px-3 py-2 border border-gray-200 rounded-xl bg-gray-100 text-gray-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          {newBrandNombre.trim() ? (
+            <label className="text-xs bg-easy-red hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1.5">
+              <UploadCloud className="w-4 h-4" />
+              <span>Seleccionar Logo y Guardar</span>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                  try {
+                    await compressAndUploadBrandLogo(file, newBrandSlug, newBrandNombre);
+                    setSuccessMsg(`✓ Marca "${newBrandNombre.toUpperCase()}" registrada correctamente.`);
+                    setNewBrandNombre('');
+                    setNewBrandSlug('');
+                    await loadBrands();
+                  } catch (err) {
+                    setErrorMsg(err.message);
+                  }
+                }}
+              />
+            </label>
+          ) : (
+            <span className="text-[10px] text-gray-400 italic font-semibold">Ingresá el nombre para habilitar la carga</span>
+          )}
+        </div>
+      </div>
+
+      {/* Tabla Listado de Marcas */}
+      <div className="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
+          <span className="text-xs font-bold text-gray-700">Catálogo de Marcas Dinámicas</span>
+          <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">Total: {brands.length}</span>
+        </div>
+
+        {brandsLoading ? (
+          <div className="flex justify-center items-center py-10 text-gray-400 gap-1.5 text-xs font-bold">
+            <RefreshCw className="w-4 h-4 animate-spin text-easy-red" /> Cargando marcas...
+          </div>
+        ) : brands.length === 0 ? (
+          <div className="py-12 text-center text-gray-400 text-xs font-bold">
+            No hay marcas dinámicas registradas en la DB.
+          </div>
+        ) : (
+          <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-100/40 text-[9px] font-extrabold uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                  <th className="px-4 py-2">Nombre</th>
+                  <th className="px-4 py-2">Slug (ID)</th>
+                  <th className="px-4 py-2">Logotipo</th>
+                  <th className="px-4 py-2 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 text-[11px]">
+                {brands.map((brand, idx) => (
+                  <tr key={brand.id || idx} className="hover:bg-gray-50/45">
+                    <td className="px-4 py-3.5 font-bold text-gray-700 uppercase">
+                      {brand.nombre}
+                    </td>
+                    <td className="px-4 py-3.5 font-mono text-gray-500">
+                      {brand.slug}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="bg-easy-dark/95 w-16 h-8 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-gray-200">
+                        <img 
+                          src={brand.logo_url} 
+                          alt={brand.nombre} 
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://placehold.co/60x30?text=Err';
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <label className="text-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1">
+                          <span>✏️ Sobreescribir</span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setErrorMsg('');
+                              setSuccessMsg('');
+                              try {
+                                await compressAndUploadBrandLogo(file, brand.slug, brand.nombre);
+                                setSuccessMsg(`✓ Logotipo de "${brand.nombre.toUpperCase()}" actualizado.`);
+                                await loadBrands();
+                              } catch (err) {
+                                setErrorMsg(err.message);
+                              }
+                            }}
+                          />
+                        </label>
+                        <button
+                          className="text-[10px] bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 inline-flex items-center gap-1"
+                          onClick={async () => {
+                            if (!window.confirm(`¿Estás seguro de eliminar la marca "${brand.nombre}"?`)) return;
+                            setErrorMsg('');
+                            setSuccessMsg('');
+                            try {
+                              const res = await fetch(`${API_BASE_URL}/marcas/${brand.slug}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              });
+                              if (!res.ok) throw new Error(`Error ${res.status}`);
+                              setSuccessMsg(`✓ Marca "${brand.nombre.toUpperCase()}" eliminada.`);
+                              await loadBrands();
+                            } catch (err) {
+                              setErrorMsg(err.message);
+                            }
+                          }}
+                        >
+                          🗑️ Borrar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

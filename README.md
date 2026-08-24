@@ -71,33 +71,71 @@ graph TD
 
 ## 📁 Estructura del Repositorio
 
+## 📁 Estructura Modularizada del Repositorio
+
 ```text
 ├── backend/
+│   ├── assets/
+│   │   └── sello_garantia_5_anos.png   # Imagen oficial del sello de 5 Años de Garantía
 │   ├── lib/
-│   │   ├── easyFetcher.js      # Consultas y extracción de imágenes del sitio público
-│   │   ├── geminiExtractor.js  # Integración con la API de Google Gemini Pro
-│   │   ├── pdfGenerator.js     # Motor de renderizado A4/Flejes con Puppeteer
-│   │   ├── supabase.js         # Inicialización de clientes Supabase (con y sin RLS)
-│   │   └── taskManager.js      # Gestor de tareas asíncronas en memoria
+│   │   ├── pdf/                        # 🧩 Módulos especializados del Generador de PDFs
+│   │   │   ├── browserManager.js       # Singleton de Puppeteer Browser y reconexión activa
+│   │   │   ├── templateLoader.js       # Resolutor de plantillas HTML (flejes, A4 y Robust)
+│   │   │   ├── brandLogoProcessor.js   # Búsqueda DB/Storage, inversión SVG y escalado dinámico
+│   │   │   └── specFormatter.js        # Detección eléctrica, pill 18V y sello oficial
+│   │   ├── pdfGenerator.js             # Fachada ligera de generación de PDFs (<170 líneas)
+│   │   ├── dataQuality.js              # Algoritmo de medición de completitud
+│   │   ├── easyFetcher.js              # Extracción de catálogo público
+│   │   ├── geminiExtractor.js          # Integración con Google Gemini AI Pro
+│   │   └── supabase.js                 # Clientes Supabase Auth & Storage
 │   ├── middlewares/
-│   │   └── authMiddleware.js   # Protección de rutas por JWT y roles (Admin/Operador)
+│   │   └── authMiddleware.js           # Validación JWT y control RBAC (Admin/Coord/Op)
 │   ├── routes/
-│   │   ├── catalogos.js        # Ingesta SAP, Login de contingencia y consulta de tareas
-│   │   ├── impresion.js        # Endpoints de generación y CDN caché de PDFs
-│   │   └── productos.js        # Búsqueda, borrador Gemini y aprobación de fichas
-│   ├── templates/
-│   │   ├── template_a4.html    # Plantilla HTML de ficha técnica en A4
-│   │   ├── template_fleje_3.html # Plantilla de cartela de góndola de 90x74mm
-│   │   └── template_fleje_2.html # Plantilla de cartela de góndola de 80x40mm
-│   ├── index.js                # Punto de entrada de la API Express
-│   └── package.json
+│   │   ├── catalogos.js                # Ingesta SAP, EANs y tareas asíncronas
+│   │   ├── impresion.js                # Descarga y caché de PDFs
+│   │   ├── productos.js                # Búsqueda, edición y aprobación de fichas
+│   │   └── storage.js                  # Carga de marcas y subida WebP
+│   ├── templates/                      # Plantillas HTML físicas real-scale
+│   │   ├── template_robust_a4.html     # Plantilla A4 máster Robust
+│   │   ├── template_robust_fleje_3.html# Plantilla Fleje 3 máster Robust (90x74mm)
+│   │   ├── template_robust_fleje_2.html# Plantilla Fleje 2 máster Robust (80x40mm)
+│   │   ├── template_standard_a4.html   # Plantilla A4 estándar
+│   │   └── template_fleje_*.html       # Plantillas estándar de cartelería
+│   └── index.js                        # Servidor Express de producción
 └── mobile/
     ├── public/
-    │   └── easy-logo.png       # Recursos estáticos
-    ├── src/
-    │   ├── components/
-    │   │   ├── AdminPanel.jsx  # Panel administrativo para carga SAP y progreso asíncrono
-    │   │   ├── FichaEditor.jsx # Editor de atributos, selector de plantilla y botones PDF
+    │   └── sello_garantia_5_anos.png   # Recurso estático del sello oficial de garantía
+    └── src/
+        ├── components/
+        │   ├── admin/                  # 🧩 Módulos del Panel Administrativo
+        │   │   ├── CatalogImportTab.jsx# Pestaña de Ingesta Excel SAP y progreso
+        │   │   ├── EanImportTab.jsx    # Pestaña de Mapeo de Códigos EAN
+        │   │   ├── QualityMetricsTab.jsx # Pestaña de Analítica de Calidad
+        │   │   └── DynamicBrandsTab.jsx# Pestaña de Catálogo Dinámico de Marcas
+        │   ├── editor/                 # 🧩 Módulos del Editor de Fichas
+        │   │   ├── SpecsEditorList.jsx # Formulario dinámico de especificaciones
+        │   │   └── ImageUploadSection.jsx # Compresión WebP en Canvas y vista previa
+        │   ├── AdminPanel.jsx          # Modal contenedor ligero del panel admin (<220 líneas)
+        │   ├── FichaEditor.jsx         # Orquestador del editor de producto
+        │   ├── FichaPreviewModal.jsx   # Vista previa modal interactiva
+        │   └── PrintQueueDrawer.jsx    # Cola de impresión batch en IndexedDB
+```
+
+---
+
+## 👩‍💻 Guía para Desarrolladores y Mantenibilidad
+
+El código ha sido refactorizado aplicando **Single Responsibility Principle (SRP)** y documentado exhaustivamente con **JSDoc**:
+
+1. **Modificar el motor de PDFs**:
+   - Para ajustar Puppeteer o agregar argumentos de Chromium, editar [`backend/lib/pdf/browserManager.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/browserManager.js).
+   - Para cambiar lógica de logos, SVGs o colores corporativos, editar [`backend/lib/pdf/brandLogoProcessor.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/brandLogoProcessor.js).
+   - Para modificar reglas de productos eléctricos o pills destacados, editar [`backend/lib/pdf/specFormatter.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/specFormatter.js).
+2. **Modificar el Panel de Administración**:
+   - Cada pestaña se encuentra totalmente desacoplada dentro de `mobile/src/components/admin/`. Se pueden agregar nuevas pestañas importándolas directamente en `AdminPanel.jsx`.
+3. **Estándares de Documentación**:
+   - Todas las funciones exportadas cuentan con firmas JSDoc indicando `@param`, `@returns` y descripción de excepciones `@throws`.
+
     │   │   ├── Scanner.jsx     # Escáner móvil integrado para cámara
     │   │   └── WelcomeLogin.jsx # Login corporativo / SSO-Ready
     │   ├── lib/

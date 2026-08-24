@@ -144,13 +144,11 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
 
                 {/* Sello de Garantía (Solo para herramientas eléctricas) */}
                 {esElectrico && (
-                  <div className="absolute right-3 bottom-3 w-12 h-12 rounded-full border-2 border-white flex flex-col justify-center items-center text-center bg-transparent z-20">
-                    <div className="w-10 h-10 rounded-full border border-white/70 flex flex-col justify-center items-center">
-                      <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
-                      <span className="text-[12px] font-black text-white leading-none my-0.5">5</span>
-                      <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
-                    </div>
-                  </div>
+                  <img
+                    src="/sello_garantia_5_anos.png"
+                    alt="5 Años de Garantía"
+                    className="absolute right-3 bottom-3 w-10 h-10 object-contain z-20"
+                  />
                 )}
               </div>
             ) : (
