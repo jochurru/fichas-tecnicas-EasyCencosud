@@ -161,19 +161,22 @@
             overflow: hidden;
         }
 
-        /* 6. SKU INFERIOR IZQUIERDO CON LÍNEAS HORIZONTALES */
+        /* 6. SKU INFERIOR IZQUIERDO CON LÍNEAS HORIZONTALES (TEXTO CENTRADO ENTRE LÍNEAS) */
         .sku-box {
             border-top: 1px solid #ffffff;
             border-bottom: 1px solid #ffffff;
-            padding: 0.8mm 0;
+            padding: 1.2mm 0;
             margin-top: auto;
             width: 28mm;
-            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
         }
         .sku-text {
             font-size: 6.5pt;
             font-weight: 700;
             color: #ffffff;
+            line-height: 1;
             letter-spacing: 0.5px;
         }
 

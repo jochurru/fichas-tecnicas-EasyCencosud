@@ -49,10 +49,11 @@
         }
 
         .brand-container {
-            margin-bottom: 0.8mm;
+            margin-bottom: 1.8mm;
             max-height: 5mm;
             display: flex;
             align-items: center;
+            flex-shrink: 0;
         }
         .brand-container img {
             max-height: 5mm;
@@ -63,16 +64,23 @@
         }
         .brand-container div, .brand-container span {
             font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif;
-            font-size: 10.5pt;
+            font-size: 9.5pt;
             font-weight: 900;
             color: #ffffff;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             line-height: 1;
         }
 
+        .title-container {
+            margin-top: 1mm;
+            margin-bottom: 1mm;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
         .title-primary {
-            font-size: 6.8pt;
+            font-size: 6.5pt;
             font-weight: 900;
             color: #ffffff;
             text-transform: uppercase;
@@ -82,7 +90,7 @@
             text-overflow: ellipsis;
         }
         .title-secondary {
-            font-size: 5.8pt;
+            font-size: 5.5pt;
             font-weight: 500;
             color: #ffffff;
             text-transform: uppercase;
@@ -142,14 +150,19 @@
         .sku-box {
             border-top: 0.8px solid #ffffff;
             border-bottom: 0.8px solid #ffffff;
-            padding: 0.3mm 0;
+            padding: 0.8mm 0;
             margin-top: auto;
-            width: 18mm;
+            width: 20mm;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
         }
         .sku-text {
             font-size: 4.8pt;
             font-weight: 700;
             color: #ffffff;
+            line-height: 1;
+            letter-spacing: 0.4px;
         }
 
         .right-content {

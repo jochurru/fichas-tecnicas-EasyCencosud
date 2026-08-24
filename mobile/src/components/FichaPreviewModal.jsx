@@ -126,9 +126,9 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     </ul>
                   </div>
 
-                  {/* SKU Inferior */}
-                  <div className="border-t border-b border-white py-0.5 w-20 mt-auto">
-                    <span className="text-[7.5px] font-bold text-white tracking-wider">SKU: {sku}</span>
+                  {/* SKU Box Centrado entre Líneas */}
+                  <div className="border-t border-b border-white py-1.5 w-28 text-left flex items-center justify-start mt-auto">
+                    <span className="font-bold text-[11px] text-white leading-none tracking-wider">SKU: {sku}</span>
                   </div>
                 </div>
 
