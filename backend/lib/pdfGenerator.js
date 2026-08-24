@@ -34,19 +34,32 @@ function escapeHtml(str) {
  * @throws {Error} Si faltan datos obligatorios o falla la renderización en Puppeteer
  */
 export async function generatePdf(ficha, templateName = 'fleje3') {
-  if (!ficha || !ficha.producto) {
-    throw new Error('No se proporcionaron datos de ficha técnica o producto para generar el PDF');
+  const producto = ficha.producto || {};
+  const ficha_tecnica = ficha.ficha_tecnica || {};
+  const specData = ficha_tecnica.especificaciones_json || ficha_tecnica.datos_especificos || {};
+  
+  // Extraer la lista de especificaciones de donde esté disponible (soporta todas las capas de datos)
+  let rawSpecs = [];
+  if (Array.isArray(ficha.especificaciones) && ficha.especificaciones.length > 0) {
+    rawSpecs = ficha.especificaciones;
+  } else if (Array.isArray(ficha_tecnica.especificaciones) && ficha_tecnica.especificaciones.length > 0) {
+    rawSpecs = ficha_tecnica.especificaciones;
+  } else if (Array.isArray(specData.especificaciones) && specData.especificaciones.length > 0) {
+    rawSpecs = specData.especificaciones;
   }
 
-  const { producto, ficha_tecnica = {}, especificaciones = [] } = ficha;
-  const specData = ficha_tecnica.datos_especificos || {};
-  const specs = especificaciones.map(e => ({ clave: e.clave, valor: e.valor }));
+  const specs = rawSpecs.map(e => ({
+    clave: e.clave || e.label || e.nombre || '',
+    valor: e.valor || e.value || ''
+  }));
+
+  const brandName = producto.marca || specData.marca || ficha_tecnica.marca || '';
 
   // Cargar contenido de la plantilla HTML
-  let html = loadTemplate(templateName, producto.marca);
+  let html = loadTemplate(templateName, brandName);
 
   // Procesar logotipo de marca (DB / Fallbacks / SVG)
-  const { headerBrandHtml } = await processBrandLogo(producto.marca || '', templateName);
+  const { headerBrandHtml } = await processBrandLogo(brandName, templateName);
 
   // Evaluar especificaciones y atributos eléctricos
   const esElectrico = isElectricTool(specs);
@@ -71,7 +84,8 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   const aprobado_por = ficha_tecnica.aprobado_por || 'OPERADOR_LOCAL';
 
   // División del título en dos líneas (SET / KIT / COMBO / JUEGO)
-  const descWords = (specData.tipo_herramienta || producto.descripcion || '').split(' ');
+  const tipoHerramientaStr = specData.tipo_herramienta || ficha_tecnica.tipo_herramienta || producto.descripcion || '';
+  const descWords = tipoHerramientaStr.trim().split(' ');
   let tituloLinea1 = descWords[0] || 'HERRAMIENTA';
   let tituloLinea2 = descWords.slice(1).join(' ') || '';
 

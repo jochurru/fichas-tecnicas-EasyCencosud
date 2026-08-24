@@ -20,23 +20,24 @@ const __dirname = path.dirname(__filename);
  */
 export function loadTemplate(templateName = 'fleje3', brandName = '') {
   const brandLower = (brandName || '').toLowerCase().trim();
-  const isRobust = brandLower.includes('robust') || (templateName || '').toLowerCase().includes('robust');
+  const tmplLower = (templateName || '').toLowerCase().trim();
+  const isRobust = brandLower.includes('robust') || tmplLower.includes('robust');
 
   let fileName = 'template_fleje_3.html';
 
   if (isRobust) {
-    if (templateName === 'fleje2') {
-      fileName = 'template_robust_fleje_2.html';
-    } else if (templateName === 'a4') {
+    if (tmplLower.includes('a4')) {
       fileName = 'template_robust_a4.html';
+    } else if (tmplLower.includes('fleje2') || tmplLower.includes('fleje_2')) {
+      fileName = 'template_robust_fleje_2.html';
     } else {
       fileName = 'template_robust_fleje_3.html';
     }
   } else {
-    if (templateName === 'fleje2') {
+    if (tmplLower.includes('a4')) {
+      fileName = 'template_a4.html';
+    } else if (tmplLower.includes('fleje2') || tmplLower.includes('fleje_2')) {
       fileName = 'template_fleje_2.html';
-    } else if (templateName === 'a4') {
-      fileName = 'template_standard_a4.html';
     } else {
       fileName = 'template_fleje_3.html';
     }
