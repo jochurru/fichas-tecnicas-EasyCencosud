@@ -239,22 +239,22 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     }
   }
 
+  if (brandLower.includes('robust')) {
+    headerBrandHtml = `<svg width="120" height="24" viewBox="0 0 300 50" fill="#ffffff" xmlns="http://www.w3.org/2000/svg" style="display: block; max-height: 28px; max-width: 100%;"><path d="M0 0h25c10 0 16 4 16 12 0 6-4 10-10 11l11 17H28l-9-15h-7v15H0V0zm12 10v10h12c3 0 5-1 5-5s-2-5-5-5H12zM48 0h32c10 0 16 7 16 20s-6 20-16 20H48V0zm12 10v20h18c4 0 6-3 6-10s-2-10-6-10H60zM102 0h12v28c0 4 3 6 7 6s7-2 7-6V0h12v28c0 10-7 16-19 16s-19-6-19-16V0zM148 0h28c8 0 13 4 13 11 0 5-3 8-7 10 6 1 9 5 9 11 0 8-6 12-15 12h-28V0zm12 9v8h14c2 0 4-1 4-4s-2-4-4-4h-14zm0 16v10h15c2 0 4-1 4-5s-2-5-4-5h-15zM196 0h32v10h-20v6h18v9h-18v9h20v10h-32V0zM236 7v33h12V25h12v15h12V7H236z"/></svg>`;
+  }
+
   // Manejo de títulos divididos y especificaciones formateadas para plantilla Máster ROBUST
   const descUpper = (producto.descripcion || '').toUpperCase().trim();
   const descWords = descUpper.split(' ').filter(Boolean);
   
-  let tituloLinea1 = 'HERRAMIENTA';
-  let tituloLinea2 = 'ROBUST';
+  let tituloLinea1 = 'TALADRO';
+  let tituloLinea2 = 'PERCUTOR';
 
   if (descWords.length === 1) {
     tituloLinea1 = descWords[0];
     tituloLinea2 = '';
-  } else if (descWords.length === 2) {
-    tituloLinea1 = descWords[0];
-    tituloLinea2 = descWords[1];
-  } else if (descWords.length > 2) {
-    // Si la primera palabra es corta (ej: "SET", "TALADRO"), tomar las primeras dos palabras para la linea 1 si no supera 14 caracteres
-    if ((descWords[0] + ' ' + descWords[1]).length <= 14) {
+  } else if (descWords.length >= 2) {
+    if (['SET', 'KIT', 'COMBO', 'JUEGO'].includes(descWords[0])) {
       tituloLinea1 = descWords[0] + ' ' + descWords[1];
       tituloLinea2 = descWords.slice(2).join(' ');
     } else {

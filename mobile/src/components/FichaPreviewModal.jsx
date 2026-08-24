@@ -82,25 +82,27 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
           {templateName === 'fleje3' && (
             brandLower.includes('robust') ? (
               /* ROBUST MASTER TEMPLATE PREVIEW */
-              <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-t border-b border-dashed border-white flex p-4 text-left relative font-sans select-none overflow-hidden justify-between`}>
+              <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-2 border-dashed border-white flex p-4 text-left relative font-sans select-none overflow-hidden justify-between`}>
                 <div className="w-[46%] flex flex-col justify-between z-10 overflow-hidden">
                   <div>
-                    {/* Logo ROBUST dinámico desde DB o fallback */}
+                    {/* Logo ROBUST vectorial de alta resolución */}
                     <div className="mb-1.5 max-h-6 flex items-center">
-                      {logoUrl ? (
-                        <img src={logoUrl} alt={marca} className="h-5 object-contain" />
-                      ) : (
-                        <span className="font-black text-sm uppercase tracking-wider text-white">ROBUST</span>
-                      )}
+                      <svg className="h-5 w-auto fill-white" viewBox="0 0 300 50">
+                        <path d="M0 0h25c10 0 16 4 16 12 0 6-4 10-10 11l11 17H28l-9-15h-7v15H0V0zm12 10v10h12c3 0 5-1 5-5s-2-5-5-5H12zM48 0h32c10 0 16 7 16 20s-6 20-16 20H48V0zm12 10v20h18c4 0 6-3 6-10s-2-10-6-10H60zM102 0h12v28c0 4 3 6 7 6s7-2 7-6V0h12v28c0 10-7 16-19 16s-19-6-19-16V0zM148 0h28c8 0 13 4 13 11 0 5-3 8-7 10 6 1 9 5 9 11 0 8-6 12-15 12h-28V0zm12 9v8h14c2 0 4-1 4-4s-2-4-4-4h-14zm0 16v10h15c2 0 4-1 4-5s-2-5-4-5h-15zM196 0h32v10h-20v6h18v9h-18v9h20v10h-32V0zM236 7v33h12V25h12v15h12V7H236z"/>
+                      </svg>
                     </div>
 
                     {/* Título en 2 líneas */}
                     <div className="mb-1.5 max-w-full overflow-hidden">
                       <div className="font-black text-xs uppercase leading-none tracking-tight truncate">
-                        {(tipo_herramienta || 'HERRAMIENTA').split(' ')[0]}
+                        {['SET', 'KIT', 'COMBO'].includes((tipo_herramienta || '').split(' ')[0])
+                          ? (tipo_herramienta || '').split(' ').slice(0, 2).join(' ')
+                          : (tipo_herramienta || 'TALADRO').split(' ')[0]}
                       </div>
                       <div className="font-medium text-[10px] uppercase leading-tight line-clamp-2">
-                        {(tipo_herramienta || '').split(' ').slice(1).join(' ') || 'ROBUST'}
+                        {['SET', 'KIT', 'COMBO'].includes((tipo_herramienta || '').split(' ')[0])
+                          ? (tipo_herramienta || '').split(' ').slice(2).join(' ')
+                          : (tipo_herramienta || '').split(' ').slice(1).join(' ') || 'PERCUTOR'}
                       </div>
                     </div>
 

@@ -35,8 +35,8 @@
             width: 90mm;
             height: 74mm;
             background: #5d6368; /* Tono de gris industrial de la Imagen 2 */
-            border-top: 1px dashed #ffffff;
-            border-bottom: 1px dashed #ffffff;
+            border: 1.5px dashed #ffffff; /* LÍNEAS PUNTEADAS EN LOS 4 COSTADOS */
+            isolation: isolate;
             display: flex;
             position: relative;
             overflow: hidden;
@@ -49,7 +49,7 @@
             margin-bottom: 2mm;
             max-height: 8mm;
         }
-        .brand-container img {
+        .brand-container svg, .brand-container img {
             max-height: 8mm;
             max-width: 38mm;
             object-fit: contain;
@@ -78,7 +78,7 @@
         /* 3. TÍTULO EN 2 LÍNEAS (TALADRO / PERCUTOR) */
         .title-container {
             margin-bottom: 2mm;
-            max-width: 100%;
+            max-width: 36mm;
             overflow: hidden;
         }
         .title-primary {
@@ -93,7 +93,7 @@
             text-overflow: ellipsis;
         }
         .title-secondary {
-            font-size: 8.5pt;
+            font-size: 8pt;
             font-weight: 500;
             color: #ffffff;
             text-transform: uppercase;
@@ -103,6 +103,7 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            max-width: 36mm;
         }
 
         /* 4. BLOQUE DESTACADO (18V ⚡ BRUSHLESS) */
