@@ -241,9 +241,27 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
 
   if (brandLower.includes('robust')) {
     if (logoUrl) {
-      headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 28px; max-width: 100%; object-fit: contain; mix-blend-mode: screen; display: block;" />`;
-    } else {
-      headerBrandHtml = `<div style="font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif; font-size: 16pt; font-weight: 900; color: #ffffff; letter-spacing: 2px; text-transform: uppercase; line-height: 1;">ROBUST</div>`;
+      const isSvg = logoUrl.toLowerCase().includes('.svg');
+      if (isSvg) {
+        try {
+          const response = await fetch(logoUrl);
+          if (response.ok) {
+            let svgText = await response.text();
+            svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff')
+                             .replace(/fill="#000000"/g, 'fill="#ffffff"')
+                             .replace(/fill="#000"/g, 'fill="#ffffff"')
+                             .replace(/fill="black"/g, 'fill="white"');
+            const base64Svg = Buffer.from(svgText).toString('base64');
+            headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+          } else {
+            headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+          }
+        } catch (e) {
+          headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block;" />`;
+        }
+      } else {
+        headerBrandHtml = `<img src="${logoUrl}" alt="ROBUST" style="max-height: 8mm; max-width: 38mm; object-fit: contain; display: block; mix-blend-mode: screen;" />`;
+      }
     }
   }
 
