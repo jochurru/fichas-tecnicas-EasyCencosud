@@ -53,15 +53,34 @@ export class SupabaseProvider {
    * @returns {Promise<string|null>} SKU asociado o null si no existe
    */
   async resolveSkuFromEan(ean) {
+    const cleanEan = String(ean || '').trim();
+    if (!cleanEan) return null;
+
     const data = await this._queryWithRetry(() => 
       supabase
         .from('codigos_ean')
         .select('sku')
-        .eq('ean', ean)
+        .eq('ean', cleanEan)
         .maybeSingle(),
       'resolveSkuFromEan'
     );
-    return data ? data.sku : null;
+    if (data && data.sku) return data.sku;
+
+    // Fallback: Si tiene ceros a la izquierda, intentar buscando la versión desprovista de ceros iniciales
+    const eanNoZeros = cleanEan.replace(/^0+/, '');
+    if (eanNoZeros && eanNoZeros !== cleanEan) {
+      const data2 = await this._queryWithRetry(() => 
+        supabase
+          .from('codigos_ean')
+          .select('sku')
+          .eq('ean', eanNoZeros)
+          .maybeSingle(),
+        'resolveSkuFromEan'
+      );
+      if (data2 && data2.sku) return data2.sku;
+    }
+
+    return null;
   }
 
   /**
@@ -201,6 +220,7 @@ export class SupabaseProvider {
         const { error: delError } = await supabase
           .from('codigos_ean')
           .delete()
+          .eq('sku', sku)
           .in('ean', eansToDelete);
         
         if (delError) {
