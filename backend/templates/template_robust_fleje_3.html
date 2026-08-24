@@ -202,50 +202,16 @@
             object-fit: contain;
             background: transparent;
             mix-blend-mode: multiply;
-        }
-
-        /* 8. SELLO CIRCULAR DE GARANTÍA (EXTREMO INFERIOR DERECHO) */
+           /* 8. SELLO CIRCULAR DE GARANTÍA (EXTREMO INFERIOR DERECHO) */
         .warranty-seal {
             position: absolute;
             right: 3.5mm;
             bottom: 3.5mm;
             width: 16mm;
             height: 16mm;
-            border: 1.5px solid #ffffff;
-            border-radius: 50%;
+            object-fit: contain;
             display: {{warranty_seal_display}};
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: transparent;
             z-index: 20;
-        }
-        .warranty-seal-inner {
-            width: 14mm;
-            height: 14mm;
-            border: 0.8px solid rgba(255,255,255,0.7);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .warranty-label {
-            font-size: 3.2pt;
-            font-weight: 800;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            line-height: 1;
-        }
-        .warranty-number {
-            font-size: 11pt;
-            font-weight: 900;
-            color: #ffffff;
-            line-height: 0.9;
-            font-family: 'Arial Black', sans-serif;
-            margin: 0.2mm 0;
         }
     </style>
 </head>
@@ -287,14 +253,7 @@
         <!-- Columna Derecha (Foto Gigante Sin Cuadro Blanco + Sello Circular de Garantía) -->
         <div class="right-content">
             <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
-            
-            <div class="warranty-seal">
-                <div class="warranty-seal-inner">
-                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
-                    <span class="warranty-number">{{garantia_numero}}</span>
-                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
-                </div>
-            </div>
+            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>

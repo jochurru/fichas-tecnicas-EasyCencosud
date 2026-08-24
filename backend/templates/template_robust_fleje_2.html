@@ -192,39 +192,9 @@
             bottom: 2.5mm;
             width: 11mm;
             height: 11mm;
-            border: 1px solid #ffffff;
-            border-radius: 50%;
+            object-fit: contain;
             display: {{warranty_seal_display}};
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: transparent;
             z-index: 20;
-        }
-        .warranty-seal-inner {
-            width: 9.5mm;
-            height: 9.5mm;
-            border: 0.6px solid rgba(255,255,255,0.7);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .warranty-label {
-            font-size: 2.2pt;
-            font-weight: 800;
-            color: #ffffff;
-            text-transform: uppercase;
-            line-height: 1;
-        }
-        .warranty-number {
-            font-size: 7.5pt;
-            font-weight: 900;
-            color: #ffffff;
-            line-height: 0.9;
-            font-family: 'Arial Black', sans-serif;
         }
     </style>
 </head>
@@ -259,14 +229,7 @@
 
         <div class="right-content">
             <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
-            
-            <div class="warranty-seal">
-                <div class="warranty-seal-inner">
-                    <span class="warranty-label">GARANTÍA</span>
-                    <span class="warranty-number">{{garantia_numero}}</span>
-                    <span class="warranty-label">AÑOS</span>
-                </div>
-            </div>
+            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>

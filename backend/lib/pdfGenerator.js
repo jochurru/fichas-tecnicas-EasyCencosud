@@ -346,6 +346,17 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   html = html.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
   html = html.replace(/\{\{specs_html\}\}/g, specsListHtml);
 
+  let selloGarantiaImg = '';
+  try {
+    const selloPath = path.join(__dirname, '../assets/sello_garantia_5_anos.png');
+    if (fs.existsSync(selloPath)) {
+      selloGarantiaImg = `data:image/png;base64,${fs.readFileSync(selloPath).toString('base64')}`;
+    }
+  } catch (err) {
+    console.warn('[pdfGenerator] Error al cargar sello_garantia_5_anos.png:', err.message);
+  }
+
+  html = html.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
   html = html.replace(/\{\{sku\}\}/g, escapeHtml(producto.sku));
   html = html.replace(/\{\{ean\}\}/g, escapeHtml(ean));

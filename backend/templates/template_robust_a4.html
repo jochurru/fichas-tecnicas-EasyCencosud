@@ -190,45 +190,13 @@
 
         .warranty-seal {
             position: absolute;
-            right: 5mm;
-            bottom: 5mm;
-            width: 38mm;
-            height: 38mm;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
+            right: 8mm;
+            bottom: 8mm;
+            width: 44mm;
+            height: 44mm;
+            object-fit: contain;
             display: {{warranty_seal_display}};
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: transparent;
             z-index: 20;
-        }
-        .warranty-seal-inner {
-            width: 34mm;
-            height: 34mm;
-            border: 1.5px solid rgba(255,255,255,0.7);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .warranty-label {
-            font-size: 7.5pt;
-            font-weight: 800;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1;
-        }
-        .warranty-number {
-            font-size: 26pt;
-            font-weight: 900;
-            color: #ffffff;
-            line-height: 0.95;
-            font-family: 'Arial Black', sans-serif;
-            margin: 0.5mm 0;
         }
     </style>
 </head>
@@ -270,13 +238,7 @@
                 <span class="sku-text">SKU: {{sku}}</span>
             </div>
 
-            <div class="warranty-seal">
-                <div class="warranty-seal-inner">
-                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
-                    <span class="warranty-number">{{garantia_numero}}</span>
-                    <span class="warranty-label">AÑOS DE GARANTÍA</span>
-                </div>
-            </div>
+            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>
