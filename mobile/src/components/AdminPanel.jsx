@@ -329,6 +329,10 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
               }
             } catch (pollErr) {
               console.error('[AdminPanel] Error al consultar progreso:', pollErr);
+              clearInterval(interval);
+              setErrorMsg('Error al consultar el avance de la tarea en segundo plano.');
+              setLoading(false);
+              setTaskProgress(null);
             }
           }, 1500);
         } else {
@@ -1088,28 +1092,56 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
                                 </div>
                               </td>
                               <td className="px-4 py-3.5 text-right">
-                                <label className="text-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1">
-                                  <span>✏️ Sobreescribir</span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={async (e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
+                                <div className="flex items-center justify-end gap-2">
+                                  <label className="text-[10px] bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer inline-flex items-center gap-1">
+                                    <span>✏️ Sobreescribir</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setErrorMsg('');
+                                        setSuccessMsg('');
+                                        try {
+                                          await compressAndUploadBrandLogo(file, brand.slug, brand.nombre);
+                                          setSuccessMsg(`✓ Logotipo de la marca "${brand.nombre.toUpperCase()}" actualizado.`);
+                                          await loadBrands();
+                                          try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
+                                        } catch (err) {
+                                          setErrorMsg(err.message);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  <button
+                                    className="text-[10px] bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 inline-flex items-center gap-1"
+                                    onClick={async () => {
+                                      if (!window.confirm(`¿Estás seguro de eliminar la marca "${brand.nombre}"? Esta acción no se puede deshacer.`)) return;
                                       setErrorMsg('');
                                       setSuccessMsg('');
                                       try {
-                                        await compressAndUploadBrandLogo(file, brand.slug, brand.nombre);
-                                        setSuccessMsg(`✓ Logotipo de la marca "${brand.nombre.toUpperCase()}" actualizado.`);
+                                        const token = localStorage.getItem('easy_token');
+                                        const res = await fetch(`${API_BASE_URL}/marcas/${brand.slug}`, {
+                                          method: 'DELETE',
+                                          headers: { 'Authorization': `Bearer ${token}` }
+                                        });
+                                        if (!res.ok) {
+                                          const errData = await res.json().catch(() => ({}));
+                                          throw new Error(errData.error || `Error ${res.status}`);
+                                        }
+                                        setSuccessMsg(`✓ Marca "${brand.nombre.toUpperCase()}" eliminada correctamente.`);
                                         await loadBrands();
                                         try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
                                       } catch (err) {
                                         setErrorMsg(err.message);
                                       }
                                     }}
-                                  />
-                                </label>
+                                  >
+                                    🗑️ Borrar
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}

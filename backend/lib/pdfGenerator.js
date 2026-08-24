@@ -285,17 +285,44 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
     }
   }
 
-  let destacadoVal = '18V';
-  let destacadoLbl = 'BRUSHLESS';
-  if (destacado) {
+  // Detectar si el producto es eléctrico (tiene voltaje, potencia, motor, watts, brushless, etc.)
+  const esElectrico = specs.some(s => {
+    const claveLower = s.clave.toLowerCase();
+    const valorLower = (s.valor || '').toLowerCase();
+    return claveLower.includes('voltaje') || claveLower.includes('potencia') || 
+           claveLower.includes('watts') || claveLower.includes('motor') ||
+           claveLower.includes('batería') || claveLower.includes('bateria') ||
+           claveLower.includes('amperaje') || claveLower.includes('amp') ||
+           valorLower.includes('brushless') || valorLower.includes('brushed') ||
+           valorLower.match(/\d+\s*v\b/) || valorLower.match(/\d+\s*w\b/);
+  });
+
+  let destacadoVal = '';
+  let destacadoLbl = '';
+  let mostrarPill = false;
+
+  if (esElectrico && destacado) {
+    mostrarPill = true;
     const parts = destacado.split(' ');
     if (parts.length > 1) {
       destacadoVal = parts[0];
       destacadoLbl = parts.slice(1).join(' ');
     } else {
       destacadoVal = destacado;
+      destacadoLbl = '';
+    }
+  } else if (esElectrico) {
+    // Es eléctrico pero no encontró spec de potencia/voltaje con valor concreto
+    // Buscar voltaje explícito en las specs
+    const voltSpec = specs.find(s => s.clave.toLowerCase().includes('voltaje'));
+    if (voltSpec) {
+      mostrarPill = true;
+      destacadoVal = voltSpec.valor.toUpperCase();
+      const brushSpec = specs.find(s => (s.valor || '').toLowerCase().includes('brushless'));
+      destacadoLbl = brushSpec ? 'BRUSHLESS' : '';
     }
   }
+  // Si no es eléctrico (herramienta manual), mostrarPill queda en false → el pill se oculta
 
   const specsListHtml = specs.slice(0, 4).map(s => 
     `<li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
@@ -305,6 +332,7 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   html = html.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
   html = html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
   html = html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
+  html = html.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
   html = html.replace(/\{\{specs_html\}\}/g, specsListHtml);
 
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);

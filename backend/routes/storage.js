@@ -184,4 +184,30 @@ router.post('/marcas', requireAuth, requireRoles(['admin', 'coordinator']), asyn
   }
 });
 
+/**
+ * @route   DELETE /api/marcas/:slug
+ * @desc    Elimina una marca por su slug.
+ */
+router.delete('/marcas/:slug', requireAuth, requireRoles(['admin', 'coordinator']), async (req, res, next) => {
+  const { slug } = req.params;
+  if (!slug) {
+    return res.status(400).json({ error: 'Falta el parámetro slug' });
+  }
+
+  try {
+    await dataService.deleteMarca(slug);
+
+    logAuditEvent(req, {
+      accion: 'BRAND_DELETED',
+      entidad: 'MARCA',
+      sku: slug.toLowerCase(),
+      valores_nuevos: {}
+    });
+
+    return res.json({ success: true, message: `Marca "${slug}" eliminada correctamente.` });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

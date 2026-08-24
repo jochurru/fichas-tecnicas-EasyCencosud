@@ -436,4 +436,21 @@ export class SupabaseProvider {
     }
     return data;
   }
+
+  /**
+   * Elimina una marca por su slug.
+   * @param {string} slug - El slug identificador de la marca a eliminar
+   * @returns {Promise<void>}
+   */
+  async deleteMarca(slug) {
+    const { error } = await supabase
+      .from('marcas')
+      .delete()
+      .eq('slug', slug.toLowerCase().trim());
+
+    if (error) {
+      console.error(`[SupabaseProvider] Error en deleteMarca para ${slug}:`, error);
+      throw error;
+    }
+  }
 }
