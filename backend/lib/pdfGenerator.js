@@ -169,4 +169,9 @@ export async function generatePdfBatch(fichas, templateName = 'fleje3') {
   return await zip.generateAsync({ type: 'nodebuffer' });
 }
 
-export { cleanupBrowser };
+// Aliases de exportación para compatibilidad con las rutas de impresion.js
+export { 
+  generatePdf as generatePdfFromFicha, 
+  generatePdfBatch as generateBatchPdf,
+  cleanupBrowser 
+};
