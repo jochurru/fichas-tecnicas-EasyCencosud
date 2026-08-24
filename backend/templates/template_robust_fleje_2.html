@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Cartela Robust Fleje 2 (80x40mm)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Montserrat:wght@600;700;800;900&display=swap');
         * {
             box-sizing: border-box;
             margin: 0;
@@ -51,20 +51,24 @@
         .brand-container {
             margin-bottom: 0.8mm;
             max-height: 5mm;
+            display: flex;
+            align-items: center;
         }
         .brand-container img {
             max-height: 5mm;
             max-width: 24mm;
             object-fit: contain;
             display: block;
+            mix-blend-mode: screen;
         }
-        .brand-container span {
-            font-family: 'Arial Black', Impact, sans-serif;
-            font-size: 9pt;
+        .brand-container div, .brand-container span {
+            font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif;
+            font-size: 10.5pt;
             font-weight: 900;
             color: #ffffff;
-            letter-spacing: 0.5px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
+            line-height: 1;
         }
 
         .title-primary {

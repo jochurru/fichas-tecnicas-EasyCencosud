@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Cartela Robust Fleje 3 (90x74mm)</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Montserrat:wght@600;700;800;900&display=swap');
         
         * {
             box-sizing: border-box;
@@ -44,24 +44,28 @@
             padding: 4.5mm 5mm 4mm 5mm;
         }
 
-        /* 1. LOGO ROBUST */
+        /* 1. LOGO ROBUST OFICIAL DE ALTA PRECISIÓN */
         .brand-container {
             margin-bottom: 2mm;
             max-height: 8mm;
+            display: flex;
+            align-items: center;
         }
-        .brand-container svg, .brand-container img {
+        .brand-container img {
             max-height: 8mm;
             max-width: 38mm;
             object-fit: contain;
             display: block;
+            mix-blend-mode: screen;
         }
-        .brand-container span {
-            font-family: 'Arial Black', Impact, sans-serif;
-            font-size: 14pt;
+        .brand-container div, .brand-container span {
+            font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif;
+            font-size: 15pt;
             font-weight: 900;
             color: #ffffff;
-            letter-spacing: 0.8px;
+            letter-spacing: 2px;
             text-transform: uppercase;
+            line-height: 1;
         }
 
         /* 2. COLUMNA IZQUIERDA */

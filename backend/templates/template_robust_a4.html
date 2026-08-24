@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Ficha Técnica Robust A4</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Montserrat:wght@600;700;800;900&display=swap');
         * {
             box-sizing: border-box;
             margin: 0;
@@ -54,20 +54,24 @@
         .brand-container {
             margin-bottom: 6mm;
             max-height: 18mm;
+            display: flex;
+            align-items: center;
         }
         .brand-container img {
             max-height: 18mm;
             max-width: 75mm;
             object-fit: contain;
             display: block;
+            mix-blend-mode: screen;
         }
-        .brand-container span {
-            font-family: 'Arial Black', Impact, sans-serif;
+        .brand-container div, .brand-container span {
+            font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif;
             font-size: 28pt;
             font-weight: 900;
             color: #ffffff;
-            letter-spacing: 1.5px;
+            letter-spacing: 3px;
             text-transform: uppercase;
+            line-height: 1;
         }
         
         .title-primary {
