@@ -31,7 +31,17 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
     }
   }
 
-  // Buscar información clave
+  const esElectrico = especificaciones.some(s => {
+    const claveLower = (s.clave || '').toLowerCase();
+    const valorLower = (s.valor || '').toLowerCase();
+    return claveLower.includes('voltaje') || claveLower.includes('potencia') || 
+           claveLower.includes('watts') || claveLower.includes('motor') ||
+           claveLower.includes('batería') || claveLower.includes('bateria') ||
+           claveLower.includes('amperaje') || claveLower.includes('amp') ||
+           valorLower.includes('brushless') || valorLower.includes('brushed') ||
+           valorLower.match(/\d+\s*v\b/) || valorLower.match(/\d+\s*w\b/);
+  });
+
   const potenciaSpec = especificaciones.find(s => 
     s.clave.toLowerCase().includes('potencia') || 
     s.clave.toLowerCase().includes('voltaje') ||
@@ -58,27 +68,20 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
-        {/* Cabecera Modal */}
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h4 className="font-bold text-gray-800 text-sm">Vista Previa Física</h4>
-            <span className="text-[10px] text-gray-500 font-semibold block uppercase">
-              Plantilla: {templateName === 'a4' ? 'Ficha A4' : templateName === 'fleje2' ? 'Fleje 2 (80x40mm)' : 'Fleje 3 (90x74mm)'}
-            </span>
+            <h3 className="font-bold text-gray-800 text-lg">Vista Previa de Ficha Técnica</h3>
+            <p className="text-xs text-gray-500 font-medium">SKU: {sku} • Plantilla: {templateName.toUpperCase()}</p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-1.5 rounded-full hover:bg-gray-200 active:scale-95 transition-all text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Contenedor Renderizado a Escala */}
-        <div className="flex-1 overflow-auto bg-gray-150 p-6 flex justify-center items-center min-h-[300px]">
-          
-          {/* PLANTILLA: FLEJE 3 (90x74mm) */}
+        {/* Content Body */}
+        <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-gray-100/60">
           {templateName === 'fleje3' && (
             brandLower.includes('robust') ? (
               /* ROBUST MASTER TEMPLATE PREVIEW */
@@ -108,19 +111,21 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                       </div>
                     </div>
 
-                    {/* Recuadro Destacado */}
-                    <div className="inline-flex items-center border border-white/90 rounded px-1.5 py-0.5 text-[7.5px] font-bold mb-1.5 bg-transparent max-w-full truncate">
-                      <span className="text-white">{destacado || '18V'}</span>
-                      <span className="text-white mx-1 text-[6.5px]">⚡</span>
-                      <span className="text-[#00c3e6] font-extrabold">BRUSHLESS</span>
-                    </div>
+                    {/* Highlight Pill (Solo si es eléctrica) */}
+                    {esElectrico && (
+                      <div className="inline-flex items-center border border-white/90 rounded px-1.5 py-0.5 text-[8px] font-bold mb-1.5">
+                        <span className="text-white">{destacado.split(' ')[0] || '18V'}</span>
+                        <span className="text-white mx-1 text-[7px]">⚡</span>
+                        <span className="text-[#00c3e6] font-extrabold">{destacado.split(' ').slice(1).join(' ') || 'BRUSHLESS'}</span>
+                      </div>
+                    )}
 
-                    {/* Especificaciones */}
-                    <ul className="space-y-0.5 text-[7.5px] text-white font-semibold max-w-full">
+                    {/* Specs List */}
+                    <ul className="space-y-0.5 max-w-full">
                       {especificaciones.slice(0, 4).map((spec, i) => (
-                        <li key={i} className="flex items-start leading-tight">
-                          <span className="text-white font-bold mr-1">·</span>
-                          <span className="line-clamp-1">{spec.clave}: {spec.valor}</span>
+                        <li key={i} className="text-[8.5px] font-semibold text-white flex items-start leading-tight">
+                          <span className="mr-1 text-[9px]">·</span>
+                          <span className="truncate">{spec.clave}: {spec.valor}</span>
                         </li>
                       ))}
                     </ul>
@@ -137,13 +142,16 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain" />
                 </div>
 
-                <div className="absolute right-3 bottom-3 w-12 h-12 rounded-full border-2 border-white flex flex-col justify-center items-center text-center bg-transparent z-20">
-                  <div className="w-10 h-10 rounded-full border border-white/70 flex flex-col justify-center items-center">
-                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
-                    <span className="text-[12px] font-black text-white leading-none my-0.5">5</span>
-                    <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
+                {/* Sello de Garantía (Solo para herramientas eléctricas) */}
+                {esElectrico && (
+                  <div className="absolute right-3 bottom-3 w-12 h-12 rounded-full border-2 border-white flex flex-col justify-center items-center text-center bg-transparent z-20">
+                    <div className="w-10 h-10 rounded-full border border-white/70 flex flex-col justify-center items-center">
+                      <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
+                      <span className="text-[12px] font-black text-white leading-none my-0.5">5</span>
+                      <span className="text-[3px] font-extrabold text-white leading-none uppercase">AÑOS DE GARANTÍA</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               /* STANDARD TEMPLATE PREVIEW */

@@ -333,6 +333,7 @@ export async function generatePdfFromFicha(data, templateName = 'fleje3') {
   html = html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
   html = html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
   html = html.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
+  html = html.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
   html = html.replace(/\{\{specs_html\}\}/g, specsListHtml);
 
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
