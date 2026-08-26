@@ -10,14 +10,15 @@ export default function ImageUploadSection({
   sku,
   fotoUrl,
   setFotoUrl,
+  sugerenciaImagen,
   setErrorMsg,
   setSuccessMsg,
   token
 }) {
   const handleImageCompressAndUpload = async (file) => {
     if (!file) return;
-    setErrorMsg('');
-    setSuccessMsg('');
+    if (setErrorMsg) setErrorMsg('');
+    if (setSuccessMsg) setSuccessMsg('');
 
     try {
       const reader = new FileReader();
@@ -27,8 +28,8 @@ export default function ImageUploadSection({
         img.src = event.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1000;
-          const MAX_HEIGHT = 1000;
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
           let width = img.width;
           let height = img.height;
 
@@ -50,7 +51,7 @@ export default function ImageUploadSection({
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          const dataUrl = canvas.toDataURL('image/webp', 0.85);
+          const dataUrl = canvas.toDataURL('image/webp', 0.8);
 
           fetch(`${API_BASE_URL}/upload/imagen`, {
             method: 'POST',
@@ -74,14 +75,16 @@ export default function ImageUploadSection({
           .then((data) => {
             if (data.url) {
               setFotoUrl(data.url);
-              setSuccessMsg('✓ Imagen de producto actualizada y comprimida correctamente.');
+              if (setSuccessMsg) setSuccessMsg('✓ Imagen de producto actualizada y comprimida correctamente.');
             }
           })
-          .catch((err) => setErrorMsg(err.message));
+          .catch((err) => {
+            if (setErrorMsg) setErrorMsg(err.message);
+          });
         };
       };
     } catch (err) {
-      setErrorMsg(err.message);
+      if (setErrorMsg) setErrorMsg(err.message);
     }
   };
 
@@ -127,6 +130,15 @@ export default function ImageUploadSection({
           </div>
         </div>
       </div>
+
+      {sugerenciaImagen && (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
+          <strong className="font-semibold block mb-0.5">Sugerencia de búsqueda de imagen:</strong>
+          <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 block mt-1 w-fit select-all cursor-pointer">
+            {sugerenciaImagen}
+          </code>
+        </div>
+      )}
     </div>
   );
 }

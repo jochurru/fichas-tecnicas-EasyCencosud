@@ -8,6 +8,8 @@ import { API_BASE_URL } from '../config';
 import CompletenessBar from './CompletenessBar';
 import VersionComparatorModal from './VersionComparatorModal';
 import Scanner from './Scanner';
+import ImageUploadSection from './editor/ImageUploadSection';
+import SpecsEditorList from './editor/SpecsEditorList';
 import { savePrintQueueItem } from '../lib/indexedDb';
 import { calculateCompleteness, detectInconsistencies, getEstadoMetadata } from '../lib/dataQuality';
 
@@ -175,16 +177,6 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
     setInconsistencies(alerts);
   }, [marca, tipoHerramienta, especificaciones, fotoUrl, eans, producto, brandSlugsWithLogos]);
 
-  // Manejo de cambios en las especificaciones dinámicas
-  const handleSpecChange = (index, field, value) => {
-    const updated = [...especificaciones];
-    updated[index][field] = value;
-    // Trazabilidad por Atributo (P1.3): Atribuir edición manual al Operador activo
-    updated[index].origen = 'Usuario';
-    updated[index].fecha_validacion = new Date().toISOString().split('T')[0];
-    setEspecificaciones(updated);
-  };
-
   const handlePrintAction = async (action) => {
     setPdfLoadingState(action);
     setErrorMsg('');
@@ -252,19 +244,6 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
     } finally {
       setPdfLoadingState('idle');
     }
-  };
-
-  const addSpecification = () => {
-    setEspecificaciones([...especificaciones, { 
-      clave: '', 
-      valor: '', 
-      origen: 'Usuario', 
-      fecha_validacion: new Date().toISOString().split('T')[0] 
-    }]);
-  };
-
-  const removeSpecification = (index) => {
-    setEspecificaciones(especificaciones.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -623,140 +602,22 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1 flex items-center gap-1">
-              <Image className="w-3.5 h-3.5 text-gray-500" /> URL de Imagen / Foto
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                disabled={loading || isReadOnly || isOffline || imageUploading}
-                value={fotoUrl}
-                onChange={(e) => setFotoUrl(e.target.value)}
-                placeholder="https://ejemplo.com/foto.jpg"
-                className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50"
-              />
-              {!isReadOnly && !isOffline && (
-                <label className="bg-easy-dark hover:bg-gray-800 text-white font-bold px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer active:scale-95 select-none shrink-0">
-                  {imageUploading ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Plus className="w-3.5 h-3.5" />
-                  )}
-                  <span>{imageUploading ? 'Subiendo...' : 'Cargar Foto'}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={imageUploading}
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setImageUploading(true);
-                      try {
-                        const url = await compressAndUploadImage(file, 'producto', producto.sku);
-                        setFotoUrl(url);
-                        try { if (navigator.vibrate) navigator.vibrate(50); } catch (vErr) {}
-                      } catch (err) {
-                        alert(err.message);
-                      } finally {
-                        setImageUploading(false);
-                      }
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-            {fotoUrl && (
-              <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden w-28 h-28 bg-gray-50 flex items-center justify-center">
-                <img 
-                  src={fotoUrl} 
-                  alt="Vista previa" 
-                  className="max-w-full max-h-full object-contain"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://placehold.co/100?text=Error+Img';
-                  }}
-                />
-              </div>
-            )}
-          </div>
+          <ImageUploadSection
+            sku={producto.sku}
+            fotoUrl={fotoUrl}
+            setFotoUrl={setFotoUrl}
+            sugerenciaImagen={sugerenciaImagen}
+            setErrorMsg={setErrorMsg}
+            setSuccessMsg={setSuccessMsg}
+            token={token}
+          />
 
-          {sugerenciaImagen && (
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
-              <strong className="font-semibold block mb-0.5">Sugerencia de búsqueda de imagen:</strong>
-              <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200 block mt-1 w-fit select-all cursor-pointer">
-                {sugerenciaImagen}
-              </code>
-            </div>
-          )}
-        </div>
-
-        {/* Sección: Especificaciones Técnicas Dinámicas */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xs font-semibold uppercase text-gray-400">Especificaciones Técnicas</h3>
-            <button
-              type="button"
-              disabled={isReadOnly || isOffline}
-              onClick={addSpecification}
-              className="flex items-center gap-1 text-xs font-bold text-easy-red bg-red-50 hover:bg-red-100 active:scale-95 px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50 disabled:pointer-events-none"
-            >
-              <Plus className="w-3.5 h-3.5" /> Agregar campo
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {especificaciones.map((spec, index) => (
-              <div key={index} className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  disabled={isReadOnly || isOffline}
-                  value={spec.clave}
-                  onChange={(e) => handleSpecChange(index, 'clave', e.target.value)}
-                  placeholder="Atributo (ej. Potencia)"
-                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red disabled:opacity-60 disabled:bg-gray-50"
-                />
-                <input
-                  type="text"
-                  disabled={isReadOnly || isOffline}
-                  value={spec.valor}
-                  onChange={(e) => handleSpecChange(index, 'valor', e.target.value)}
-                  placeholder="Valor (ej. 750W)"
-                  className="flex-1 min-w-0 bg-white border border-gray-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-easy-red focus:border-easy-red disabled:opacity-60 disabled:bg-gray-50"
-                />
-                
-                {/* Badge de Trazabilidad de Atributo P1.3 */}
-                <span 
-                  className={`text-[8px] font-black uppercase px-1.5 py-1 rounded shrink-0 select-none ${
-                    spec.origen === 'SAP' 
-                      ? 'bg-gray-150 text-gray-500' 
-                      : spec.origen === 'IA' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'bg-blue-100 text-blue-700'
-                  }`}
-                  title={`Validación: ${spec.fecha_validacion || 'Desconocida'}`}
-                >
-                  {spec.origen || 'SAP'}
-                </span>
-
-                <button
-                  type="button"
-                  disabled={isReadOnly || isOffline}
-                  onClick={() => removeSpecification(index)}
-                  className="p-2 text-gray-400 hover:text-easy-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-
-            {especificaciones.length === 0 && (
-              <p className="text-center text-xs text-gray-400 py-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                No hay especificaciones agregadas. Hacé clic en "Agregar campo" para sumar atributos.
-              </p>
-            )}
-          </div>
+          <SpecsEditorList
+            especificaciones={especificaciones}
+            setEspecificaciones={setEspecificaciones}
+            isReadOnly={isReadOnly}
+            isOffline={isOffline}
+          />
         </div>
 
         {/* Sección: Template de Impresión Lexmark */}

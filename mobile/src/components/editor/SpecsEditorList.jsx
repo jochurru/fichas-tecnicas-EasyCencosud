@@ -5,9 +5,9 @@ import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
  * @fileoverview Componente para la edición y ordenamiento dinámico de la lista de especificaciones técnicas.
  */
 
-export default function SpecsEditorList({ especificaciones, setEspecificaciones }) {
+export default function SpecsEditorList({ especificaciones, setEspecificaciones, isReadOnly, isOffline }) {
   const addSpec = () => {
-    setEspecificaciones([...especificaciones, { clave: '', valor: '' }]);
+    setEspecificaciones([...especificaciones, { clave: '', valor: '', origen: 'MANUAL', fecha_validacion: new Date().toISOString().split('T')[0] }]);
   };
 
   const removeSpec = (index) => {
@@ -16,7 +16,7 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones 
 
   const updateSpec = (index, field, value) => {
     const updated = [...especificaciones];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setEspecificaciones(updated);
   };
 
@@ -38,8 +38,9 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones 
         </div>
         <button
           type="button"
+          disabled={isReadOnly || isOffline}
           onClick={addSpec}
-          className="flex items-center gap-1 text-xs bg-easy-red hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all active:scale-95"
+          className="flex items-center gap-1 text-xs bg-easy-red hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
         >
           <Plus className="w-4 h-4" />
           Agregar Atributo
@@ -57,22 +58,39 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones 
               <span className="text-[10px] font-bold text-gray-400 w-5 text-center">{idx + 1}</span>
               <input
                 type="text"
+                disabled={isReadOnly || isOffline}
                 placeholder="Atributo (ej: Potencia)"
                 value={spec.clave}
                 onChange={(e) => updateSpec(idx, 'clave', e.target.value)}
-                className="w-1/2 text-xs font-semibold px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-easy-red bg-white"
+                className="w-1/2 text-xs font-semibold px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-easy-red bg-white disabled:opacity-60 disabled:bg-gray-50"
               />
               <input
                 type="text"
+                disabled={isReadOnly || isOffline}
                 placeholder="Valor (ej: 800W)"
                 value={spec.valor}
                 onChange={(e) => updateSpec(idx, 'valor', e.target.value)}
-                className="w-1/2 text-xs font-medium px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-easy-red bg-white"
+                className="w-1/2 text-xs font-medium px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-easy-red bg-white disabled:opacity-60 disabled:bg-gray-50"
               />
+              
+              {/* Badge de Trazabilidad de Atributo P1.3 */}
+              <span 
+                className={`text-[8px] font-black uppercase px-1.5 py-1 rounded shrink-0 select-none ${
+                  spec.origen === 'SAP' 
+                    ? 'bg-gray-150 text-gray-500' 
+                    : spec.origen === 'IA' 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-blue-100 text-blue-700'
+                }`}
+                title={`Validación: ${spec.fecha_validacion || 'Desconocida'}`}
+              >
+                {spec.origen || 'SAP'}
+              </span>
+
               <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
                 <button
                   type="button"
-                  disabled={idx === 0}
+                  disabled={isReadOnly || isOffline || idx === 0}
                   onClick={() => moveSpec(idx, -1)}
                   className="p-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 rounded hover:bg-gray-200"
                 >
@@ -80,7 +98,7 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones 
                 </button>
                 <button
                   type="button"
-                  disabled={idx === especificaciones.length - 1}
+                  disabled={isReadOnly || isOffline || idx === especificaciones.length - 1}
                   onClick={() => moveSpec(idx, 1)}
                   className="p-1.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 rounded hover:bg-gray-200"
                 >
@@ -88,8 +106,9 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones 
                 </button>
                 <button
                   type="button"
+                  disabled={isReadOnly || isOffline}
                   onClick={() => removeSpec(idx)}
-                  className="p-1.5 text-red-500 hover:text-red-700 rounded hover:bg-red-50"
+                  className="p-1.5 text-red-500 hover:text-red-700 rounded hover:bg-red-50 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

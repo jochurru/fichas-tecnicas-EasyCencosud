@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import CatalogImportTab from './admin/CatalogImportTab';
 import EanImportTab from './admin/EanImportTab';
 import QualityMetricsTab from './admin/QualityMetricsTab';
+import UsageMetricsTab from './admin/UsageMetricsTab';
 import DynamicBrandsTab from './admin/DynamicBrandsTab';
 
 /**
  * @fileoverview Modal contenedor principal del Panel de Administración.
- * Coordina la navegación entre pestañas (Importación SAP, EANs, Métricas y Marcas).
+ * Coordina la navegación entre pestañas (Importación SAP, EANs, Métricas de Uso, Calidad de Datos y Marcas).
  */
 
 export default function AdminPanel({ token, onClose, onTokenExpired }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'analytics' | 'brands'
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -103,6 +104,18 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
           </button>
 
           <button
+            onClick={() => setActiveTab('metrics')}
+            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'metrics'
+                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Métricas de Uso
+          </button>
+
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'analytics'
@@ -156,7 +169,6 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
               setDragActive={setDragActive}
               taskProgress={taskProgress}
               setTaskProgress={setTaskProgress}
-              stats={stats}
               newSkus={newSkus}
               token={token}
               onTokenExpired={onTokenExpired}
@@ -173,6 +185,10 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
               token={token}
               onTokenExpired={onTokenExpired}
             />
+          )}
+
+          {activeTab === 'metrics' && (
+            <UsageMetricsTab stats={stats} />
           )}
 
           {activeTab === 'analytics' && (
