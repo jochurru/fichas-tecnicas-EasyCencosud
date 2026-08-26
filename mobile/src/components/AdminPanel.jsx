@@ -9,7 +9,7 @@ import DynamicBrandsTab from './admin/DynamicBrandsTab';
 
 /**
  * @fileoverview Modal contenedor principal del Panel de Administración.
- * Coordina la navegación entre pestañas (Importación SAP, EANs, Métricas de Uso, Calidad de Datos y Marcas).
+ * Layout First Mobile, responsivo y sin barra de desplazamiento nativa visible en pestañas.
  */
 
 export default function AdminPanel({ token, onClose, onTokenExpired }) {
@@ -58,90 +58,55 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
   }, [activeTab]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl overflow-hidden my-auto border border-gray-100 flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden my-auto border border-gray-150 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         
         {/* Header Modal */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/70">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
           <div>
-            <h3 className="font-extrabold text-gray-800 text-lg flex items-center gap-2">
+            <h3 className="font-black text-gray-800 text-base sm:text-xl flex items-center gap-2">
               <span>⚙️ Panel Administrativo</span>
             </h3>
-            <p className="text-xs text-gray-400 font-medium">Gestión integral de catálogos SAP, marcas y analítica de datos</p>
+            <p className="text-xs text-gray-500 font-medium">Gestión integral de catálogos SAP, marcas y analítica de datos</p>
           </div>
           <button 
             onClick={onClose} 
-            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200/60 transition-all active:scale-95"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all active:scale-95 shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Pestañas de Navegación */}
-        <div className="px-6 bg-gray-50/70 border-b border-gray-100 flex gap-2 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('catalog')}
-            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'catalog'
-                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Catálogo SAP
-          </button>
-
-          <button
-            onClick={() => setActiveTab('ean')}
-            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'ean'
-                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <KeyRound className="w-4 h-4" />
-            Mapeo de EANs
-          </button>
-
-          <button
-            onClick={() => setActiveTab('metrics')}
-            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'metrics'
-                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Métricas de Uso
-          </button>
-
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'analytics'
-                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <BarChart2 className="w-4 h-4" />
-            Calidad de Datos
-          </button>
-
-          <button
-            onClick={() => setActiveTab('brands')}
-            className={`py-3 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'brands'
-                ? 'border-easy-red text-easy-red bg-white/80 rounded-t-xl shadow-xs'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            Marcas Dinámicas
-          </button>
+        {/* Pestañas de Navegación Responsivas (Sin barra de scroll nativa fea) */}
+        <div className="px-3 sm:px-6 py-2.5 bg-gray-50/80 border-b border-gray-100 flex gap-1.5 sm:gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {[
+            { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet },
+            { id: 'ean', name: 'Mapeo EANs', icon: KeyRound },
+            { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp },
+            { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2 },
+            { id: 'brands', name: 'Marcas Dinámicas', icon: Layers }
+          ].map((tab) => {
+            const IconComponent = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-3 sm:px-4 text-xs sm:text-sm font-extrabold rounded-xl transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-easy-red text-white shadow-md shadow-red-900/10 scale-[1.02]'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
+                }`}
+              >
+                <IconComponent className="w-4 h-4 shrink-0" />
+                <span>{tab.name}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Mensajes Globales de Error / Éxito */}
-        <div className="px-6 pt-4 space-y-2">
+        <div className="px-4 sm:px-6 pt-3 space-y-2">
           {errorMsg && (
             <div className="bg-red-50 text-red-600 border border-red-150 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -158,7 +123,7 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
         </div>
 
         {/* Contenido Dinámico de la Pestaña Activa */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
           {activeTab === 'catalog' && (
             <CatalogImportTab
               loading={loading}
