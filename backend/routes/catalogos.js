@@ -93,6 +93,7 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
 
     const startIdx = (rows[headerRowIndex] && String(rows[headerRowIndex][Object.keys(colMapping)[0]]).toLowerCase().includes('material')) ? headerRowIndex + 1 : headerRowIndex;
     const processRows = rows.slice(startIdx);
+    const hasGCColumn = foundKeys.includes('grupo_compras');
 
     // 4. Filtrar y limpiar registros
     const cleanedProducts = [];
