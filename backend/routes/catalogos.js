@@ -21,7 +21,8 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
   try {
     // 1. Decodificar Base64 a buffer
     console.log('[Catalogos] Decodificando archivo XLSX...');
-    const buffer = Buffer.from(fileBase64, 'base64');
+    const cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+    const buffer = Buffer.from(cleanBase64, 'base64');
 
     // 2. Leer el Excel usando SheetJS
     const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -263,7 +264,8 @@ router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), va
 
   try {
     console.log('[Catalogos] Decodificando archivo XLSX de EANs...');
-    const buffer = Buffer.from(fileBase64, 'base64');
+    const cleanBase64 = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+    const buffer = Buffer.from(cleanBase64, 'base64');
     const workbook = XLSX.read(buffer, { type: 'buffer', raw: false, cellText: true });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];

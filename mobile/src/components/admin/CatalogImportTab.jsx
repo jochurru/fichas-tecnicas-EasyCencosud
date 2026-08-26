@@ -110,15 +110,22 @@ export default function CatalogImportTab({
             handleFileUpload(e.dataTransfer.files[0]);
           }
         }}
+        onClick={() => document.getElementById('cat-upload-input')?.click()}
       >
         <input 
           type="file" 
           accept=".xlsx, .xls" 
           className="hidden" 
           id="cat-upload-input"
-          onChange={(e) => handleFileUpload(e.target.files[0])}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              e.target.value = '';
+              handleFileUpload(file);
+            }
+          }}
         />
-        <label htmlFor="cat-upload-input" className="cursor-pointer flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center pointer-events-none">
           <div className="w-12 h-12 rounded-full bg-red-100/60 text-easy-red flex items-center justify-center mb-3">
             <UploadCloud className="w-6 h-6" />
           </div>
@@ -128,7 +135,7 @@ export default function CatalogImportTab({
           <span className="text-xs text-gray-400 font-medium">
             Soporta planillas maestras con columnas de SKU, Descripción, Marca y Proveedor
           </span>
-        </label>
+        </div>
       </div>
 
       {/* Progreso de importación en segundo plano */}
