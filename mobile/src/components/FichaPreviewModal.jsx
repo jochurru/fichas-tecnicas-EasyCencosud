@@ -57,6 +57,12 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
   const garantiaMatch = garantiaVal ? garantiaVal.match(/(\d+)/) : null;
   const garantiaNumero = garantiaMatch ? garantiaMatch[1] : null;
 
+  // Filtrar atributos del cuerpo excluyendo Garantía y Origen (que tienen celdas dedicadas en el footer)
+  const bodySpecs = especificaciones.filter(s => {
+    const k = (s.clave || '').toLowerCase();
+    return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
+  });
+
   // Dimensiones en pantalla y clases específicas
   let widthClass = 'w-[340px]';
   let heightClass = 'h-[280px]';
@@ -121,10 +127,9 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                         <span className="text-[#00c3e6] font-extrabold">{destacado.split(' ').slice(1).join(' ') || 'BRUSHLESS'}</span>
                       </div>
                     )}
-
                     {/* Specs List */}
                     <ul className="space-y-0.5 max-w-full">
-                      {especificaciones.slice(0, 4).map((spec, i) => (
+                      {bodySpecs.slice(0, 4).map((spec, i) => (
                         <li key={i} className="text-[8.5px] font-semibold text-white flex items-start leading-tight">
                           <span className="mr-1 text-[9px]">·</span>
                           <span className="truncate">{spec.clave}: {spec.valor}</span>
@@ -170,8 +175,10 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                 )}
               </div>
             ) : (
-              /* STANDARD TEMPLATE PREVIEW */
-              <div className={`${widthClass} ${heightClass} bg-white shadow-lg border border-dashed border-gray-400 flex flex-col overflow-hidden text-left relative font-sans select-none`}>
+              /* ========================================================================= */
+              /* PLANTILLA ESTÁNDAR (Fleje 2, Fleje 3, A4 Estándar)                       */
+              /* ========================================================================= */
+              <div className={`${widthClass} ${heightClass} bg-white text-gray-900 shadow-xl border border-gray-300 rounded-lg flex flex-col justify-between overflow-hidden relative font-sans select-none`}>
                 {/* Header */}
                 <div className="bg-[#222222] text-white h-[65px] px-3 py-2 flex justify-between items-center">
                   <div className="max-w-[60%] flex flex-col justify-center">
@@ -191,13 +198,13 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                 {/* Body */}
                 <div className="flex-1 flex border-b border-gray-200 min-h-0">
                   <div className="w-[42%] bg-gray-50 border-r border-gray-200 flex flex-col divide-y divide-gray-100 overflow-hidden text-center justify-center">
-                    {especificaciones.slice(0, 4).map((spec, i) => (
+                    {bodySpecs.slice(0, 4).map((spec, i) => (
                       <div key={i} className="flex-1 flex flex-col justify-center py-0.5 px-1 min-h-0">
                         <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">{spec.clave}</span>
                         <span className="text-[9px] font-bold text-gray-800 leading-tight truncate">{spec.valor}</span>
                       </div>
                     ))}
-                    {especificaciones.length < 4 && Array.from({ length: 4 - especificaciones.length }).map((_, idx) => (
+                    {bodySpecs.length < 4 && Array.from({ length: 4 - bodySpecs.length }).map((_, idx) => (
                       <div key={idx} className="flex-1 flex flex-col justify-center min-h-0">
                         <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide">-</span>
                       </div>
@@ -208,19 +215,19 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   </div>
                 </div>
 
-                {/* Footer */}
+                {/* Footer Grid */}
                 <div className="h-[48px] bg-gray-100 flex divide-x divide-gray-200">
                   <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
-                    <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">{especificaciones[4]?.clave || '-'}</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{especificaciones[4]?.valor || '-'}</span>
+                    <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">{bodySpecs[4]?.clave || '-'}</span>
+                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{bodySpecs[4]?.valor || '-'}</span>
                   </div>
                   <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
                     <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">Origen</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{origen}</span>
+                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{origenVal || '-'}</span>
                   </div>
                   <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
                     <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">Garantía</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{garantia}</span>
+                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{garantiaVal || '-'}</span>
                   </div>
                 </div>
 

@@ -100,8 +100,14 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     tituloLinea2 = descWords.slice(2).join(' ');
   }
 
+  // Filtrar especificaciones del cuerpo (excluyendo Garantía y Origen)
+  const bodySpecs = specs.filter(s => {
+    const k = (s.clave || '').toLowerCase();
+    return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
+  });
+
   // Formatear lista de viñetas HTML
-  const specsListHtml = formatSpecsListHtml(specs);
+  const specsListHtml = formatSpecsListHtml(bodySpecs);
   const selloGarantiaImg = getWarrantySealBase64();
 
   // Inyección de variables en el HTML
@@ -129,7 +135,7 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
 
   // Mapear especificaciones individuales spec1 a spec5
   for (let i = 0; i < 5; i++) {
-    const spec = specs[i];
+    const spec = bodySpecs[i];
     if (spec) {
       html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), escapeHtml(spec.clave || '-'));
       html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), escapeHtml(spec.valor || '-'));

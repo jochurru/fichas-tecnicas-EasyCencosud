@@ -3,11 +3,15 @@ import { Plus, Trash2, ArrowUp, ArrowDown, Shield, Globe } from 'lucide-react';
 
 /**
  * @fileoverview Componente para la edición y ordenamiento dinámico de la lista de especificaciones técnicas.
- * Mobile-First responsivo con accesos directos para Garantía y Origen.
+ * Limitado a 7 atributos máximo (capacidad física de la etiqueta) con trazabilidad automática a MANUAL al editar.
  */
 
 export default function SpecsEditorList({ especificaciones, setEspecificaciones, isReadOnly, isOffline }) {
+  const MAX_SPECS = 7;
+  const isMaxReached = especificaciones.length >= MAX_SPECS;
+
   const addSpec = (defaultClave = '', defaultValor = '') => {
+    if (isMaxReached) return;
     setEspecificaciones([
       ...especificaciones, 
       { 
@@ -25,7 +29,14 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones,
 
   const updateSpec = (index, field, value) => {
     const updated = [...especificaciones];
-    updated[index] = { ...updated[index], [field]: value };
+    const current = updated[index] || {};
+    // Al modificar manualmente cualquier campo (clave o valor), la especificación cambia automáticamente su origen a MANUAL
+    updated[index] = { 
+      ...current, 
+      [field]: value,
+      origen: 'MANUAL',
+      fecha_validacion: new Date().toISOString().split('T')[0]
+    };
     setEspecificaciones(updated);
   };
 
@@ -46,13 +57,20 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones,
       {/* Header del Editor de Especificaciones */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h4 className="font-extrabold text-gray-800 text-sm sm:text-base">Especificaciones Técnicas</h4>
-          <p className="text-xs text-gray-400 font-medium">Atributos visibles en la ficha e impresiones físicas</p>
+          <h4 className="font-extrabold text-gray-800 text-sm sm:text-base flex items-center gap-2">
+            <span>Especificaciones Técnicas</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              isMaxReached ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {especificaciones.length}/{MAX_SPECS} Atributos
+            </span>
+          </h4>
+          <p className="text-xs text-gray-400 font-medium">Atributos visibles en la ficha e impresiones físicas (Máximo 7)</p>
         </div>
 
         {/* Botones de Acción y Accesos Directos */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {!hasGarantia && (
+          {!hasGarantia && !isMaxReached && (
             <button
               type="button"
               disabled={isReadOnly || isOffline}
@@ -65,7 +83,7 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones,
             </button>
           )}
 
-          {!hasOrigen && (
+          {!hasOrigen && !isMaxReached && (
             <button
               type="button"
               disabled={isReadOnly || isOffline}
@@ -80,15 +98,21 @@ export default function SpecsEditorList({ especificaciones, setEspecificaciones,
 
           <button
             type="button"
-            disabled={isReadOnly || isOffline}
+            disabled={isReadOnly || isOffline || isMaxReached}
             onClick={() => addSpec()}
             className="flex items-center gap-1 text-xs bg-easy-red hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none ml-auto"
           >
             <Plus className="w-4 h-4" />
-            Agregar Atributo
+            {isMaxReached ? 'Límite Alcanzado (7)' : 'Agregar Atributo'}
           </button>
         </div>
       </div>
+
+      {isMaxReached && (
+        <div className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+          ⚠️ Has alcanzado el límite máximo de 7 atributos. Este límite garantiza que toda la información se imprima con excelente legibilidad en los flejes físicos (90x74mm y 80x40mm).
+        </div>
+      )}
 
       {/* Lista de Especificaciones Responsiva Mobile-First */}
       <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
