@@ -50,10 +50,12 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
   const destacado = potenciaSpec ? potenciaSpec.valor : '';
 
   const origenSpec = especificaciones.find(s => s.clave.toLowerCase().includes('origen') || s.clave.toLowerCase().includes('país'));
-  const origen = origenSpec ? origenSpec.valor.toUpperCase() : 'CHINA';
+  const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
 
   const garantiaSpec = especificaciones.find(s => s.clave.toLowerCase().includes('garant'));
-  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '1 AÑO';
+  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
+  const garantiaMatch = garantia.match(/(\d+)/);
+  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : (garantia.includes('1') ? '1' : null);
 
   // Dimensiones en pantalla y clases específicas
   let widthClass = 'w-[340px]';
@@ -142,13 +144,21 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain" />
                 </div>
 
-                {/* Sello de Garantía (Solo para herramientas eléctricas) */}
-                {esElectrico && (
-                  <img
-                    src="/sello_garantia_5_anos.png"
-                    alt="5 Años de Garantía"
-                    className="absolute right-3 bottom-3 w-10 h-10 object-contain z-20"
-                  />
+                {/* Sello de Garantía dinámico (Muestra los años reales especificados) */}
+                {esElectrico && garantiaNumero && (
+                  garantiaNumero === '5' ? (
+                    <img
+                      src="/sello_garantia_5_anos.png"
+                      alt="5 Años de Garantía"
+                      className="absolute right-3 bottom-3 w-10 h-10 object-contain z-20"
+                    />
+                  ) : (
+                    <div className="absolute right-3 bottom-3 w-11 h-11 rounded-full border-2 border-red-600 bg-white flex flex-col items-center justify-center text-center p-0.5 shadow-md z-20">
+                      <span className="text-[11px] font-black text-red-600 leading-none">{garantiaNumero}</span>
+                      <span className="text-[6px] font-black text-red-600 uppercase leading-none mt-0.5">{garantiaNumero === '1' ? 'AÑO' : 'AÑOS'}</span>
+                      <span className="text-[5px] font-bold text-gray-500 uppercase leading-none">GARANTÍA</span>
+                    </div>
+                  )
                 )}
               </div>
             ) : (

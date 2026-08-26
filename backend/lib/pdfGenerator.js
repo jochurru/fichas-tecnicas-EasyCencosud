@@ -74,12 +74,12 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
 
   // Extraer Origen y Garantía
   const origenSpec = specs.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
-  const origen = origenSpec ? origenSpec.valor.toUpperCase() : 'CHINA';
+  const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
 
   const garantiaSpec = specs.find(s => (s.clave || '').toLowerCase().includes('garant'));
-  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '5 AÑOS';
+  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
   const garantiaMatch = garantia.match(/(\d+)/);
-  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : '5';
+  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : null;
 
   const ean = producto.ean || (producto.eans && producto.eans.length > 0 ? producto.eans[0].codigo_ean : 'SIN EAN');
   const aprobado_por = ficha_tecnica.aprobado_por || 'OPERADOR_LOCAL';
@@ -249,9 +249,9 @@ export async function generatePdfBatch(items, ds = dataService) {
     const esElectrico = isElectricTool(specs);
 
     const origenSpec = specs.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
-    const origen = origenSpec ? origenSpec.valor.toUpperCase() : 'CHINA';
+    const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
     const garantiaSpec = specs.find(s => (s.clave || '').toLowerCase().includes('garant'));
-    const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '1 AÑO';
+    const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
 
     const tipo_herramienta = specData.tipo_herramienta || ficha_tecnica.tipo_herramienta || producto.descripcion || 'HERRAMIENTA';
     const foto_url = ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto';
