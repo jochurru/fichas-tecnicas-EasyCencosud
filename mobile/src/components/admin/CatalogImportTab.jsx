@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UploadCloud, FileSpreadsheet, RefreshCw, CheckCircle } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 /**
  * @fileoverview Sub-pestaña para la importación masiva del catálogo SAP vía Excel.
- * Maneja arrastrar y soltar (drag & drop), selección de archivo y monitoreo de progreso.
+ * Maneja arrastrar y soltar (drag & drop), selección de archivo, monitoreo de progreso y pantalla de carga.
  */
 
 export default function CatalogImportTab({
@@ -16,22 +16,25 @@ export default function CatalogImportTab({
   setDragActive,
   taskProgress,
   setTaskProgress,
-  stats,
   newSkus,
   token,
   onTokenExpired
 }) {
+  const [statusText, setStatusText] = useState('');
+
   const handleFileUpload = async (file) => {
     if (!file) return;
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
     setTaskProgress(null);
+    setStatusText(`Leyendo planilla ${file.name}...`);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const fileBase64 = e.target.result;
+        setStatusText('Enviando catálogo al servidor...');
 
         const res = await fetch(`${API_BASE_URL}/catalogos/importar`, {
           method: 'POST',
@@ -49,74 +52,86 @@ export default function CatalogImportTab({
         }
 
         const data = await res.json();
-
-        if (data.async && data.taskId) {
-          setSuccessMsg(`✓ Proceso iniciado en segundo plano (ID: ${data.taskId}). Monitoreando progreso...`);
-          
-          const pollInterval = setInterval(async () => {
-            try {
-              const progressRes = await fetch(`${API_BASE_URL}/catalogos/tareas/${data.taskId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              
-              if (progressRes.ok) {
-                const taskData = await progressRes.json();
-                setTaskProgress(taskData);
-                if (taskData.estado === 'COMPLETADO' || taskData.estado === 'ERROR') {
-                  clearInterval(pollInterval);
-                  setLoading(false);
-                  if (taskData.estado === 'COMPLETADO') {
-                    setSuccessMsg(`✓ Importación completada: ${taskData.resultado?.nuevosCount || 0} nuevos productos procesados.`);
-                  } else {
-                    setErrorMsg(`Error en la tarea: ${taskData.error || 'Fallo desconocido'}`);
-                  }
-                }
-              }
-            } catch (pErr) {
-              console.error('Error al consultar estado de tarea:', pErr);
-            }
-          }, 2000);
+        
+        // Si es procesamiento asincrónico por tarea
+        if (data.taskId) {
+          setStatusText('Procesando productos en segundo plano...');
+          setTaskProgress({ status: 'PROCESSING', progress: 0, total: 0 });
+          pollTaskStatus(data.taskId);
         } else {
           setLoading(false);
-          setSuccessMsg(`✓ Importación completada: ${data.nuevosCount || 0} nuevos productos creados.`);
-          try { if (navigator.vibrate) navigator.vibrate(100); } catch (vErr) {}
+          setStatusText('');
+          const total = data.estadisticas?.totalProcesados || data.procesados || 0;
+          setSuccessMsg(`✓ Catálogo SAP importado exitosamente: ${total.toLocaleString()} SKUs procesados.`);
         }
       } catch (err) {
         setLoading(false);
-        setErrorMsg(err.message);
+        setStatusText('');
+        setErrorMsg(err.message || 'Error al procesar el archivo Excel.');
       }
     };
 
     reader.onerror = () => {
       setLoading(false);
+      setStatusText('');
       setErrorMsg('Error al leer el archivo Excel.');
     };
 
     reader.readAsDataURL(file);
   };
 
+  const pollTaskStatus = (taskId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/catalogos/tareas/${taskId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+
+        const task = await res.json();
+        setTaskProgress(task);
+
+        if (task.status === 'COMPLETED') {
+          clearInterval(interval);
+          setLoading(false);
+          setStatusText('');
+          const total = task.result?.totalProcesados || task.result?.procesados || 0;
+          setSuccessMsg(`✓ Importación de catálogo SAP finalizada: ${total.toLocaleString()} registros procesados.`);
+        } else if (task.status === 'FAILED') {
+          clearInterval(interval);
+          setLoading(false);
+          setStatusText('');
+          setErrorMsg(task.error || 'La tarea de importación de catálogo falló.');
+        }
+      } catch (err) {
+        console.error('Error al verificar estado de tarea:', err);
+      }
+    }, 2000);
+  };
+
   return (
     <div className="space-y-6">
       <div 
-        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer bg-gray-50/50 hover:bg-gray-50 ${
-          dragActive ? 'border-easy-red bg-red-50/20' : 'border-gray-200'
+        className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all bg-gray-50/50 hover:bg-gray-50 overflow-hidden ${
+          loading ? 'pointer-events-none opacity-80 border-easy-red' : dragActive ? 'border-easy-red bg-red-50/20' : 'border-gray-200 cursor-pointer'
         }`}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragOver={(e) => { e.preventDefault(); if (!loading) setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
         onDrop={(e) => {
           e.preventDefault();
           setDragActive(false);
-          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          if (!loading && e.dataTransfer.files && e.dataTransfer.files[0]) {
             handleFileUpload(e.dataTransfer.files[0]);
           }
         }}
-        onClick={() => document.getElementById('cat-upload-input')?.click()}
+        onClick={() => { if (!loading) document.getElementById('cat-upload-input')?.click(); }}
       >
         <input 
           type="file" 
           accept=".xlsx, .xls" 
           className="hidden" 
           id="cat-upload-input"
+          disabled={loading}
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
               const file = e.target.files[0];
@@ -125,66 +140,45 @@ export default function CatalogImportTab({
             }
           }}
         />
-        <div className="flex flex-col items-center justify-center pointer-events-none">
-          <div className="w-12 h-12 rounded-full bg-red-100/60 text-easy-red flex items-center justify-center mb-3">
-            <UploadCloud className="w-6 h-6" />
+        
+        {loading ? (
+          <div className="py-6 flex flex-col items-center justify-center space-y-3">
+            <RefreshCw className="w-10 h-10 text-easy-red animate-spin" />
+            <div className="space-y-1">
+              <h4 className="font-extrabold text-gray-800 text-sm">Importando Catálogo SAP...</h4>
+              <p className="text-xs text-gray-500 font-medium">{statusText || 'Procesando registros de productos...'}</p>
+            </div>
           </div>
-          <span className="font-bold text-gray-800 text-sm mb-1">
-            Arrastrá acá tu archivo Excel SAP (.xlsx) o hacé clic para buscar
-          </span>
-          <span className="text-xs text-gray-400 font-medium">
-            Soporta planillas maestras con columnas de SKU, Descripción, Marca y Proveedor
-          </span>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-red-100/60 text-easy-red flex items-center justify-center mb-3">
+              <UploadCloud className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-gray-800 text-sm mb-1">
+              Arrastrá acá tu archivo Excel SAP (.xlsx / .xls) o hacé clic para buscar
+            </span>
+            <span className="text-xs text-gray-400 font-medium max-w-sm mx-auto">
+              Soporta planillas maestras ZMA con columnas de Material/SKU, Texto Breve, Grupo de Artículos y Proveedor
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Progreso de importación en segundo plano */}
-      {taskProgress && (
-        <div className="bg-blue-50 border border-blue-150 rounded-2xl p-5 space-y-3">
+      {taskProgress && taskProgress.status === 'PROCESSING' && (
+        <div className="bg-blue-50 border border-blue-150 p-4 rounded-xl space-y-2">
           <div className="flex justify-between items-center text-xs font-bold text-blue-900">
             <span className="flex items-center gap-1.5">
-              <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-              Procesando filas del catálogo... ({taskProgress.processedRows} de {taskProgress.totalRows})
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+              Procesando catálogo en segundo plano...
             </span>
-            <span>{Math.round((taskProgress.processedRows / (taskProgress.totalRows || 1)) * 100)}%</span>
+            <span>{taskProgress.progress || 0}%</span>
           </div>
           <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${Math.round((taskProgress.processedRows / (taskProgress.totalRows || 1)) * 100)}%` }}
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${taskProgress.progress || 0}%` }}
             />
-          </div>
-        </div>
-      )}
-
-      {/* Métricas y resumen */}
-      {stats && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-center">
-            <div className="text-xl font-extrabold text-gray-800">{stats.totalExistentes || 0}</div>
-            <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Existentes</div>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
-            <div className="text-xl font-extrabold text-emerald-700">{stats.nuevosAgregados || 0}</div>
-            <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Nuevos Creados</div>
-          </div>
-        </div>
-      )}
-
-      {/* Lista de nuevos SKUs agregados */}
-      {newSkus && newSkus.length > 0 && (
-        <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-2">
-          <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            Nuevos SKUs incorporados ({newSkus.length})
-          </h4>
-          <div className="max-h-32 overflow-y-auto divide-y divide-gray-100 text-xs">
-            {newSkus.map((item, idx) => (
-              <div key={idx} className="py-1.5 flex justify-between items-center text-gray-600">
-                <span className="font-mono font-bold text-gray-800">{item.sku}</span>
-                <span className="truncate max-w-[200px] text-gray-500 text-[11px]">{item.descripcion}</span>
-              </div>
-            ))}
           </div>
         </div>
       )}

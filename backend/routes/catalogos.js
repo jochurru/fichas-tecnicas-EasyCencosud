@@ -44,26 +44,38 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
       return res.status(400).json({ error: 'El archivo Excel está vacío.' });
     }
 
-    // 3. Detectar dinámicamente las columnas usando mapeo flexible
-    let firstRow = rows[0];
+    // 3. Detectar dinámicamente las columnas usando mapeo flexible (escaneando primeras 5 filas para soportar reportes SAP ZMA)
     let colMapping = {};
+    let headerRowIndex = 0;
 
-    for (let key of Object.keys(firstRow)) {
-      const keyStr = String(key).trim();
-      const keyLower = keyStr.toLowerCase();
+    for (let r = 0; r < Math.min(5, rows.length); r++) {
+      const row = rows[r];
+      let tempMapping = {};
 
-      if (keyLower === 'material' || keyLower === 'sku' || keyLower.includes('codigo sap') || keyLower.includes('código sap')) {
-        colMapping[key] = 'sku';
-      } else if (keyLower.includes('texto breve') || keyLower.includes('descrip') || keyLower.includes('denominac') || keyLower === 'nombre' || keyLower === 'producto') {
-        colMapping[key] = 'descripcion';
-      } else if ((keyLower.includes('raz') && keyLower.includes('social')) || keyLower.includes('proveedor') || keyLower.includes('vendor')) {
-        colMapping[key] = 'proveedor';
-      } else if (keyLower.includes('compras') || keyLower.includes('grp.comp') || keyLower.includes('grp comp') || keyLower.includes('gpo') || keyLower === 'gc' || keyLower === 'g/c') {
-        colMapping[key] = 'grupo_compras';
-      } else if (keyLower.includes('grupo de art') || keyLower.includes('grupo art') || keyLower.includes('rubro') || keyLower.includes('categor')) {
-        colMapping[key] = 'grupo_articulos';
-      } else if (keyLower.includes('ean') || keyLower.includes('codigo de barra') || keyLower.includes('código de barra') || keyLower.includes('upc') || keyLower.includes('barras')) {
-        colMapping[key] = 'ean';
+      for (let [origKey, val] of Object.entries(row)) {
+        const origKeyStr = String(origKey).trim().toLowerCase();
+        const valStr = String(val).trim().toLowerCase();
+        const combined = origKeyStr + ' ' + valStr;
+
+        if (combined.includes('ean') || combined.includes('barra') || combined.includes('upc') || combined.includes('gtin')) {
+          tempMapping[origKey] = 'ean';
+        } else if (combined.includes('texto breve') || combined.includes('descrip') || combined.includes('denominac') || valStr === 'nombre' || valStr === 'producto') {
+          tempMapping[origKey] = 'descripcion';
+        } else if (combined.includes('material') || combined.includes('sku') || combined.includes('sap') || combined.includes('código') || combined.includes('codigo') || combined.includes('artículo')) {
+          if (!tempMapping[origKey]) tempMapping[origKey] = 'sku';
+        } else if (combined.includes('razón') || combined.includes('razon') || combined.includes('social') || combined.includes('proveed') || combined.includes('vendor')) {
+          tempMapping[origKey] = 'proveedor';
+        } else if (combined.includes('grupo art') || combined.includes('grupo_art') || combined.includes('rubro')) {
+          tempMapping[origKey] = 'grupo_articulos';
+        } else if (combined.includes('gcp') || combined.includes('grupo comp') || combined.includes('compras')) {
+          tempMapping[origKey] = 'grupo_compras';
+        }
+      }
+
+      if (Object.values(tempMapping).includes('sku')) {
+        colMapping = tempMapping;
+        headerRowIndex = r;
+        break;
       }
     }
 
@@ -79,7 +91,8 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
       });
     }
 
-    const hasGCColumn = foundKeys.includes('grupo_compras');
+    const startIdx = (rows[headerRowIndex] && String(rows[headerRowIndex][Object.keys(colMapping)[0]]).toLowerCase().includes('material')) ? headerRowIndex + 1 : headerRowIndex;
+    const processRows = rows.slice(startIdx);
 
     // 4. Filtrar y limpiar registros
     const cleanedProducts = [];
@@ -90,7 +103,7 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
     const existingSkus = new Set(await dataService.getAllSkus());
     const newSkusImported = [];
 
-    for (let row of rows) {
+    for (let row of processRows) {
       let rawSku = '';
       let rawDesc = '';
       let rawProv = 'DESCONOCIDO';

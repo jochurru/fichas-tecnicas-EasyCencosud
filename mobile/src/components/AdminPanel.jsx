@@ -142,6 +142,7 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
 
           {activeTab === 'ean' && (
             <EanImportTab
+              loading={loading}
               setLoading={setLoading}
               setErrorMsg={setErrorMsg}
               setSuccessMsg={setSuccessMsg}
