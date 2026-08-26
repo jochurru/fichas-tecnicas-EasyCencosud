@@ -31,9 +31,13 @@ export function calculateCompleteness(producto, ficha, brandSlugsWithLogos = [])
     const brandLower = marca.trim().toLowerCase();
     const brandLogoMap = {
       'einhell': true, 'bosch': true, 'dewalt': true, 'stanley': true,
-      'black & decker': true, 'black and decker': true, 'b&d': true,
-      'makita': true, 'karcher': true, 'dremel': true, 'skil': true,
-      'gamma': true, 'kushiro': true, 'dowen pagio': true
+      'bahco': true, 'robust': true, 'black & decker': true, 'black and decker': true, 
+      'black+decker': true, 'b&d': true, 'makita': true, 'karcher': true, 
+      'dremel': true, 'skil': true, 'gamma': true, 'kushiro': true, 
+      'dowen pagio': true, 'lusqtoff': true, 'total': true, 'truper': true, 
+      'philco': true, 'stihl': true, 'schneider': true, 'force': true, 
+      'urrea': true, 'irwin': true, 'crossmaster': true, 'biassoni': true, 
+      'tramontina': true, 'cta': true
     };
     const hasLogo = Object.keys(brandLogoMap).some(key => brandLower.includes(key)) || 
                     brandSlugsWithLogos.includes(brandLower.replace(/[^a-z0-9-_]/g, ''));
@@ -83,9 +87,13 @@ export function detectInconsistencies(producto, ficha, eanList = [], brandSlugsW
     const brandLower = marca.trim().toLowerCase();
     const brandLogoMap = {
       'einhell': true, 'bosch': true, 'dewalt': true, 'stanley': true,
-      'black & decker': true, 'black and decker': true, 'b&d': true,
-      'makita': true, 'karcher': true, 'dremel': true, 'skil': true,
-      'gamma': true, 'kushiro': true, 'dowen pagio': true
+      'bahco': true, 'robust': true, 'black & decker': true, 'black and decker': true, 
+      'black+decker': true, 'b&d': true, 'makita': true, 'karcher': true, 
+      'dremel': true, 'skil': true, 'gamma': true, 'kushiro': true, 
+      'dowen pagio': true, 'lusqtoff': true, 'total': true, 'truper': true, 
+      'philco': true, 'stihl': true, 'schneider': true, 'force': true, 
+      'urrea': true, 'irwin': true, 'crossmaster': true, 'biassoni': true, 
+      'tramontina': true, 'cta': true
     };
     const hasLogo = Object.keys(brandLogoMap).some(key => brandLower.includes(key)) || 
                     brandSlugsWithLogos.includes(brandLower.replace(/[^a-z0-9-_]/g, ''));
