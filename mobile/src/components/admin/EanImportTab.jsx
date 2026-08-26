@@ -21,30 +21,42 @@ export default function EanImportTab({
     setErrorMsg('');
     setSuccessMsg('');
 
-    const formData = new FormData();
-    formData.append('archivo', file);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const fileBase64 = e.target.result;
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/catalogos/importar-eans`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+        const res = await fetch(`${API_BASE_URL}/catalogos/importar-eans`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify({ fileBase64 })
+        });
 
-      if (!res.ok) {
-        if (res.status === 401 && onTokenExpired) onTokenExpired();
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Error ${res.status} al importar EANs`);
+        if (!res.ok) {
+          if (res.status === 401 && onTokenExpired) onTokenExpired();
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || errData.error || `Error ${res.status} al importar EANs`);
+        }
+
+        const data = await res.json();
+        setLoading(false);
+        setSuccessMsg(`✓ Mapeo de EANs completado: ${data.actualizados || data.total || 0} registros procesados exitosamente.`);
+        try { if (navigator.vibrate) navigator.vibrate(100); } catch (vErr) {}
+      } catch (err) {
+        setLoading(false);
+        setErrorMsg(err.message);
       }
+    };
 
-      const data = await res.json();
+    reader.onerror = () => {
       setLoading(false);
-      setSuccessMsg(`✓ Mapeo de EANs completado: ${data.actualizados || 0} registros actualizados.`);
-      try { if (navigator.vibrate) navigator.vibrate(100); } catch (vErr) {}
-    } catch (err) {
-      setLoading(false);
-      setErrorMsg(err.message);
-    }
+      setErrorMsg('Error al leer el archivo Excel.');
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -62,25 +74,32 @@ export default function EanImportTab({
             handleEanUpload(e.dataTransfer.files[0]);
           }
         }}
+        onClick={() => document.getElementById('eanFileInput').click()}
       >
         <input 
+          id="eanFileInput"
           type="file" 
-          accept=".xlsx, .xls" 
+          accept=".xlsx, .xls"
           className="hidden" 
-          id="ean-upload-input"
-          onChange={(e) => handleEanUpload(e.target.files[0])}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleEanUpload(e.target.files[0]);
+            }
+          }}
         />
-        <label htmlFor="ean-upload-input" className="cursor-pointer flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-blue-100/60 text-blue-600 flex items-center justify-center mb-3">
-            <FileSpreadsheet className="w-6 h-6" />
-          </div>
-          <span className="font-bold text-gray-800 text-sm mb-1">
-            Cargar archivo Excel con mapeo de SKU a EAN (.xlsx)
-          </span>
-          <span className="text-xs text-gray-400 font-medium">
-            Actualizará automáticamente la relación de EANs para lectura con escáner de barras
-          </span>
-        </label>
+
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-easy-red">
+          <FileSpreadsheet className="w-8 h-8" />
+        </div>
+        <h3 className="text-base font-bold text-gray-800 mb-1">
+          Cargar archivo Excel con mapeo de SKU a EAN (.xlsx)
+        </h3>
+        <p className="text-xs text-gray-500 max-w-sm mx-auto mb-4">
+          Actualizará automáticamente la relación de EANs para lectura con escáner de barras
+        </p>
+        <span className="inline-flex items-center gap-2 bg-easy-red text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:bg-red-700 transition-all">
+          <UploadCloud className="w-4 h-4" /> Seleccionar Planilla
+        </span>
       </div>
     </div>
   );

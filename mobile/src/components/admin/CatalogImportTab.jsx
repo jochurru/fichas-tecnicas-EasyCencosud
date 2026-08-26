@@ -28,60 +28,71 @@ export default function CatalogImportTab({
     setSuccessMsg('');
     setTaskProgress(null);
 
-    const formData = new FormData();
-    formData.append('archivo', file);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const fileBase64 = e.target.result;
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/catalogos/importar`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
+        const res = await fetch(`${API_BASE_URL}/catalogos/importar`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify({ fileBase64 })
+        });
 
-      if (!res.ok) {
-        if (res.status === 401 && onTokenExpired) onTokenExpired();
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Error ${res.status} al subir archivo`);
-      }
+        if (!res.ok) {
+          if (res.status === 401 && onTokenExpired) onTokenExpired();
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || errData.error || `Error ${res.status} al subir archivo`);
+        }
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.async && data.taskId) {
-        setSuccessMsg(`✓ Proceso iniciado en segundo plano (ID: ${data.taskId}). Monitoreando progreso...`);
-        
-        const pollInterval = setInterval(async () => {
-          try {
-            const progressRes = await fetch(`${API_BASE_URL}/catalogos/tareas/${data.taskId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (progressRes.ok) {
-              const taskData = await progressRes.json();
-              setTaskProgress(taskData);
+        if (data.async && data.taskId) {
+          setSuccessMsg(`✓ Proceso iniciado en segundo plano (ID: ${data.taskId}). Monitoreando progreso...`);
+          
+          const pollInterval = setInterval(async () => {
+            try {
+              const progressRes = await fetch(`${API_BASE_URL}/catalogos/tareas/${data.taskId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
               
-              if (taskData.status === 'completed') {
-                clearInterval(pollInterval);
-                setLoading(false);
-                setSuccessMsg('¡Catálogo SAP importado y sincronizado correctamente!');
-                try { if (navigator.vibrate) navigator.vibrate(100); } catch (vErr) {}
-              } else if (taskData.status === 'failed') {
-                clearInterval(pollInterval);
-                setLoading(false);
-                setErrorMsg(`Error en la tarea: ${taskData.error || 'Fallo desconocido'}`);
+              if (progressRes.ok) {
+                const taskData = await progressRes.json();
+                setTaskProgress(taskData);
+                if (taskData.estado === 'COMPLETADO' || taskData.estado === 'ERROR') {
+                  clearInterval(pollInterval);
+                  setLoading(false);
+                  if (taskData.estado === 'COMPLETADO') {
+                    setSuccessMsg(`✓ Importación completada: ${taskData.resultado?.nuevosCount || 0} nuevos productos procesados.`);
+                  } else {
+                    setErrorMsg(`Error en la tarea: ${taskData.error || 'Fallo desconocido'}`);
+                  }
+                }
               }
+            } catch (pErr) {
+              console.error('Error al consultar estado de tarea:', pErr);
             }
-          } catch (pErr) {
-            console.error('Error al monitorear tarea:', pErr);
-          }
-        }, 2000);
-      } else {
+          }, 2000);
+        } else {
+          setLoading(false);
+          setSuccessMsg(`✓ Importación completada: ${data.nuevosCount || 0} nuevos productos creados.`);
+          try { if (navigator.vibrate) navigator.vibrate(100); } catch (vErr) {}
+        }
+      } catch (err) {
         setLoading(false);
-        setSuccessMsg('¡Catálogo SAP importado correctamente!');
+        setErrorMsg(err.message);
       }
-    } catch (err) {
+    };
+
+    reader.onerror = () => {
       setLoading(false);
-      setErrorMsg(err.message);
-    }
+      setErrorMsg('Error al leer el archivo Excel.');
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -133,8 +144,40 @@ export default function CatalogImportTab({
           <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
             <div 
               className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(taskProgress.processedRows / (taskProgress.totalRows || 1)) * 100}%` }}
+              style={{ width: `${Math.round((taskProgress.processedRows / (taskProgress.totalRows || 1)) * 100)}%` }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Métricas y resumen */}
+      {stats && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-center">
+            <div className="text-xl font-extrabold text-gray-800">{stats.totalExistentes || 0}</div>
+            <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Existentes</div>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
+            <div className="text-xl font-extrabold text-emerald-700">{stats.nuevosAgregados || 0}</div>
+            <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Nuevos Creados</div>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de nuevos SKUs agregados */}
+      {newSkus && newSkus.length > 0 && (
+        <div className="bg-white border border-gray-150 rounded-2xl p-4 space-y-2">
+          <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
+            Nuevos SKUs incorporados ({newSkus.length})
+          </h4>
+          <div className="max-h-32 overflow-y-auto divide-y divide-gray-100 text-xs">
+            {newSkus.map((item, idx) => (
+              <div key={idx} className="py-1.5 flex justify-between items-center text-gray-600">
+                <span className="font-mono font-bold text-gray-800">{item.sku}</span>
+                <span className="truncate max-w-[200px] text-gray-500 text-[11px]">{item.descripcion}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
