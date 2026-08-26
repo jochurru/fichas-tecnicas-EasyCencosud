@@ -1,8 +1,11 @@
 import React from 'react';
-import { Clock, Printer, Search, Zap, CheckCircle2 } from 'lucide-react';
+import { 
+  Clock, Printer, Search, Zap, CheckCircle2, Award, Users, 
+  Eye, ShieldAlert, FileText, TrendingUp 
+} from 'lucide-react';
 
 /**
- * @fileoverview Sub-pestaña para la visualización de Métricas de Uso y Eficiencia Operativa.
+ * @fileoverview Sub-pestaña completa para la visualización de Métricas de Uso, Ranking de SKUs y Actividad de Operadores.
  */
 
 export default function UsageMetricsTab({ stats }) {
@@ -16,6 +19,9 @@ export default function UsageMetricsTab({ stats }) {
 
   const resumen = stats.resumen || {};
   const ia = stats.ia || {};
+  const topSkus = stats.topSkus || [];
+  const operadores = stats.operadores || [];
+
   const draftsCreated = ia.draftsCreated || 0;
   const draftsApproved = ia.draftsApproved || 0;
   const conversionPct = draftsCreated > 0 ? Math.round((draftsApproved / draftsCreated) * 100) : 0;
@@ -25,11 +31,11 @@ export default function UsageMetricsTab({ stats }) {
       <div>
         <h4 className="font-extrabold text-gray-800 text-sm mb-1">Métricas de Uso y Eficiencia Operativa</h4>
         <p className="text-xs text-gray-400 font-medium">
-          Indicadores clave de ahorro de tiempo, impresiones y efectividad de borradores IA
+          Dashboard consolidado de horas ahorradas, demanda de productos y rendimiento de operadores en tiendas
         </p>
       </div>
 
-      {/* Tarjetas Principales de Métricas */}
+      {/* 1. Tarjetas Principales de KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-emerald-50/70 border border-emerald-100 p-4 rounded-2xl">
           <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold mb-1">
@@ -68,12 +74,36 @@ export default function UsageMetricsTab({ stats }) {
         </div>
       </div>
 
-      {/* Barra de Conversión de Borradores IA */}
+      {/* 2. Indicadores Secundarios de Operación */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-gray-150 p-3 rounded-2xl text-center shadow-xs">
+          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+            <FileText className="w-3.5 h-3.5 text-gray-500" /> Aprobaciones
+          </div>
+          <div className="text-lg font-extrabold text-gray-800">{resumen.aprobaciones || 0}</div>
+        </div>
+
+        <div className="bg-white border border-gray-150 p-3 rounded-2xl text-center shadow-xs">
+          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+            <Eye className="w-3.5 h-3.5 text-blue-500" /> Previsualizaciones
+          </div>
+          <div className="text-lg font-extrabold text-blue-900">{resumen.vistasPrevias || 0}</div>
+        </div>
+
+        <div className="bg-white border border-gray-150 p-3 rounded-2xl text-center shadow-xs">
+          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+            <ShieldAlert className="w-3.5 h-3.5 text-red-500" /> Logins Fallidos
+          </div>
+          <div className="text-lg font-extrabold text-red-900">{resumen.loginFailed || 0}</div>
+        </div>
+      </div>
+
+      {/* 3. Barra de Conversión de Borradores IA */}
       <div className="bg-white border border-gray-150 p-5 rounded-2xl space-y-3 shadow-xs">
         <div className="flex justify-between items-center text-xs">
           <span className="font-bold text-gray-800 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-easy-red" />
-            Conversión de Borradores IA
+            Conversión de Borradores IA a Fichas Aprobadas
           </span>
           <span className="font-bold text-gray-600">
             {draftsApproved} aprobados de {draftsCreated} creados ({conversionPct}%)
@@ -86,6 +116,84 @@ export default function UsageMetricsTab({ stats }) {
           />
         </div>
       </div>
+
+      {/* 4. Top 10 SKUs Más Demandados */}
+      {topSkus.length > 0 && (
+        <div className="bg-white border border-gray-150 p-5 rounded-2xl space-y-3 shadow-xs">
+          <h5 className="font-bold text-gray-800 text-xs uppercase tracking-wide flex items-center gap-1.5">
+            <Award className="w-4 h-4 text-amber-500" />
+            Top 10 SKUs Más Consultados e Impresos
+          </h5>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-gray-150 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  <th className="pb-2 pl-1">#</th>
+                  <th className="pb-2">SKU</th>
+                  <th className="pb-2 text-center">Operaciones Totales</th>
+                  <th className="pb-2 text-right pr-1">Impresiones Físicas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {topSkus.map((item, idx) => (
+                  <tr key={item.sku} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="py-2.5 pl-1 font-bold text-gray-400">{idx + 1}</td>
+                    <td className="py-2.5 font-mono font-bold text-gray-900">{item.sku}</td>
+                    <td className="py-2.5 text-center">
+                      <span className="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded-md border border-purple-100">
+                        {item.total} ops
+                      </span>
+                    </td>
+                    <td className="py-2.5 text-right pr-1 font-bold text-blue-700">
+                      {item.impresiones} impresiones
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Ranking de Operadores y Tiendas */}
+      {operadores.length > 0 && (
+        <div className="bg-white border border-gray-150 p-5 rounded-2xl space-y-3 shadow-xs">
+          <h5 className="font-bold text-gray-800 text-xs uppercase tracking-wide flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-blue-600" />
+            Actividad por Usuario / Operador
+          </h5>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-gray-150 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  <th className="pb-2 pl-1">Usuario / Email</th>
+                  <th className="pb-2">Rol</th>
+                  <th className="pb-2 text-center">Búsquedas</th>
+                  <th className="pb-2 text-center">Aprobaciones</th>
+                  <th className="pb-2 text-right pr-1">Impresiones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {operadores.map((op) => (
+                  <tr key={op.email} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="py-2.5 pl-1 font-semibold text-gray-800">{op.email}</td>
+                    <td className="py-2.5">
+                      <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                        op.rol === 'ADMIN' ? 'bg-red-100 text-easy-red' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {op.rol}
+                      </span>
+                    </td>
+                    <td className="py-2.5 text-center font-mono">{op.busquedas}</td>
+                    <td className="py-2.5 text-center font-mono text-emerald-700 font-bold">{op.aprobaciones}</td>
+                    <td className="py-2.5 text-right pr-1 font-mono text-blue-700 font-bold">{op.impresiones}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
