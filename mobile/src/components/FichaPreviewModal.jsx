@@ -49,13 +49,13 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
   );
   const destacado = potenciaSpec ? potenciaSpec.valor : '';
 
-  const origenSpec = especificaciones.find(s => s.clave.toLowerCase().includes('origen') || s.clave.toLowerCase().includes('país'));
-  const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
+  const origenSpec = especificaciones.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
+  const origenVal = (origenSpec && origenSpec.valor && origenSpec.valor.trim() !== '-') ? origenSpec.valor.trim().toUpperCase() : null;
 
-  const garantiaSpec = especificaciones.find(s => s.clave.toLowerCase().includes('garant'));
-  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
-  const garantiaMatch = garantia.match(/(\d+)/);
-  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : (garantia.includes('1') ? '1' : null);
+  const garantiaSpec = especificaciones.find(s => (s.clave || '').toLowerCase().includes('garant'));
+  const garantiaVal = (garantiaSpec && garantiaSpec.valor && garantiaSpec.valor.trim() !== '-') ? garantiaSpec.valor.trim().toUpperCase() : null;
+  const garantiaMatch = garantiaVal ? garantiaVal.match(/(\d+)/) : null;
+  const garantiaNumero = garantiaMatch ? garantiaMatch[1] : null;
 
   // Dimensiones en pantalla y clases específicas
   let widthClass = 'w-[340px]';
@@ -138,11 +138,11 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     <span className="font-bold text-[11px] text-white leading-none tracking-wider">SKU: {sku}</span>
                   </div>
 
-                  {/* Origen y Garantía para Robust */}
-                  {(origen !== '-' || garantia !== '-') && (
+                  {/* Origen y Garantía Dinámicos para Robust */}
+                  {(origenVal || garantiaVal) && (
                     <div className="text-[7.5px] font-bold text-gray-200 mt-1 flex flex-col gap-0.5 leading-none">
-                      {origen !== '-' && <div>ORIGEN: {origen}</div>}
-                      {garantia !== '-' && <div>GARANTÍA: {garantia}</div>}
+                      {origenVal && <div>ORIGEN: {origenVal}</div>}
+                      {garantiaVal && <div>GARANTÍA: {garantiaVal}</div>}
                     </div>
                   )}
                 </div>

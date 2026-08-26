@@ -72,14 +72,19 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   const destacado = potenciaSpec ? potenciaSpec.valor : '';
   const { destacadoVal, destacadoLbl, mostrarPill } = getHighlightPill(specs, destacado);
 
-  // Extraer Origen y Garantía
+  // Extraer Origen y Garantía solo si existen explícitamente en especificaciones
   const origenSpec = specs.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
-  const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
+  const origenVal = (origenSpec && origenSpec.valor && origenSpec.valor.trim() !== '-') ? origenSpec.valor.trim().toUpperCase() : null;
 
   const garantiaSpec = specs.find(s => (s.clave || '').toLowerCase().includes('garant'));
-  const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
-  const garantiaMatch = garantia.match(/(\d+)/);
+  const garantiaVal = (garantiaSpec && garantiaSpec.valor && garantiaSpec.valor.trim() !== '-') ? garantiaSpec.valor.trim().toUpperCase() : null;
+  const garantiaMatch = garantiaVal ? garantiaVal.match(/(\d+)/) : null;
   const garantiaNumero = garantiaMatch ? garantiaMatch[1] : null;
+
+  let metaItemsHtml = '';
+  if (origenVal) metaItemsHtml += `<span class="meta-text">ORIGEN: ${escapeHtml(origenVal)}</span>`;
+  if (garantiaVal) metaItemsHtml += `<span class="meta-text">GARANTÍA: ${escapeHtml(garantiaVal)}</span>`;
+  const metaInfoHtml = metaItemsHtml ? `<div class="meta-info">${metaItemsHtml}</div>` : '';
 
   const ean = producto.ean || (producto.eans && producto.eans.length > 0 ? producto.eans[0].codigo_ean : 'SIN EAN');
   const aprobado_por = ficha_tecnica.aprobado_por || 'OPERADOR_LOCAL';
@@ -116,9 +121,10 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   html = html.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
   html = html.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
   html = html.replace(/\{\{foto_url\}\}/g, ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto');
-  html = html.replace(/\{\{origen\}\}/g, escapeHtml(origen));
-  html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantia));
-  html = html.replace(/\{\{garantia_numero\}\}/g, escapeHtml(garantiaNumero));
+  html = html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
+  html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+  html = html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
+  html = html.replace(/\{\{garantia_numero\}\}/g, escapeHtml(garantiaNumero || ''));
   html = html.replace(/\{\{aprobado_por\}\}/g, escapeHtml(aprobado_por));
 
   // Mapear especificaciones individuales spec1 a spec5
@@ -249,9 +255,14 @@ export async function generatePdfBatch(items, ds = dataService) {
     const esElectrico = isElectricTool(specs);
 
     const origenSpec = specs.find(s => (s.clave || '').toLowerCase().includes('origen') || (s.clave || '').toLowerCase().includes('país'));
-    const origen = origenSpec ? origenSpec.valor.toUpperCase() : '-';
+    const origenVal = (origenSpec && origenSpec.valor && origenSpec.valor.trim() !== '-') ? origenSpec.valor.trim().toUpperCase() : null;
     const garantiaSpec = specs.find(s => (s.clave || '').toLowerCase().includes('garant'));
-    const garantia = garantiaSpec ? garantiaSpec.valor.toUpperCase() : '-';
+    const garantiaVal = (garantiaSpec && garantiaSpec.valor && garantiaSpec.valor.trim() !== '-') ? garantiaSpec.valor.trim().toUpperCase() : null;
+
+    let metaItemsHtml = '';
+    if (origenVal) metaItemsHtml += `<span class="meta-text">ORIGEN: ${escapeHtml(origenVal)}</span>`;
+    if (garantiaVal) metaItemsHtml += `<span class="meta-text">GARANTÍA: ${escapeHtml(garantiaVal)}</span>`;
+    const metaInfoHtml = metaItemsHtml ? `<div class="meta-info">${metaItemsHtml}</div>` : '';
 
     const tipo_herramienta = specData.tipo_herramienta || ficha_tecnica.tipo_herramienta || producto.descripcion || 'HERRAMIENTA';
     const foto_url = ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto';
