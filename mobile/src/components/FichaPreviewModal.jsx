@@ -137,6 +137,14 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   <div className="border-t border-b border-white py-1.5 w-28 text-left flex items-center justify-start mt-auto">
                     <span className="font-bold text-[11px] text-white leading-none tracking-wider">SKU: {sku}</span>
                   </div>
+
+                  {/* Origen y Garantía para Robust */}
+                  {(origen !== '-' || garantia !== '-') && (
+                    <div className="text-[7.5px] font-bold text-gray-200 mt-1 flex flex-col gap-0.5 leading-none">
+                      {origen !== '-' && <div>ORIGEN: {origen}</div>}
+                      {garantia !== '-' && <div>GARANTÍA: {garantia}</div>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Columna Derecha con Imagen Integrada (Sin Cuadro Blanco) */}

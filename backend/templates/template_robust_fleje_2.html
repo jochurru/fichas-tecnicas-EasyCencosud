@@ -164,6 +164,20 @@
             line-height: 1;
             letter-spacing: 0.4px;
         }
+        .meta-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4mm;
+            margin-top: 0.8mm;
+        }
+        .meta-text {
+            font-size: 4.2pt;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+        }
 
         .right-content {
             position: absolute;
@@ -224,6 +238,12 @@
 
             <div class="sku-box">
                 <span class="sku-text">SKU: {{sku}}</span>
+            </div>
+
+            <!-- Origen y Garantía para Robust -->
+            <div class="meta-info">
+                <span class="meta-text">ORIGEN: {{origen}}</span>
+                <span class="meta-text">GARANTÍA: {{garantia}}</span>
             </div>
         </div>
 
