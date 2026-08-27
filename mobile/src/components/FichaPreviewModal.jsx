@@ -145,9 +145,9 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
 
                   {/* Origen y Garantía Dinámicos para Robust */}
                   {(origenVal || garantiaVal) && (
-                    <div className="text-[7.5px] font-bold text-gray-200 mt-1 flex flex-col gap-0.5 leading-none">
-                      {origenVal && <div>ORIGEN: {origenVal}</div>}
-                      {garantiaVal && <div>GARANTÍA: {garantiaVal}</div>}
+                    <div className="text-[7.5px] font-bold text-gray-200 mt-1 flex flex-row flex-wrap gap-1.5 leading-none">
+                      {origenVal && <span>ORIGEN: {origenVal}</span>}
+                      {garantiaVal && <span>GARANTÍA: {garantiaVal}</span>}
                     </div>
                   )}
                 </div>

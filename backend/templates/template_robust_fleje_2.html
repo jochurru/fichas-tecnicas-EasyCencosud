@@ -35,21 +35,21 @@
             position: relative;
             overflow: hidden;
             color: #ffffff;
-            padding: 2.5mm 3.5mm;
+            padding: 2mm 3mm;
         }
 
         .left-content {
-            width: 46%;
+            width: 48%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             z-index: 10;
             height: 100%;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .brand-container {
-            margin-bottom: 1.8mm;
+            margin-bottom: 1.2mm;
             max-height: 5mm;
             display: flex;
             align-items: center;
@@ -73,8 +73,8 @@
         }
 
         .title-container {
-            margin-top: 1mm;
-            margin-bottom: 1mm;
+            margin-top: 0.5mm;
+            margin-bottom: 0.5mm;
             max-width: 100%;
             overflow: hidden;
         }
@@ -95,7 +95,7 @@
             color: #ffffff;
             text-transform: uppercase;
             line-height: 1.05;
-            margin-bottom: 0.8mm;
+            margin-bottom: 0.5mm;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -110,7 +110,7 @@
             padding: 0.3mm 1.2mm;
             font-size: 4.8pt;
             font-weight: 700;
-            margin-bottom: 0.8mm;
+            margin-bottom: 0.5mm;
             width: fit-content;
             max-width: 100%;
             white-space: nowrap;
@@ -124,7 +124,7 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 0.3mm;
+            gap: 0.2mm;
             max-width: 100%;
         }
         .spec-item {
@@ -150,9 +150,9 @@
         .sku-box {
             border-top: 0.8px solid #ffffff;
             border-bottom: 0.8px solid #ffffff;
-            padding: 0.8mm 0;
+            padding: 0.4mm 0;
             margin-top: auto;
-            width: 20mm;
+            width: 22mm;
             display: flex;
             align-items: center;
             justify-content: flex-start;
@@ -166,17 +166,20 @@
         }
         .meta-info {
             display: flex;
-            flex-direction: column;
-            gap: 0.4mm;
-            margin-top: 0.8mm;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.8mm;
+            margin-top: 0.5mm;
         }
         .meta-text {
             font-size: 4.2pt;
-            font-weight: 600;
+            font-weight: 700;
             color: rgba(255, 255, 255, 0.95);
             line-height: 1;
             text-transform: uppercase;
             letter-spacing: 0.1px;
+            white-space: nowrap;
         }
 
         .right-content {
