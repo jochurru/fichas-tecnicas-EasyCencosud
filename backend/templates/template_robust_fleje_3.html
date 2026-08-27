@@ -60,7 +60,7 @@
 
         /* 2. COLUMNA IZQUIERDA */
         .left-content {
-            width: 46%;
+            width: 44%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -194,19 +194,19 @@
             letter-spacing: 0.2px;
         }
 
-        /* 7. COLUMNA DERECHA: FOTO INTEGRADA DIRECTAMENTE SOBRE FONDO (SIN CUADRO BLANCO NI DESBORDES) */
+        /* 7. COLUMNA DERECHA: FOTO INTEGRADA MÁS GRANDE (AMPLIADA 56% ANCHO Y SCALE 1.18) */
         .right-content {
             position: absolute;
             right: 0;
             top: 0;
             bottom: 0;
-            width: 52%;
+            width: 56%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 5;
-            padding: 4mm 3mm;
+            padding: 1mm 1mm;
             background: transparent;
         }
 
@@ -215,6 +215,8 @@
             max-height: 100%;
             object-fit: contain;
             background: transparent;
+            transform: scale(1.18);
+            transform-origin: center;
         }
 
         /* 8. SELLO CIRCULAR DE GARANTÍA (EXTREMO INFERIOR DERECHO) */
