@@ -13,8 +13,11 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
+const safeUrl = supabaseUrl || 'https://mock.supabase.co';
+const safeKey = supabaseKey || 'mock-key';
+
 // Cliente global usado principalmente para autenticación
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+export const supabase = createClient(safeUrl, safeKey, {
   auth: {
     persistSession: false
   },
@@ -24,7 +27,7 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
 });
 
 export const createDbClientWithToken = (token) => {
-  return createClient(supabaseUrl || '', supabaseKey || '', {
+  return createClient(safeUrl, safeKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false },
     realtime: { transport: ws }
@@ -34,7 +37,7 @@ export const createDbClientWithToken = (token) => {
 // Cliente dedicado exclusivo para consultas de base de datos.
 // Esto evita que mutaciones de headers (provocadas al validar tokens JWT de usuarios de bajos privilegios)
 // afecten las consultas del backend y causen problemas de RLS.
-export const supabaseDb = createClient(supabaseUrl || '', supabaseKey || '', {
+export const supabaseDb = createClient(safeUrl, safeKey, {
   auth: {
     persistSession: false
   },

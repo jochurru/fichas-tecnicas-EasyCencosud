@@ -6,9 +6,14 @@ import fs from 'fs';
 import path from 'path';
 import { generatePdf } from '../lib/pdfGenerator.js';
 import { supabaseDb } from '../lib/supabase.js';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const scratchDir = path.join(__dirname, '..', 'scratch');
 
-const scratchDir = 'C:/Users/Jonatan Churruarin/.gemini/antigravity/brain/58462749-821d-45ec-9def-32a73ae61948/scratch';
-
+if (!fs.existsSync(scratchDir)) {
+  fs.mkdirSync(scratchDir, { recursive: true });
+}
 test('1. Producto Robust con 3 especificaciones (fleje3 y fleje2)', async () => {
   const robustFicha = {
     producto: { sku: 'TEST_ROBUST_3', descripcion: 'TALADRO ROBUST 3 SPECS', marca: 'ROBUST', ean: '7790000000001' },
@@ -101,7 +106,7 @@ test('3. Producto Stanley con 7 especificaciones (fleje3, fleje2, a4)', async ()
   fs.writeFileSync(path.join(scratchDir, 'test3_stanley7_a4.pdf'), pdfA4);
 });
 
-test('4 & 5. Verificación de Invalidación de Caché en Supabase y Audit Logs', async () => {
+test('4 & 5. Verificación de Invalidación de Caché en Supabase y Audit Logs', { skip: !process.env.SUPABASE_URL }, async () => {
   const testSku = '1293475';
   const fakeFileName = `${testSku}_fleje3.pdf`;
 
@@ -174,4 +179,10 @@ test('6. Verificación de Generación de PDF por Lote (generateBatchPdf) con Ifr
   const batchPath = path.join(scratchDir, 'test6_lote_hibrido.pdf');
   fs.writeFileSync(batchPath, pdfBuffer);
   assert.ok(fs.existsSync(batchPath), 'El archivo PDF del lote debe existir en la carpeta scratch');
+});
+
+import { after } from 'node:test';
+import { cleanupBrowser } from '../lib/pdfGenerator.js';
+after(async () => {
+  await cleanupBrowser();
 });
