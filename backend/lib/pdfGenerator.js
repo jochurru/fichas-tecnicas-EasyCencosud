@@ -304,12 +304,22 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-      // Extraer el body del HTML para empaquetarlo como página A4 en el lote
-      const bodyMatch = a4Html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const pageInner = bodyMatch ? bodyMatch[1] : a4Html;
-
+      const safeHtml = a4Html.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always;">${pageInner}</div>`);
+        const pageId = `a4_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const pageInner = `
+          <div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0;">
+            <div id="${pageId}" style="width:100%; height:100%;"></div>
+            <script>
+              (function(){
+                var el = document.getElementById("${pageId}");
+                var shadow = el.attachShadow({mode: 'open'});
+                shadow.innerHTML = \`${safeHtml}\`;
+              })();
+            </script>
+          </div>
+        `;
+        a4Pages.push(pageInner);
       }
     } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
       let cardHtml = loadTemplate('fleje3', isRobust ? 'ROBUST' : brandName);
@@ -334,10 +344,20 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-      const cardMatch = cardHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const cardInner = cardMatch ? cardMatch[1] : cardHtml;
-
+      const safeHtml = cardHtml.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+      
       for (let c = 0; c < (item.cantidad || 1); c++) {
+        const cardId = `f3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const cardInner = `
+          <div id="${cardId}" style="width: 90mm; height: 74mm; overflow: hidden; background: white;"></div>
+          <script>
+            (function(){
+              var el = document.getElementById("${cardId}");
+              var shadow = el.attachShadow({mode: 'open'});
+              shadow.innerHTML = \`${safeHtml}\`;
+            })();
+          </script>
+        `;
         fleje3Cards.push(cardInner);
       }
     } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
@@ -363,10 +383,20 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-      const cardMatch = cardHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      const cardInner = cardMatch ? cardMatch[1] : cardHtml;
-
+      const safeHtml = cardHtml.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+      
       for (let c = 0; c < (item.cantidad || 1); c++) {
+        const cardId = `f2_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const cardInner = `
+          <div id="${cardId}" style="width: 80mm; height: 40mm; overflow: hidden; background: white;"></div>
+          <script>
+            (function(){
+              var el = document.getElementById("${cardId}");
+              var shadow = el.attachShadow({mode: 'open'});
+              shadow.innerHTML = \`${safeHtml}\`;
+            })();
+          </script>
+        `;
         fleje2Cards.push(cardInner);
       }
     }
