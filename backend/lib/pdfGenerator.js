@@ -282,10 +282,15 @@ export async function generatePdfBatch(items, ds = dataService) {
     const mostrarSelloGarantia = esElectrico && !garantiaVal;
 
     function toIframeCard(htmlContent, width, height) {
-      const escapedForAttr = htmlContent
+      const resetCss = `<style>
+        html, body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+        .card { width: 100% !important; height: 100% !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+      </style>`;
+      const modifiedHtml = htmlContent.replace('</head>', resetCss + '</head>');
+      const escapedForAttr = modifiedHtml
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;');
-      return `<iframe srcdoc="${escapedForAttr}" style="width:${width}; height:${height}; border:none; display:block; overflow:hidden;" scrolling="no"></iframe>`;
+      return `<iframe srcdoc="${escapedForAttr}" style="width:${width}; height:${height}; border:none; display:block; overflow:hidden; box-sizing:border-box;" scrolling="no"></iframe>`;
     }
 
     if (templateName === 'a4' || templateName === 'robust_a4') {
