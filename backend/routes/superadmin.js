@@ -77,4 +77,51 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['admin']), async 
   }
 });
 
+/**
+ * GET /api/admin/database-viewer
+ * Visor de Base de Datos para Superadmin (Solo Lectura)
+ */
+const ALLOWED_TABLES = ['productos', 'catalogos_sap', 'codigos_ean', 'usuarios_roles', 'audit_logs'];
+
+router.get('/admin/database-viewer', requireAuth, requireRoles(['superadmin']), async (req, res) => {
+  try {
+    const { tableName, limit = 50, offset = 0 } = req.query;
+
+    if (!tableName || !ALLOWED_TABLES.includes(tableName)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Tabla no permitida o no especificada.' });
+    }
+
+    const parsedLimit = Math.min(parseInt(limit, 10) || 50, 1000);
+    const parsedOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
+    const { data, error, count } = await supabaseDb
+      .from(tableName)
+      .select('*', { count: 'exact' })
+      .range(parsedOffset, parsedOffset + parsedLimit - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    // Registrar en audit_logs
+    logAuditEvent(req, {
+      accion: 'DB_SUPERADMIN_READ',
+      entidad: 'DATABASE',
+      valores_nuevos: { tabla_consultada: tableName, limit: parsedLimit, offset: parsedOffset }
+    });
+
+    res.json({
+      data,
+      totalCount: count,
+      pageInfo: {
+        limit: parsedLimit,
+        offset: parsedOffset
+      }
+    });
+  } catch (error) {
+    console.error('[DB Viewer] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

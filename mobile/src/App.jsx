@@ -182,7 +182,7 @@ export default function App() {
             </div>
 
             {/* Botón de Administración - Solo para administradores */}
-            {(userEmail === 'admin@easy.com.ar' || userEmail.toLowerCase() === 'jonatan.churruarin@outlook.com') && (
+            {(userEmail.trim().toLowerCase() === 'admin@easy.com.ar' || userEmail.trim().toLowerCase() === 'jonatan.churruarin@outlook.com') && (
               <button 
                 onClick={() => setIsAdminOpen(true)}
                 className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
