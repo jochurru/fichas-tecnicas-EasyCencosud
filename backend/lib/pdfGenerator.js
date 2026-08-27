@@ -281,6 +281,13 @@ export async function generatePdfBatch(items, ds = dataService) {
 
     const mostrarSelloGarantia = esElectrico && !garantiaVal;
 
+    function toIframeCard(htmlContent, width, height) {
+      const escapedForAttr = htmlContent
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+      return `<iframe srcdoc="${escapedForAttr}" style="width:${width}; height:${height}; border:none; display:block; overflow:hidden;" scrolling="no"></iframe>`;
+    }
+
     if (templateName === 'a4' || templateName === 'robust_a4') {
       let a4Html = loadTemplate('a4', isRobust ? 'ROBUST' : brandName);
 
@@ -304,22 +311,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-      const safeHtml = a4Html.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        const pageId = `a4_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const pageInner = `
-          <div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0;">
-            <div id="${pageId}" style="width:100%; height:100%;"></div>
-            <script>
-              (function(){
-                var el = document.getElementById("${pageId}");
-                var shadow = el.attachShadow({mode: 'open'});
-                shadow.innerHTML = \`${safeHtml}\`;
-              })();
-            </script>
-          </div>
-        `;
-        a4Pages.push(pageInner);
+        const iframeHtml = toIframeCard(a4Html, '210mm', '297mm');
+        a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0;">${iframeHtml}</div>`);
       }
     } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
       let cardHtml = loadTemplate('fleje3', isRobust ? 'ROBUST' : brandName);
@@ -343,22 +337,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
-
-      const safeHtml = cardHtml.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
       
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        const cardId = `f3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const cardInner = `
-          <div id="${cardId}" style="width: 90mm; height: 74mm; overflow: hidden; background: white;"></div>
-          <script>
-            (function(){
-              var el = document.getElementById("${cardId}");
-              var shadow = el.attachShadow({mode: 'open'});
-              shadow.innerHTML = \`${safeHtml}\`;
-            })();
-          </script>
-        `;
-        fleje3Cards.push(cardInner);
+        fleje3Cards.push(toIframeCard(cardHtml, '90mm', '74mm'));
       }
     } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
       let cardHtml = loadTemplate('fleje2', isRobust ? 'ROBUST' : brandName);
@@ -382,22 +363,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
-
-      const safeHtml = cardHtml.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
       
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        const cardId = `f2_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const cardInner = `
-          <div id="${cardId}" style="width: 80mm; height: 40mm; overflow: hidden; background: white;"></div>
-          <script>
-            (function(){
-              var el = document.getElementById("${cardId}");
-              var shadow = el.attachShadow({mode: 'open'});
-              shadow.innerHTML = \`${safeHtml}\`;
-            })();
-          </script>
-        `;
-        fleje2Cards.push(cardInner);
+        fleje2Cards.push(toIframeCard(cardHtml, '80mm', '40mm'));
       }
     }
   }
