@@ -1,9 +1,9 @@
-﻿import express from 'express';
+import express from 'express';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { aiHealth } from '../lib/geminiExtractor.js';
-import { getBrowser } from '../lib/pdfGenerator.js';
+import { getBrowser } from '../lib/pdf/browserManager.js';
 import fs from 'fs';
 import path from 'path';
 
