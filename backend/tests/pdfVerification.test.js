@@ -143,3 +143,35 @@ test('4 & 5. Verificación de Invalidación de Caché en Supabase y Audit Logs',
   assert.ok(auditData && auditData.length > 0, 'El audit log de PDF_CACHE_INVALIDATED debe existir en DB');
   assert.strictEqual(auditData[0].accion, 'PDF_CACHE_INVALIDATED');
 });
+
+test('6. Verificación de Generación de PDF por Lote (generateBatchPdf) con Iframes', async () => {
+  const { generateBatchPdf } = await import('../lib/pdfGenerator.js');
+  
+  // Simular un lote híbrido de productos con múltiples copias
+  const batchItems = [
+    { sku: '1277609', template: 'robust_fleje3', cantidad: 2 }, // Robust
+    { sku: '1366396', template: 'fleje3', cantidad: 1 }         // Stanley (Standard)
+  ];
+  
+  // DataService mock simplificado para el test
+  const mockDataService = {
+    getProductoBySku: async (sku) => ({ sku, descripcion: 'Mock Product', marca: sku === '1277609' ? 'ROBUST' : 'STANLEY' }),
+    getFichaBySku: async (sku) => ({
+      especificaciones_json: {
+        tipo_herramienta: 'MOCK',
+        especificaciones: [{ clave: 'Potencia', valor: '500W' }]
+      }
+    }),
+    getEanBySku: async (sku) => '1234567890123'
+  };
+
+  const pdfBuffer = await generateBatchPdf(batchItems, mockDataService);
+  
+  // Verificaciones básicas
+  assert.ok(pdfBuffer && pdfBuffer.length > 1000, 'El PDF generado por lote no debe estar vacío');
+  
+  // Guardar en la carpeta temporal de scratch (como los demás tests)
+  const batchPath = path.join(scratchDir, 'test6_lote_hibrido.pdf');
+  fs.writeFileSync(batchPath, pdfBuffer);
+  assert.ok(fs.existsSync(batchPath), 'El archivo PDF del lote debe existir en la carpeta scratch');
+});
