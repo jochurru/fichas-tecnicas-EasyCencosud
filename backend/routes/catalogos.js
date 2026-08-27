@@ -516,7 +516,10 @@ router.get('/catalogos/metricas', requireAuth, requireRoles(['admin']), async (r
       else if (log.accion === 'PREVIEW_REQUESTED') vistasPrevias++;
       else if (log.accion === 'LOGIN_FAILED') loginFailed++;
       else if (log.accion === 'AI_DRAFT_CREATED') draftsCreated++;
-      else if (log.accion === 'AI_DRAFT_APPROVED') draftsApproved++;
+      else if (log.accion === 'AI_DRAFT_APPROVED') {
+        draftsApproved++;
+        aprobaciones++;
+      }
 
       // Contar SKUs
       if (log.sku) {
@@ -552,8 +555,8 @@ router.get('/catalogos/metricas', requireAuth, requireRoles(['admin']), async (r
       .sort((a, b) => b.impresiones - a.impresiones || b.busquedas - a.busquedas);
 
     // Si no hay aprobaciones explícitas de borradores registradas con AI_DRAFT_APPROVED,
-    // podemos aproximarla por la cantidad de aprobaciones de ficha técnica del total
-    const actualDraftsApproved = draftsApproved || aprobaciones;
+    // aproximamos pero limitando al total de drafts creados para evitar porcentajes > 100%
+    const actualDraftsApproved = draftsApproved > 0 ? draftsApproved : Math.min(aprobaciones, draftsCreated);
     const aiAcceptanceRate = draftsCreated > 0
       ? Math.round((actualDraftsApproved / draftsCreated) * 100)
       : 100;

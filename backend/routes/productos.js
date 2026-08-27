@@ -329,8 +329,9 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
     })();
 
     // 6. Registrar en el Log de Auditoría Inmutable
+    const isAiDraft = previousFicha && previousFicha.estado === 'GENERADA_POR_IA';
     logAuditEvent(req, {
-      accion: 'PRODUCT_APPROVE',
+      accion: isAiDraft ? 'AI_DRAFT_APPROVED' : 'PRODUCT_APPROVE',
       entidad: 'FICHA_TECNICA',
       sku,
       valores_anteriores: previousFicha ? previousFicha.especificaciones_json : null,
