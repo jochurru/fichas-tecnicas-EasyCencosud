@@ -554,9 +554,11 @@ router.get('/catalogos/metricas', requireAuth, requireRoles(['admin']), async (r
     const operadores = Object.values(operatorCounts)
       .sort((a, b) => b.impresiones - a.impresiones || b.busquedas - a.busquedas);
 
-    // Si no hay aprobaciones explícitas de borradores registradas con AI_DRAFT_APPROVED,
-    // aproximamos pero limitando al total de drafts creados para evitar porcentajes > 100%
-    const actualDraftsApproved = draftsApproved > 0 ? draftsApproved : Math.min(aprobaciones, draftsCreated);
+    // Como los eventos antiguos no emitían AI_DRAFT_APPROVED, calculamos cuántos drafts "legacy"
+    // quedaron sin su evento correspondiente (draftsCreated totales - nuevos draftsApproved)
+    // y asumimos que fueron aprobados (o lo limitamos al número de aprobaciones totales)
+    const legacyDrafts = Math.max(0, draftsCreated - draftsApproved);
+    const actualDraftsApproved = draftsApproved + Math.min(aprobaciones, legacyDrafts);
     const aiAcceptanceRate = draftsCreated > 0
       ? Math.round((actualDraftsApproved / draftsCreated) * 100)
       : 100;
