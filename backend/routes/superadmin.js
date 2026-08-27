@@ -81,7 +81,7 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['admin']), async 
  * GET /api/admin/database-viewer
  * Visor de Base de Datos para Superadmin (Solo Lectura)
  */
-const ALLOWED_TABLES = ['productos', 'catalogos_sap', 'codigos_ean', 'usuarios_roles', 'audit_logs'];
+const ALLOWED_TABLES = ['productos', 'fichas_historial', 'codigos_ean', 'usuarios_roles', 'audit_logs'];
 
 router.get('/admin/database-viewer', requireAuth, requireRoles(['superadmin']), async (req, res) => {
   try {

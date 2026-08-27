@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Search, Download, RefreshCw, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
@@ -13,7 +13,7 @@ export default function DatabaseViewerTab({ token }) {
 
   const tables = [
     { id: 'productos', name: 'Productos SAP' },
-    { id: 'catalogos_sap', name: 'Historial Catálogos SAP' },
+    { id: 'fichas_historial', name: 'Historial de Fichas' },
     { id: 'codigos_ean', name: 'Mapeo EAN' },
     { id: 'usuarios_roles', name: 'Roles de Usuarios' },
     { id: 'audit_logs', name: 'Logs de Auditoría' }
