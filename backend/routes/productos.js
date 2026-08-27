@@ -320,7 +320,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
             entidad: 'FICHA_TECNICA',
             sku,
             resultado: 'SUCCESS',
-            detalles: { archivos_eliminados: filesToRemove }
+            valores_nuevos: { archivos_eliminados: filesToRemove }
           });
         }
       } catch (cacheErr) {
