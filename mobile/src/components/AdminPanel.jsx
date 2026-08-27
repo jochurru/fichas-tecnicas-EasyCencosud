@@ -61,7 +61,7 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden my-auto border border-gray-150 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+      <div className="bg-white rounded-3xl max-w-[95vw] lg:max-w-6xl w-full shadow-2xl overflow-hidden my-auto border border-gray-150 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         
         {/* Header Modal */}
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
@@ -79,8 +79,8 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
           </button>
         </div>
 
-        {/* Pestañas de Navegación Responsivas (Sin barra de scroll nativa fea) */}
-        <div className="px-3 sm:px-6 py-2.5 bg-gray-50/80 border-b border-gray-100 flex gap-1.5 sm:gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {/* Pestañas de Navegación Responsivas (Wrap en desktop, scroll en mobile) */}
+        <div className="px-3 sm:px-6 py-2.5 bg-gray-50/80 border-b border-gray-100 flex flex-nowrap sm:flex-wrap gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet },
             { id: 'ean', name: 'Mapeo EANs', icon: KeyRound },
