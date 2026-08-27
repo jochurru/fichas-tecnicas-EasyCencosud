@@ -152,9 +152,9 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   )}
                 </div>
 
-                {/* Columna Derecha con Imagen Integrada Más Grande */}
-                <div className="absolute right-0 top-0 bottom-0 w-[56%] flex flex-col justify-center items-center z-0 p-1">
-                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain scale-115 transform-gpu" />
+                {/* Columna Derecha con Imagen Integrada (Equilibrada sin sobreposición) */}
+                <div className="absolute right-0 top-0 bottom-0 w-[53%] flex flex-col justify-center items-center z-0 p-2">
+                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain scale-105 transform-gpu" />
                 </div>
 
                 {/* Sello de Garantía dinámico (Se muestra solo si es eléctrica y NO se especificó garantía explícita en el formulario) */}

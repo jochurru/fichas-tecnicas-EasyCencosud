@@ -95,12 +95,6 @@ export default function ImageUploadSection({
                 setFotoUrl(data.url);
                 setUploadState('success');
                 setStatusMsg('¡Foto subida y optimizada exitosamente!');
-                if (setSuccessMsg) setSuccessMsg('✓ Imagen de producto actualizada y comprimida correctamente.');
-
-                setTimeout(() => {
-                  setUploadState('idle');
-                  setStatusMsg('');
-                }, 4000);
               } else {
                 throw new Error('No se obtuvo la URL de la imagen subida.');
               }
@@ -110,14 +104,12 @@ export default function ImageUploadSection({
               const msg = err.message || 'Error al subir la imagen';
               setStatusMsg('Falla en la carga de la foto');
               setErrorDetails(msg);
-              if (setErrorMsg) setErrorMsg(msg);
             });
           } catch (canvasErr) {
             setUploadState('error');
             const msg = canvasErr.message || 'Error al comprimir la imagen.';
             setStatusMsg('Error de compresión');
             setErrorDetails(msg);
-            if (setErrorMsg) setErrorMsg(msg);
           }
         };
 
@@ -126,7 +118,6 @@ export default function ImageUploadSection({
           const msg = 'El archivo seleccionado no se pudo decodificar como imagen.';
           setStatusMsg('Error de formato');
           setErrorDetails(msg);
-          if (setErrorMsg) setErrorMsg(msg);
         };
 
         // Asignar src DESPUÉS de definir onload y onerror
@@ -138,7 +129,6 @@ export default function ImageUploadSection({
         const msg = 'Error al leer el archivo del dispositivo.';
         setStatusMsg('Error de lectura');
         setErrorDetails(msg);
-        if (setErrorMsg) setErrorMsg(msg);
       };
 
       // Iniciar lectura DESPUÉS de definir onload y onerror
@@ -148,7 +138,6 @@ export default function ImageUploadSection({
       const msg = err.message || 'Error al procesar la imagen';
       setStatusMsg('Error inesperado');
       setErrorDetails(msg);
-      if (setErrorMsg) setErrorMsg(msg);
     }
   };
 

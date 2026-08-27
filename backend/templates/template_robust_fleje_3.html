@@ -60,7 +60,7 @@
 
         /* 2. COLUMNA IZQUIERDA */
         .left-content {
-            width: 44%;
+            width: 45%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -194,19 +194,19 @@
             letter-spacing: 0.2px;
         }
 
-        /* 7. COLUMNA DERECHA: FOTO INTEGRADA MÁS GRANDE (AMPLIADA 56% ANCHO Y SCALE 1.18) */
+        /* 7. COLUMNA DERECHA: FOTO INTEGRADA EQUILIBRADA (SIN SOBREPOSICIÓN CON TEXTOS) */
         .right-content {
             position: absolute;
             right: 0;
             top: 0;
             bottom: 0;
-            width: 56%;
+            width: 53%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 5;
-            padding: 1mm 1mm;
+            padding: 2mm 2mm;
             background: transparent;
         }
 
@@ -215,7 +215,7 @@
             max-height: 100%;
             object-fit: contain;
             background: transparent;
-            transform: scale(1.18);
+            transform: scale(1.08);
             transform-origin: center;
         }
 
