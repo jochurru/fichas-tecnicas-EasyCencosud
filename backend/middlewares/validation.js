@@ -41,7 +41,7 @@ export const loginSchema = z.object({
     .min(1, 'El correo electrónico es obligatorio.')
     .email('El formato del correo electrónico es inválido.')
     .refine(
-      (val) => val.endsWith('@easy.com.ar') || val.endsWith('@cencosud.com.ar'),
+      (val) => val.endsWith('@easy.com.ar') || val.endsWith('@cencosud.com.ar') || val.toLowerCase() === 'jonatan.churruarin@outlook.com',
       { message: 'El dominio del correo debe ser institucional (@easy.com.ar o @cencosud.com.ar).' }
     ),
   password: z.string()
