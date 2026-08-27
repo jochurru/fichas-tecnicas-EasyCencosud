@@ -452,10 +452,8 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
     // Obtener el rol del usuario
     let role = 'operator';
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
-        global: { headers: { Authorization: `Bearer ${data.session.access_token}` } }
-      });
+      const { createDbClientWithToken } = await import('../lib/supabase.js');
+      const userClient = createDbClientWithToken(data.session.access_token);
       const { data: roleRow, error: roleError } = await userClient
         .from('usuarios_roles')
         .select('role')

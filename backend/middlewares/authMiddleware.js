@@ -30,10 +30,8 @@ export async function requireAuth(req, res, next) {
     // Resolver rol a partir del lookup exacto en usuarios_roles (pasando el JWT para respetar RLS)
     let role = 'operator';
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      });
+      const { createDbClientWithToken } = await import('../lib/supabase.js');
+      const userClient = createDbClientWithToken(token);
       const { data: roleRow, error: roleError } = await userClient
         .from('usuarios_roles')
         .select('role')

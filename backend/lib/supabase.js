@@ -23,6 +23,14 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
   }
 });
 
+export const createDbClientWithToken = (token) => {
+  return createClient(supabaseUrl || '', supabaseKey || '', {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+    realtime: { transport: ws }
+  });
+};
+
 // Cliente dedicado exclusivo para consultas de base de datos.
 // Esto evita que mutaciones de headers (provocadas al validar tokens JWT de usuarios de bajos privilegios)
 // afecten las consultas del backend y causen problemas de RLS.
