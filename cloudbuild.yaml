@@ -48,3 +48,6 @@ images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest'
 
 timeout: '1200s'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
