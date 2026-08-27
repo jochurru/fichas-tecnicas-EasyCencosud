@@ -20,6 +20,8 @@ export default function ImageUploadSection({
   const [statusMsg, setStatusMsg] = useState('');
   const [errorDetails, setErrorDetails] = useState('');
 
+  const fileInputRef = React.useRef(null);
+
   const handleImageCompressAndUpload = async (file) => {
     if (!file) return;
     if (setErrorMsg) setErrorMsg('');
@@ -31,93 +33,106 @@ export default function ImageUploadSection({
 
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(file);
+
       reader.onload = (event) => {
+        setUploadState('compressing');
+        setStatusMsg('Optimizando a formato WebP (800x800)...');
+
         const img = new window.Image();
-        img.src = event.target.result;
+
         img.onload = () => {
-          setUploadState('compressing');
-          setStatusMsg('Optimizando a formato WebP (800x800)...');
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
 
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const dataUrl = canvas.toDataURL('image/webp', 0.8);
-
-          setUploadState('uploading');
-          setStatusMsg('Subiendo a servidor de almacenamiento...');
-
-          fetch(`${API_BASE_URL}/upload/imagen`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              tipo: 'producto',
-              id: sku,
-              fileBase64: dataUrl
-            })
-          })
-          .then(async (res) => {
-            if (!res.ok) {
-              const errData = await res.json().catch(() => ({}));
-              throw new Error(errData.error || `Error ${res.status} al subir imagen`);
-            }
-            return res.json();
-          })
-          .then((data) => {
-            if (data.url) {
-              setFotoUrl(data.url);
-              setUploadState('success');
-              setStatusMsg('¡Foto subida y optimizada exitosamente!');
-              if (setSuccessMsg) setSuccessMsg('✓ Imagen de producto actualizada y comprimida correctamente.');
-
-              setTimeout(() => {
-                setUploadState('idle');
-                setStatusMsg('');
-              }, 4000);
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
             } else {
-              throw new Error('No se obtuvo la URL de la imagen subida.');
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
             }
-          })
-          .catch((err) => {
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/webp', 0.8);
+
+            setUploadState('uploading');
+            setStatusMsg('Subiendo a servidor de almacenamiento...');
+
+            fetch(`${API_BASE_URL}/upload/imagen`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                tipo: 'producto',
+                id: sku,
+                fileBase64: dataUrl
+              })
+            })
+            .then(async (res) => {
+              if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Error ${res.status} al subir imagen`);
+              }
+              return res.json();
+            })
+            .then((data) => {
+              if (data.url) {
+                setFotoUrl(data.url);
+                setUploadState('success');
+                setStatusMsg('¡Foto subida y optimizada exitosamente!');
+                if (setSuccessMsg) setSuccessMsg('✓ Imagen de producto actualizada y comprimida correctamente.');
+
+                setTimeout(() => {
+                  setUploadState('idle');
+                  setStatusMsg('');
+                }, 4000);
+              } else {
+                throw new Error('No se obtuvo la URL de la imagen subida.');
+              }
+            })
+            .catch((err) => {
+              setUploadState('error');
+              const msg = err.message || 'Error al subir la imagen';
+              setStatusMsg('Falla en la carga de la foto');
+              setErrorDetails(msg);
+              if (setErrorMsg) setErrorMsg(msg);
+            });
+          } catch (canvasErr) {
             setUploadState('error');
-            const msg = err.message || 'Error al subir la imagen';
-            setStatusMsg('Falla en la carga de la foto');
+            const msg = canvasErr.message || 'Error al comprimir la imagen.';
+            setStatusMsg('Error de compresión');
             setErrorDetails(msg);
             if (setErrorMsg) setErrorMsg(msg);
-          });
+          }
         };
+
         img.onerror = () => {
           setUploadState('error');
-          const msg = 'El archivo seleccionado no es una imagen válida.';
+          const msg = 'El archivo seleccionado no se pudo decodificar como imagen.';
           setStatusMsg('Error de formato');
           setErrorDetails(msg);
           if (setErrorMsg) setErrorMsg(msg);
         };
+
+        // Asignar src DESPUÉS de definir onload y onerror
+        img.src = event.target.result;
       };
+
       reader.onerror = () => {
         setUploadState('error');
         const msg = 'Error al leer el archivo del dispositivo.';
@@ -125,6 +140,9 @@ export default function ImageUploadSection({
         setErrorDetails(msg);
         if (setErrorMsg) setErrorMsg(msg);
       };
+
+      // Iniciar lectura DESPUÉS de definir onload y onerror
+      reader.readAsDataURL(file);
     } catch (err) {
       setUploadState('error');
       const msg = err.message || 'Error al procesar la imagen';
@@ -173,15 +191,20 @@ export default function ImageUploadSection({
 
         {/* Botón interactivo de Carga e Insumos */}
         <div className="flex-1 w-full space-y-2">
-          <label className={`text-xs font-bold px-4 py-3 rounded-xl shadow-sm transition-all duration-200 cursor-pointer inline-flex items-center gap-2.5 w-full justify-center sm:w-auto ${
-            isUploading
-              ? 'bg-blue-600 text-white cursor-not-allowed opacity-90'
-              : uploadState === 'success'
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-              : uploadState === 'error'
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-easy-dark hover:bg-black text-white active:scale-95'
-          }`}>
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className={`text-xs font-bold px-4 py-3 rounded-xl shadow-sm transition-all duration-200 cursor-pointer inline-flex items-center gap-2.5 w-full justify-center sm:w-auto ${
+              isUploading
+                ? 'bg-blue-600 text-white cursor-not-allowed opacity-90'
+                : uploadState === 'success'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                : uploadState === 'error'
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-easy-dark hover:bg-black text-white active:scale-95'
+            }`}
+          >
             {isUploading ? (
               <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
             ) : uploadState === 'success' ? (
@@ -201,17 +224,22 @@ export default function ImageUploadSection({
                 ? 'Error al subir — Reintentar'
                 : 'Subir Nueva Foto (Auto WebP)'}
             </span>
+          </button>
 
-            <input
-              type="file"
-              accept="image/*"
-              disabled={isUploading}
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleImageCompressAndUpload(e.target.files[0]);
-              }}
-            />
-          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            disabled={isUploading}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                handleImageCompressAndUpload(file);
+              }
+              e.target.value = ''; // Resetear para permitir volver a subir el mismo archivo si es necesario
+            }}
+          />
 
           {/* Banner con detalle del estado inmediato justo debajo del botón */}
           {isUploading && (
