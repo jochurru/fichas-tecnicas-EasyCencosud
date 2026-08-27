@@ -1,9 +1,17 @@
 steps:
-  # 1. Ejecutar pruebas unitarias automatizadas en backend
+  # 1. Instalar dependencias, configurar entorno Chromium y correr pruebas
   - name: 'node:20-slim'
-    entrypoint: 'npm'
-    args: ['test']
+    entrypoint: 'bash'
     dir: 'backend'
+    args:
+      - '-c'
+      - |
+        npm ci
+        apt-get update && apt-get install -y chromium fonts-freefont-ttf libxss1
+        npm test
+    env:
+      - 'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true'
+      - 'PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium'
 
   # 2. Compilar la imagen de Docker para Google Cloud Run
   - name: 'gcr.io/cloud-builders/docker'
