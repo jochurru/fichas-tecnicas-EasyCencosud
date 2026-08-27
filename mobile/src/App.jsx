@@ -146,9 +146,12 @@ export default function App() {
   if (!token) {
     return (
       <WelcomeLogin 
-        onLoginSuccess={(t, u) => {
-          setToken(t);
-          setUserEmail(u.email);
+        onLoginSuccess={(newToken, user) => {
+          setToken(newToken);
+          setUserEmail(user.email);
+          if (user.role) {
+            setUserRole(user.role);
+          }
         }} 
       />
     );
