@@ -323,6 +323,7 @@ export default function App() {
                 data={productData} 
                 token={token}
                 userEmail={userEmail}
+                userRole={userRole}
                 onTokenExpired={handleTokenExpiration}
                 onSaveSuccess={(updatedFicha, updatedEans) => {
                   // Actualizar estado local con la nueva ficha aprobada e EAN

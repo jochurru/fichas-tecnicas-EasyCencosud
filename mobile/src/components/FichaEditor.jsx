@@ -13,13 +13,13 @@ import SpecsEditorList from './editor/SpecsEditorList';
 import { savePrintQueueItem } from '../lib/indexedDb';
 import { calculateCompleteness, detectInconsistencies, getEstadoMetadata } from '../lib/dataQuality';
 
-export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onTokenExpired }) {
+export default function FichaEditor({ data, token, userEmail, userRole, onSaveSuccess, onTokenExpired }) {
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
   const isOffline = data?.origen === 'local_offline';
   
   // Roles de permisos: Solo administradores y coordinadores de cartelería pueden editar/aprobar fichas
-  const canEdit = userEmail && (userEmail.includes('admin') || userEmail.includes('coord'));
+  const canEdit = userRole === 'superadmin' || userRole === 'admin' || userRole === 'coordinator' || (userEmail && (userEmail.includes('admin') || userEmail.includes('coord')));
   const isReadOnly = !canEdit;
 
   // Estados locales del formulario
@@ -301,7 +301,7 @@ export default function FichaEditor({ data, token, userEmail, onSaveSuccess, onT
 
       setSuccessMsg('Ficha técnica aprobada y guardada con éxito.');
       setTimeout(() => {
-        onSaveSuccess(result.ficha_tecnica, eans && eans.length > 0 ? eans[0] : null);
+        onSaveSuccess(result.ficha_tecnica, eans.filter(Boolean));
       }, 1500);
 
     } catch (err) {
