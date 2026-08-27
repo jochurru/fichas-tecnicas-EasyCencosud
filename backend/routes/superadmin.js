@@ -32,7 +32,7 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['admin']), async 
     let activePages = 0;
     try {
       const browser = await getBrowser();
-      if (browser && browser.isConnected()) {
+      if (browser && browser.connected) {
         pdfStatus = 'ok';
         const pages = await browser.pages();
         activePages = pages.length;
