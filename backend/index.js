@@ -79,65 +79,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Endpoints de depuración: SOLO disponibles en entorno de desarrollo
-if (process.env.NODE_ENV !== 'production') {
-
-// Endpoint de depuración seguro para variables de entorno
-app.get('/api/debug/env', (req, res) => {
-  const sanitize = (val) => {
-    if (!val) return 'no configurado';
-    if (val.length <= 12) return 'configurado (corto)';
-    return `${val.substring(0, 8)}...${val.substring(val.length - 4)}`;
-  };
-  res.json({
-    SUPABASE_URL: sanitize(process.env.SUPABASE_URL),
-    SUPABASE_KEY: sanitize(process.env.SUPABASE_KEY),
-    GEMINI_API_KEY: sanitize(process.env.GEMINI_API_KEY),
-    GROQ_API_KEY: sanitize(process.env.GROQ_API_KEY),
-    DATA_PROVIDER: process.env.DATA_PROVIDER || 'supabase'
-  });
-});
-
-// Endpoint de depuración seguro para la base de datos
-app.get('/api/debug/db', async (req, res) => {
-  try {
-    const { count, error: countError } = await supabase
-      .from('productos')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      return res.status(500).json({ step: 'conteo', error: countError });
-    }
-
-    const { data: sampleProducts, error: sampleError } = await supabase
-      .from('productos')
-      .select('sku, descripcion')
-      .limit(3);
-
-    if (sampleError) {
-      return res.status(500).json({ step: 'muestra', error: sampleError });
-    }
-
-    const { data: targetProduct, error: targetError } = await supabase
-      .from('productos')
-      .select('*')
-      .eq('sku', '1269208')
-      .maybeSingle();
-
-    res.json({
-      success: true,
-      totalProductos: count,
-      muestra: sampleProducts,
-      busquedaSierra: targetProduct,
-      targetError
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Excepcion critica', message: err.message });
-  }
-});
-
-} // Fin de bloque de endpoints de depuración (solo desarrollo)
-
 import superadminRouter from './routes/superadmin.js';
 
 // Rutas API
@@ -157,24 +98,19 @@ app.use((err, req, res, next) => {
 });
 
 // Crear usuarios por defecto (Administrador, Coordinador y Operador) en el arranque si no existen
+// SOLO si las variables de entorno son provistas. Ya no existen fallbacks hardcodeados en código público.
 const createDefaultUsers = async () => {
-  const usersToCreate = [
-    {
-      email: 'admin@easy.com.ar',
-      password: process.env.ADMIN_PASSWORD || 'EasyIT2026!',
-      label: 'administrador'
-    },
-    {
-      email: 'coordinador@easy.com.ar',
-      password: process.env.COORD_PASSWORD || 'CoordinadorIT2026!',
-      label: 'coordinador de carteleria'
-    },
-    {
-      email: 'usuario@easy.com.ar',
-      password: process.env.USER_PASSWORD || 'UsuarioIT2026!',
-      label: 'operador / usuario'
-    }
-  ];
+  const usersToCreate = [];
+  
+  if (process.env.ADMIN_PASSWORD) {
+    usersToCreate.push({ email: 'admin@easy.com.ar', password: process.env.ADMIN_PASSWORD, label: 'administrador' });
+  }
+  if (process.env.COORD_PASSWORD) {
+    usersToCreate.push({ email: 'coordinador@easy.com.ar', password: process.env.COORD_PASSWORD, label: 'coordinador de carteleria' });
+  }
+  if (process.env.USER_PASSWORD) {
+    usersToCreate.push({ email: 'usuario@easy.com.ar', password: process.env.USER_PASSWORD, label: 'operador / usuario' });
+  }
 
   for (const userConfig of usersToCreate) {
     try {

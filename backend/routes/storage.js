@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
+import { validateSchema, uploadImageSchema } from '../middlewares/validation.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { dataService } from '../services/dataService.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -10,16 +11,8 @@ const router = Router();
  * @route   POST /api/upload/imagen
  * @desc    Sube una imagen de producto o de marca a Supabase Storage y actualiza la base de datos.
  */
-router.post('/upload/imagen', requireAuth, requireRoles(['admin', 'coordinator']), async (req, res, next) => {
+router.post('/upload/imagen', requireAuth, requireRoles(['admin', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
   const { tipo, id, fileBase64, nombre } = req.body;
-
-  if (!tipo || !id || !fileBase64) {
-    return res.status(400).json({ error: 'Faltan parámetros obligatorios: tipo, id, fileBase64' });
-  }
-
-  if (tipo !== 'producto' && tipo !== 'marca') {
-    return res.status(400).json({ error: 'Tipo de imagen inválido. Debe ser "producto" o "marca"' });
-  }
 
   try {
     // 1. Limpiar base64 header si existe

@@ -59,6 +59,38 @@ export const searchSchema = z.object({
 });
 
 // 3. Esquema: Ficha Técnica (/api/fichas/aprobar)
+export const pdfBatchSchema = z.object({
+  skus: z.array(
+    z.string().trim().regex(/^[0-9A-Za-z_-]+$/)
+  )
+  .min(1, 'Debe proporcionar al menos un SKU para imprimir.')
+  .max(10, 'El sistema permite un máximo de 10 impresiones por lote para evitar bloqueos del servidor.'),
+  marca: z.string().trim().min(1, 'La marca es obligatoria.').max(100).optional()
+});
+
+export const uploadImageSchema = z.object({
+  tipo: z.enum(['producto', 'marca']),
+  id: z.string().trim().min(1).max(50),
+  nombre: z.string().optional(),
+  fileBase64: z.string()
+    .min(1, "El archivo no puede estar vacío.")
+    .refine((val) => {
+      // Remover header si existe
+      const base64Data = val.replace(/^data:image\/\w+;base64,/, "");
+      // Chequear tamaño (max 5MB)
+      const bufferLength = Buffer.byteLength(base64Data, 'base64');
+      return bufferLength <= 5 * 1024 * 1024;
+    }, { message: "El archivo excede el tamaño máximo permitido de 5MB." })
+    .refine((val) => {
+      const base64Data = val.replace(/^data:image\/\w+;base64,/, "");
+      const header = base64Data.substring(0, 30);
+      const buffer = Buffer.from(header, 'base64');
+      const hex = buffer.toString('hex').toLowerCase();
+      // PNG: 89504e47, JPEG: ffd8ff, WEBP: 52494646...57454250
+      return hex.startsWith('89504e47') || hex.startsWith('ffd8ff') || (hex.startsWith('52494646') && hex.includes('57454250'));
+    }, { message: "El archivo subido no es una imagen válida (solo PNG, JPEG o WEBP)." })
+});
+
 export const approveFichaSchema = z.object({
   sku: z.string()
     .trim()
