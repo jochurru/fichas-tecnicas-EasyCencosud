@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Database, FileText, Cpu, AlertTriangle, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 export default function SystemHealthTab() {
   const [health, setHealth] = useState(null);
@@ -10,10 +11,10 @@ export default function SystemHealthTab() {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(\\/api/admin/estado-sistema\, {
+      const token = localStorage.getItem('userToken');
+      const res = await fetch(`${API_BASE_URL}/admin/estado-sistema`, {
         headers: {
-          'Authorization': \Bearer \\
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!res.ok) throw new Error('Error fetching system health');
@@ -45,7 +46,7 @@ export default function SystemHealthTab() {
       <div className="flex justify-between items-center">
         <h4 className="font-bold text-gray-900">Estado del Sistema</h4>
         <button onClick={fetchHealth} disabled={loading} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-          <RefreshCw className={\w-4 h-4 \\} />
+          <RefreshCw className={"w-4 h-4 " + (loading ? "animate-spin" : "")} />
         </button>
       </div>
 
@@ -61,7 +62,7 @@ export default function SystemHealthTab() {
         </div>
 
         {/* Base de datos */}
-        <div className={\order p-4 rounded-xl flex items-start gap-3 \\}>
+        <div className={"border p-4 rounded-xl flex items-start gap-3 " + statusColor(health.db.status)}>
           <Database className="w-6 h-6" />
           <div>
             <h5 className="font-bold text-sm">Base de Datos (Supabase)</h5>
@@ -71,7 +72,7 @@ export default function SystemHealthTab() {
         </div>
 
         {/* PDF Generator */}
-        <div className={\order p-4 rounded-xl flex items-start gap-3 \\}>
+        <div className={"border p-4 rounded-xl flex items-start gap-3 " + statusColor(health.pdf.status)}>
           <FileText className="w-6 h-6" />
           <div>
             <h5 className="font-bold text-sm">Motor PDF (Puppeteer)</h5>
@@ -81,7 +82,7 @@ export default function SystemHealthTab() {
         </div>
 
         {/* Inteligencia Artificial */}
-        <div className={\order p-4 rounded-xl flex items-start gap-3 \\}>
+        <div className={"border p-4 rounded-xl flex items-start gap-3 " + (health.ai.lastResult.includes('success') || health.ai.lastResult === 'idle' ? 'text-emerald-700 bg-emerald-50' : 'text-red-600 bg-red-50')}>
           <Activity className="w-6 h-6" />
           <div>
             <h5 className="font-bold text-sm">Inteligencia Artificial</h5>
