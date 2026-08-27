@@ -117,8 +117,9 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   html = html.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
   html = html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
   html = html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
+  const mostrarSelloGarantia = esElectrico && !garantiaVal;
   html = html.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
-  html = html.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+  html = html.replace(/\{\{warranty_seal_display\}\}/g, mostrarSelloGarantia ? 'flex' : 'none');
   html = html.replace(/\{\{specs_html\}\}/g, specsListHtml);
   html = html.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
   html = html.replace(/\{\{marca\}\}/g, headerBrandHtml);
@@ -278,6 +279,8 @@ export async function generatePdfBatch(items, ds = dataService) {
     });
     const specsListHtml = formatSpecsListHtml(bodySpecs, 7);
 
+    const mostrarSelloGarantia = esElectrico && !garantiaVal;
+
     if (templateName === 'a4' || templateName === 'robust_a4') {
       let a4Html = loadTemplate('a4', isRobust ? 'ROBUST' : brandName);
 
@@ -288,7 +291,7 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       a4Html = a4Html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       a4Html = a4Html.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
-      a4Html = a4Html.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+      a4Html = a4Html.replace(/\{\{warranty_seal_display\}\}/g, mostrarSelloGarantia ? 'flex' : 'none');
       a4Html = a4Html.replace(/\{\{specs_html\}\}/g, specsListHtml);
       a4Html = a4Html.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
       a4Html = a4Html.replace(/\{\{marca\}\}/g, headerBrandHtml);
@@ -318,7 +321,7 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
-      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, mostrarSelloGarantia ? 'flex' : 'none');
       cardHtml = cardHtml.replace(/\{\{specs_html\}\}/g, specsListHtml);
       cardHtml = cardHtml.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
       cardHtml = cardHtml.replace(/\{\{marca\}\}/g, headerBrandHtml);
@@ -347,7 +350,7 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
-      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, mostrarSelloGarantia ? 'flex' : 'none');
       cardHtml = cardHtml.replace(/\{\{specs_html\}\}/g, specsListHtml);
       cardHtml = cardHtml.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
       cardHtml = cardHtml.replace(/\{\{marca\}\}/g, headerBrandHtml);
