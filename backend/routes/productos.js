@@ -295,14 +295,38 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
       console.error('[Productos] Error al registrar historial de versión:', insertHistError.message);
     }
 
-    // 5. Invalidar caché de PDFs para este SKU en Supabase Storage (las 3 plantillas posibles)
-    const cacheFiles = [`${sku}_a4.pdf`, `${sku}_fleje3.pdf`, `${sku}_fleje2.pdf`];
-    supabaseDb.storage.from('fichas-pdf').remove(cacheFiles)
-      .then(({ error }) => {
-        if (error) console.error(`[PDF Storage] Error al invalidar caché para SKU ${sku}:`, error.message);
-        else console.log(`[PDF Storage] Caché de PDF invalidada para SKU ${sku}.`);
-      })
-      .catch(err => console.error(`[PDF Storage] Error al limpiar caché de PDF:`, err));
+    // 5. Invalidar caché de PDFs para este SKU en Supabase Storage (borrado dinámico por prefijo {sku}_)
+    (async () => {
+      try {
+        const { data: fileList, error: listError } = await supabaseDb.storage.from('fichas-pdf').list('', { search: `${sku}_` });
+        let filesToRemove = [`${sku}_a4.pdf`, `${sku}_fleje3.pdf`, `${sku}_fleje2.pdf`, `${sku}_robust_a4.pdf`, `${sku}_robust_fleje3.pdf`, `${sku}_robust_fleje2.pdf`];
+        
+        if (!listError && Array.isArray(fileList) && fileList.length > 0) {
+          const matchedFiles = fileList.filter(f => f.name && f.name.startsWith(`${sku}_`)).map(f => f.name);
+          if (matchedFiles.length > 0) {
+            filesToRemove = Array.from(new Set([...filesToRemove, ...matchedFiles]));
+          }
+        }
+        
+        const { error: removeError } = await supabaseDb.storage.from('fichas-pdf').remove(filesToRemove);
+        
+        if (removeError) {
+          console.error(`[PDF Storage] Error al invalidar caché para SKU ${sku}:`, removeError.message);
+        } else {
+          console.log(`[PDF Storage] Caché de PDF invalidada exitosamente para SKU ${sku}. Archivos borrados:`, filesToRemove);
+          
+          logAuditEvent(req, {
+            accion: 'PDF_CACHE_INVALIDATED',
+            entidad: 'FICHA_TECNICA',
+            sku,
+            resultado: 'SUCCESS',
+            detalles: { archivos_eliminados: filesToRemove }
+          });
+        }
+      } catch (cacheErr) {
+        console.error(`[PDF Storage] Excepción al limpiar caché de PDF para SKU ${sku}:`, cacheErr.message);
+      }
+    })();
 
     // 6. Registrar en el Log de Auditoría Inmutable
     logAuditEvent(req, {
