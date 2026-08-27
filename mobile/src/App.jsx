@@ -11,6 +11,7 @@ import { saveProduct, getProduct } from './lib/indexedDb';
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('userToken') || null);
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
+  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || 'operator');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeScanner, setActiveScanner] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,8 +36,10 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
     setToken(null);
     setUserEmail('');
+    setUserRole('operator');
     setProductData(null);
     setSearchTerm('');
     setIsAdminOpen(false);
@@ -45,8 +48,10 @@ export default function App() {
   const handleTokenExpiration = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
     setToken(null);
     setUserEmail('');
+    setUserRole('operator');
     setProductData(null);
     setSearchTerm('');
     setIsAdminOpen(false);
@@ -181,8 +186,8 @@ export default function App() {
               )}
             </div>
 
-            {/* Botón de Administración - Solo para administradores */}
-            {(userEmail.trim().toLowerCase() === 'admin@easy.com.ar' || userEmail.trim().toLowerCase() === 'jonatan.churruarin@outlook.com') && (
+            {/* Botón de Administración - Solo para administradores y superadmins */}
+            {(userRole === 'admin' || userRole === 'superadmin') && (
               <button 
                 onClick={() => setIsAdminOpen(true)}
                 className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
@@ -360,7 +365,7 @@ export default function App() {
 
         {/* Modal de Administración SAP */}
         {isAdminOpen && (
-          <AdminPanel token={token} userEmail={userEmail} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
+          <AdminPanel token={token} userRole={userRole} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
         )}
 
         {/* Footer simple de marca */}

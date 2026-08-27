@@ -33,6 +33,9 @@ export default function WelcomeLogin({ onLoginSuccess }) {
       // Persistir token y datos de usuario en localStorage
       localStorage.setItem('userToken', data.token);
       localStorage.setItem('userEmail', data.user.email);
+      if (data.user.role) {
+        localStorage.setItem('userRole', data.user.role);
+      }
 
       // Disparar callback
       onLoginSuccess(data.token, data.user);

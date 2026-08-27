@@ -14,8 +14,8 @@ import DatabaseViewerTab from './admin/DatabaseViewerTab';
  * Layout First Mobile, responsivo y sin barra de desplazamiento nativa visible en pestañas.
  */
 
-export default function AdminPanel({ token, userEmail, onClose, onTokenExpired }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands' | 'health'
+export default function AdminPanel({ token, userRole, onClose, onTokenExpired }) {
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands' | 'health' | 'dbviewer'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -88,7 +88,7 @@ export default function AdminPanel({ token, userEmail, onClose, onTokenExpired }
             { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2 },
             { id: 'brands', name: 'Marcas Dinámicas', icon: Layers },
             { id: 'health', name: 'Estado del Sistema', icon: Activity },
-            ...(userEmail && userEmail.toLowerCase() === 'jonatan.churruarin@outlook.com' 
+            ...(userRole === 'superadmin' 
                 ? [{ id: 'dbviewer', name: 'Base de Datos', icon: Database }] 
                 : [])
           ].map((tab) => {

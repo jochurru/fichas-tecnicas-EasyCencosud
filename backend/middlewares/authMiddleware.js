@@ -27,10 +27,14 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Resolver rol a partir del lookup exacto en usuarios_roles
+    // Resolver rol a partir del lookup exacto en usuarios_roles (pasando el JWT para respetar RLS)
     let role = 'operator';
     try {
-      const { data: roleRow, error: roleError } = await supabaseDb
+      const { createClient } = await import('@supabase/supabase-js');
+      const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+        global: { headers: { Authorization: `Bearer ${token}` } }
+      });
+      const { data: roleRow, error: roleError } = await userClient
         .from('usuarios_roles')
         .select('role')
         .eq('email', user.email)
@@ -45,7 +49,7 @@ export async function requireAuth(req, res, next) {
     
     // Fallback de emergencia
     const bootstrapEmail = process.env.SUPERADMIN_BOOTSTRAP_EMAIL;
-    if ((bootstrapEmail && user.email.toLowerCase() === bootstrapEmail.toLowerCase()) || user.email.toLowerCase() === 'jonatan.churruarin@outlook.com') {
+    if (bootstrapEmail && user.email.toLowerCase() === bootstrapEmail.toLowerCase()) {
       role = 'superadmin';
     }
 
