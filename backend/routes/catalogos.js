@@ -452,9 +452,7 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
     // Obtener el rol del usuario
     let role = 'operator';
     try {
-      const { createDbClientWithToken } = await import('../lib/supabase.js');
-      const userClient = createDbClientWithToken(data.session.access_token);
-      const { data: roleRow, error: roleError } = await userClient
+      const { data: roleRow, error: roleError } = await supabaseDb
         .from('usuarios_roles')
         .select('role')
         .eq('email', email)

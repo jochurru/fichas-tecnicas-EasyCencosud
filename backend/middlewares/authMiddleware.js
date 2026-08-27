@@ -27,12 +27,10 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Resolver rol a partir del lookup exacto en usuarios_roles (pasando el JWT para respetar RLS)
+    // Resolver rol a partir del lookup exacto en usuarios_roles
     let role = 'operator';
     try {
-      const { createDbClientWithToken } = await import('../lib/supabase.js');
-      const userClient = createDbClientWithToken(token);
-      const { data: roleRow, error: roleError } = await userClient
+      const { data: roleRow, error: roleError } = await supabaseDb
         .from('usuarios_roles')
         .select('role')
         .eq('email', user.email)
