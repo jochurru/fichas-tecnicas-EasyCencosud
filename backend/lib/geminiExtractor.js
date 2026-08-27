@@ -165,15 +165,24 @@ Devuelve ÚNICAMENTE un JSON válido que siga exactamente esta estructura:
   return cleanAndParseJson(textContent);
 }
 
+export const aiHealth = {
+  lastCall: null,
+  lastResult: 'idle', // 'success_gemini', 'success_groq', 'error'
+  lastError: null
+};
+
 /**
  * Invoca a la API de Gemini (Principal) o a Groq (Fallback) para extraer
  * y enriquecer las especificaciones técnicas de un producto.
  */
 export async function extractSpecifications(descripcion, proveedor, grupoArticulos) {
+  aiHealth.lastCall = new Date().toISOString();
   try {
     console.log('[Extractor] Intentando extracción con Gemini (3.5 Flash Lite)...');
     const result = await fetchFromGemini(descripcion, proveedor, grupoArticulos);
     console.log('[Extractor] ✓ Éxito con Gemini');
+    aiHealth.lastResult = 'success_gemini';
+    aiHealth.lastError = null;
     return result;
   } catch (geminiError) {
     console.warn(`[Extractor] ⚠️ Gemini falló (${geminiError.message}). Iniciando fallback con Groq (compound-mini)...`);
@@ -181,9 +190,13 @@ export async function extractSpecifications(descripcion, proveedor, grupoArticul
     try {
       const result = await fetchFromGroq(descripcion, proveedor, grupoArticulos);
       console.log('[Extractor] ✓ Éxito con Groq (Fallback)');
+      aiHealth.lastResult = 'success_groq';
+      aiHealth.lastError = null;
       return result;
     } catch (groqError) {
       console.error('[Extractor] ❌ Falló también el motor de Groq:', groqError.message);
+      aiHealth.lastResult = 'error';
+      aiHealth.lastError = `Gemini: ${geminiError.message} | Groq: ${groqError.message}`;
       throw new Error(`Ambos motores fallaron. Gemini: ${geminiError.message}. Groq: ${groqError.message}`);
     }
   }

@@ -138,11 +138,14 @@ app.get('/api/debug/db', async (req, res) => {
 
 } // Fin de bloque de endpoints de depuración (solo desarrollo)
 
+import superadminRouter from './routes/superadmin.js';
+
 // Rutas API
 app.use('/api', productosRouter);
 app.use('/api', impresionRouter);
 app.use('/api', catalogosRouter);
 app.use('/api', storageRouter);
+app.use('/api', superadminRouter);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

@@ -182,7 +182,7 @@ export default function App() {
             </div>
 
             {/* Botón de Administración - Solo para administradores */}
-            {userEmail === 'admin@easy.com.ar' && (
+            {(userEmail === 'admin@easy.com.ar' || userEmail.toLowerCase() === 'jonatan.churruarin@outlook.com') && (
               <button 
                 onClick={() => setIsAdminOpen(true)}
                 className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
@@ -316,13 +316,13 @@ export default function App() {
                 token={token}
                 userEmail={userEmail}
                 onTokenExpired={handleTokenExpiration}
-                onSaveSuccess={(updatedFicha, newEan) => {
+                onSaveSuccess={(updatedFicha, updatedEans) => {
                   // Actualizar estado local con la nueva ficha aprobada e EAN
                   setProductData({
                     ...productData,
                     producto: {
                       ...productData.producto,
-                      eans: newEan ? [newEan] : productData.producto.eans
+                      eans: Array.isArray(updatedEans) ? updatedEans : productData.producto.eans
                     },
                     ficha_tecnica: updatedFicha,
                     origen: 'base_datos' // Cambiar origen a base de datos tras guardado
@@ -360,7 +360,7 @@ export default function App() {
 
         {/* Modal de Administración SAP */}
         {isAdminOpen && (
-          <AdminPanel token={token} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
+          <AdminPanel token={token} userEmail={userEmail} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
         )}
 
         {/* Footer simple de marca */}

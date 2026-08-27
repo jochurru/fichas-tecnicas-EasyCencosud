@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import CatalogImportTab from './admin/CatalogImportTab';
 import EanImportTab from './admin/EanImportTab';
 import QualityMetricsTab from './admin/QualityMetricsTab';
 import UsageMetricsTab from './admin/UsageMetricsTab';
 import DynamicBrandsTab from './admin/DynamicBrandsTab';
+import SystemHealthTab from './admin/SystemHealthTab';
 
 /**
  * @fileoverview Modal contenedor principal del Panel de Administración.
  * Layout First Mobile, responsivo y sin barra de desplazamiento nativa visible en pestañas.
  */
 
-export default function AdminPanel({ token, onClose, onTokenExpired }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands'
+export default function AdminPanel({ token, userEmail, onClose, onTokenExpired }) {
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands' | 'health'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -84,7 +85,8 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
             { id: 'ean', name: 'Mapeo EANs', icon: KeyRound },
             { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp },
             { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2 },
-            { id: 'brands', name: 'Marcas Dinámicas', icon: Layers }
+            { id: 'brands', name: 'Marcas Dinámicas', icon: Layers },
+            { id: 'health', name: 'Estado del Sistema', icon: Activity }
           ].map((tab) => {
             const IconComponent = tab.icon;
             const isActive = activeTab === tab.id;
@@ -155,6 +157,10 @@ export default function AdminPanel({ token, onClose, onTokenExpired }) {
 
           {activeTab === 'metrics' && (
             <UsageMetricsTab stats={stats} />
+          )}
+
+          {activeTab === 'health' && (
+            <SystemHealthTab />
           )}
 
           {activeTab === 'analytics' && (
