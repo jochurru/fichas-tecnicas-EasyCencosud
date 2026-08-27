@@ -85,10 +85,11 @@ export function getHighlightPill(specs = [], rawDestacado = '') {
  * Genera el marcado HTML para la lista de viñetas de especificaciones principales.
  * 
  * @param {Array<{clave: string, valor: string}>} specs - Lista de especificaciones del producto
+ * @param {number} [maxSpecs=7] - Cantidad máxima de especificaciones a renderizar
  * @returns {string} Código HTML `<li>...</li>`
  */
-export function formatSpecsListHtml(specs = []) {
-  return specs.slice(0, 4).map(s => 
+export function formatSpecsListHtml(specs = [], maxSpecs = 7) {
+  return specs.slice(0, maxSpecs).map(s => 
     `<li class="spec-item"><span class="spec-bullet">·</span><span class="spec-text">${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
   ).join('');
 }

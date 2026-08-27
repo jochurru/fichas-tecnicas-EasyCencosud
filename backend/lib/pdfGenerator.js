@@ -106,8 +106,8 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
   });
 
-  // Formatear lista de viñetas HTML
-  const specsListHtml = formatSpecsListHtml(bodySpecs);
+  // Formatear lista de viñetas HTML (hasta 7 especificaciones)
+  const specsListHtml = formatSpecsListHtml(bodySpecs, 7);
   const selloGarantiaImg = getWarrantySealBase64();
 
   // Inyección de variables en el HTML
@@ -132,18 +132,6 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   html = html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
   html = html.replace(/\{\{garantia_numero\}\}/g, escapeHtml(garantiaNumero || ''));
   html = html.replace(/\{\{aprobado_por\}\}/g, escapeHtml(aprobado_por));
-
-  // Mapear especificaciones individuales spec1 a spec5
-  for (let i = 0; i < 5; i++) {
-    const spec = bodySpecs[i];
-    if (spec) {
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), escapeHtml(spec.clave || '-'));
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), escapeHtml(spec.valor || '-'));
-    } else {
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), '-');
-      html = html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), '-');
-    }
-  }
 
   // Adquirir un slot del semáforo de concurrencia antes de abrir la pestaña
   await acquirePageSlot();
@@ -284,9 +272,14 @@ export async function generatePdfBatch(items, ds = dataService) {
       tituloLinea2 = descWords.slice(2).join(' ');
     }
 
+    const bodySpecs = specs.filter(s => {
+      const k = (s.clave || '').toLowerCase();
+      return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
+    });
+    const specsListHtml = formatSpecsListHtml(bodySpecs, 7);
+
     if (templateName === 'a4' || templateName === 'robust_a4') {
       let a4Html = loadTemplate('a4', isRobust ? 'ROBUST' : brandName);
-      const specsListHtml = formatSpecsListHtml(specs);
 
       a4Html = a4Html.replace(/\{\{tipo_herramienta\}\}/g, escapeHtml(tipo_herramienta));
       a4Html = a4Html.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
@@ -304,19 +297,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
       a4Html = a4Html.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
       a4Html = a4Html.replace(/\{\{foto_url\}\}/g, foto_url);
-      a4Html = a4Html.replace(/\{\{origen\}\}/g, escapeHtml(origen));
-      a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantia));
-
-      for (let i = 0; i < 5; i++) {
-        const spec = specs[i];
-        if (spec) {
-          a4Html = a4Html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), escapeHtml(spec.clave || '-'));
-          a4Html = a4Html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), escapeHtml(spec.valor || '-'));
-        } else {
-          a4Html = a4Html.replace(new RegExp(`\\{\\{spec${i+1}_label\\}\\}`, 'g'), '-');
-          a4Html = a4Html.replace(new RegExp(`\\{\\{spec${i+1}_value\\}\\}`, 'g'), '-');
-        }
-      }
+      a4Html = a4Html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
+      a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
       // Extraer el body del HTML para empaquetarlo como página A4 en el lote
       const bodyMatch = a4Html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -326,194 +309,62 @@ export async function generatePdfBatch(items, ds = dataService) {
         a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always;">${pageInner}</div>`);
       }
     } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
-      let cardHtml = '';
+      let cardHtml = loadTemplate('fleje3', isRobust ? 'ROBUST' : brandName);
 
-      if (isRobust) {
-        const specsListHtml = specs.slice(0, 4).map(s => 
-          `<li style="font-size: 6.5pt; font-weight: 600; color: #ffffff; display: flex; align-items: flex-start; line-height: 1.15; margin-bottom: 0.5mm;"><span style="margin-right: 1.5mm; font-size: 7pt;">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
-        ).join('');
+      cardHtml = cardHtml.replace(/\{\{tipo_herramienta\}\}/g, escapeHtml(tipo_herramienta));
+      cardHtml = cardHtml.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
+      cardHtml = cardHtml.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
+      cardHtml = cardHtml.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+      cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
+      cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
+      cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{specs_html\}\}/g, specsListHtml);
+      cardHtml = cardHtml.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
+      cardHtml = cardHtml.replace(/\{\{marca\}\}/g, headerBrandHtml);
+      cardHtml = cardHtml.replace(/\{\{sku\}\}/g, escapeHtml(producto.sku));
+      cardHtml = cardHtml.replace(/\{\{ean\}\}/g, escapeHtml(ean));
+      cardHtml = cardHtml.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
+      cardHtml = cardHtml.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
+      cardHtml = cardHtml.replace(/\{\{foto_url\}\}/g, foto_url);
+      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
+      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-        cardHtml = `
-        <div class="card-robust-fleje3">
-          <div style="width: 48%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; height: 100%; overflow: hidden;">
-            <div>
-              <div style="margin-bottom: 2mm; max-height: 8mm; display: flex; align-items: center;">
-                ${headerBrandHtml}
-              </div>
-              <div style="margin-bottom: 2mm; max-width: 36mm; overflow: hidden;">
-                <div style="font-size: 10pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tituloLinea1)}</div>
-                ${tituloLinea2 ? `<div style="font-size: 8pt; font-weight: 500; color: #ffffff; text-transform: uppercase; line-height: 1.05; overflow: hidden;">${escapeHtml(tituloLinea2)}</div>` : ''}
-              </div>
-              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 1mm; background: #000000; border: 1px solid rgba(255,255,255,0.9); padding: 0.8mm 2.2mm; border-radius: 4px; margin-bottom: 2mm; width: fit-content;"><span style="font-size: 6.5pt; font-weight: 700; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #ffffff; margin: 0 0.4mm; font-size: 6pt;">⚡</span><span style="font-size: 6.5pt; font-weight: 700; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
-              <ul style="list-style: none; padding: 0; margin: 0;">
-                ${specsListHtml}
-              </ul>
-            </div>
-            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.5mm 0; width: fit-content; margin-top: auto;">
-              <span style="font-size: 6.5pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
-            </div>
-          </div>
-          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 52%; display: flex; justify-content: center; align-items: center; padding: 3mm;">
-            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-            ${esElectrico && selloGarantiaImg ? `<img src="${selloGarantiaImg}" style="position: absolute; right: 3.5mm; bottom: 3.5mm; width: 16mm; height: 16mm; object-fit: contain; z-index: 20;" />` : ''}
-          </div>
-        </div>`;
-      } else {
-        const spec1_label = specs[0]?.clave || '-';
-        const spec1_value = specs[0]?.valor || '-';
-        const spec2_label = specs[1]?.clave || '-';
-        const spec2_value = specs[1]?.valor || '-';
-        const spec3_label = specs[2]?.clave || '-';
-        const spec3_value = specs[2]?.valor || '-';
-        const spec4_label = specs[3]?.clave || '-';
-        const spec4_value = specs[3]?.valor || '-';
-        const spec5_label = specs[4]?.clave || '-';
-        const spec5_value = specs[4]?.valor || '-';
-
-        cardHtml = `
-        <div class="card-fleje3">
-          <div class="header">
-            <div class="header-left">
-              <span class="header-title">${escapeHtml(tipo_herramienta)}</span>
-              <span class="header-subtitle">${escapeHtml(destacado)}</span>
-            </div>
-            <div class="header-right">
-              ${headerBrandHtml}
-              <span class="header-sku">SAP ${escapeHtml(producto.sku)}</span>
-            </div>
-          </div>
-          <div class="body-grid">
-            <div class="specs-column">
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec1_label)}</span>
-                <span class="spec-value">${escapeHtml(spec1_value)}</span>
-              </div>
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec2_label)}</span>
-                <span class="spec-value">${escapeHtml(spec2_value)}</span>
-              </div>
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec3_label)}</span>
-                <span class="spec-value">${escapeHtml(spec3_value)}</span>
-              </div>
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec4_label)}</span>
-                <span class="spec-value">${escapeHtml(spec4_value)}</span>
-              </div>
-            </div>
-            <div class="image-column">
-              <img class="product-image" src="${foto_url}" />
-            </div>
-          </div>
-          <div class="footer-grid">
-            <div class="footer-cell">
-              <span class="footer-label">${escapeHtml(spec5_label)}</span>
-              <span class="footer-value">${escapeHtml(spec5_value)}</span>
-            </div>
-            <div class="footer-cell">
-              <span class="footer-label">Origen</span>
-              <span class="footer-value">${escapeHtml(origen)}</span>
-            </div>
-            <div class="footer-cell">
-              <span class="footer-label">Garantía</span>
-              <span class="footer-value">${escapeHtml(garantia)}</span>
-            </div>
-          </div>
-          <div class="bottom-bar"></div>
-        </div>`;
-      }
+      const cardMatch = cardHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      const cardInner = cardMatch ? cardMatch[1] : cardHtml;
 
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje3Cards.push(cardHtml);
+        fleje3Cards.push(cardInner);
       }
     } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
-      let cardHtml = '';
+      let cardHtml = loadTemplate('fleje2', isRobust ? 'ROBUST' : brandName);
 
-      if (isRobust) {
-        const specsListHtml = specs.slice(0, 3).map(s => 
-          `<li style="font-size: 4.8pt; font-weight: 600; color: #ffffff; display: flex; align-items: flex-start; line-height: 1.1; margin-bottom: 0.3mm;"><span style="margin-right: 1mm; font-size: 5pt;">·</span><span>${escapeHtml(s.clave)}: ${escapeHtml(s.valor)}</span></li>`
-        ).join('');
+      cardHtml = cardHtml.replace(/\{\{tipo_herramienta\}\}/g, escapeHtml(tipo_herramienta));
+      cardHtml = cardHtml.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
+      cardHtml = cardHtml.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
+      cardHtml = cardHtml.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+      cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
+      cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
+      cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{warranty_seal_display\}\}/g, esElectrico ? 'flex' : 'none');
+      cardHtml = cardHtml.replace(/\{\{specs_html\}\}/g, specsListHtml);
+      cardHtml = cardHtml.replace(/\{\{garantia_sello_img\}\}/g, selloGarantiaImg);
+      cardHtml = cardHtml.replace(/\{\{marca\}\}/g, headerBrandHtml);
+      cardHtml = cardHtml.replace(/\{\{sku\}\}/g, escapeHtml(producto.sku));
+      cardHtml = cardHtml.replace(/\{\{ean\}\}/g, escapeHtml(ean));
+      cardHtml = cardHtml.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
+      cardHtml = cardHtml.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
+      cardHtml = cardHtml.replace(/\{\{foto_url\}\}/g, foto_url);
+      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
+      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-        cardHtml = `
-        <div class="card-robust-fleje2">
-          <div style="width: 48%; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; height: 100%; overflow: hidden;">
-            <div>
-              <div style="margin-bottom: 1.8mm; max-height: 5mm; display: flex; align-items: center;">
-                ${headerBrandHtml}
-              </div>
-              <div style="margin-top: 1mm; margin-bottom: 1mm; max-width: 100%; overflow: hidden;">
-                <div style="font-size: 6.5pt; font-weight: 900; color: #ffffff; text-transform: uppercase; line-height: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(tituloLinea1)}</div>
-                ${tituloLinea2 ? `<div style="font-size: 5.5pt; font-weight: 500; color: #ffffff; text-transform: uppercase; line-height: 1.05; overflow: hidden;">${escapeHtml(tituloLinea2)}</div>` : ''}
-              </div>
-              ${mostrarPill ? `<div style="display: inline-flex; align-items: center; gap: 0.8mm; background: #000000; border: 0.8px solid rgba(255,255,255,0.9); padding: 0.3mm 1.2mm; border-radius: 3px; margin-bottom: 0.8mm; width: fit-content;"><span style="font-size: 4.8pt; font-weight: 700; color: #ffffff;">${escapeHtml(destacadoVal)}</span><span style="color: #ffffff; margin: 0 0.3mm; font-size: 4.2pt;">⚡</span><span style="font-size: 4.8pt; font-weight: 700; color: #00e5ff;">${escapeHtml(destacadoLbl)}</span></div>` : ''}
-              <ul style="list-style: none; padding: 0; margin: 0;">
-                ${specsListHtml}
-              </ul>
-            </div>
-            <div style="border-top: 1px solid #ffffff; border-bottom: 1px solid #ffffff; padding: 0.4mm 0; width: fit-content; margin-top: auto;">
-              <span style="font-size: 5.5pt; font-weight: 800; color: #ffffff;">SKU: ${escapeHtml(producto.sku)}</span>
-            </div>
-          </div>
-          <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 52%; display: flex; justify-content: center; align-items: center; padding: 2mm;">
-            <img src="${foto_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-            ${esElectrico && selloGarantiaImg ? `<img src="${selloGarantiaImg}" style="position: absolute; right: 2.5mm; bottom: 2.5mm; width: 11mm; height: 11mm; object-fit: contain; z-index: 20;" />` : ''}
-          </div>
-        </div>`;
-      } else {
-        const spec1_label = specs[0]?.clave || '-';
-        const spec1_value = specs[0]?.valor || '-';
-        const spec2_label = specs[1]?.clave || '-';
-        const spec2_value = specs[1]?.valor || '-';
-        const spec3_label = specs[2]?.clave || '-';
-        const spec3_value = specs[2]?.valor || '-';
-
-        cardHtml = `
-        <div class="card-fleje2">
-          <div class="header">
-            <div class="header-left">
-              <span class="header-title">${escapeHtml(tipo_herramienta)}</span>
-              <span class="header-subtitle">${escapeHtml(destacado)}</span>
-            </div>
-            <div class="header-right">
-              ${headerBrandHtml}
-              <span class="header-sku">SAP ${escapeHtml(producto.sku)}</span>
-            </div>
-          </div>
-          <div class="body-grid">
-            <div class="specs-column">
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec1_label)}</span>
-                <span class="spec-value">${escapeHtml(spec1_value)}</span>
-              </div>
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec2_label)}</span>
-                <span class="spec-value">${escapeHtml(spec2_value)}</span>
-              </div>
-              <div class="spec-cell">
-                <span class="spec-label">${escapeHtml(spec3_label)}</span>
-                <span class="spec-value">${escapeHtml(spec3_value)}</span>
-              </div>
-            </div>
-            <div class="image-column">
-              <img class="product-image" src="${foto_url}" />
-            </div>
-          </div>
-          <div class="footer-grid">
-            <div class="footer-cell">
-              <span class="footer-label">Origen</span>
-              <span class="footer-value">${escapeHtml(origen)}</span>
-            </div>
-            <div class="footer-cell">
-              <span class="footer-label">Garantía</span>
-              <span class="footer-value">${escapeHtml(garantia)}</span>
-            </div>
-          </div>
-          <div class="bottom-bar"></div>
-        </div>`;
-      }
+      const cardMatch = cardHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      const cardInner = cardMatch ? cardMatch[1] : cardHtml;
 
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje2Cards.push(cardHtml);
+        fleje2Cards.push(cardInner);
       }
     }
   }

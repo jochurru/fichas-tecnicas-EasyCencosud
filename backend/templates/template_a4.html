@@ -99,50 +99,52 @@
             border-bottom: 2px solid #cbd5e1;
         }
         
-        /* Columna Izquierda (Specs) */
+        /* Columna Izquierda (Specs Dinámicas) */
         .specs-column {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            border-right: 2px solid #cbd5e1;
-            background: #f8fafc;
-        }
-        .spec-cell {
-            flex: 1;
+            width: 42%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 4mm;
-            text-align: center;
+            border-right: 2px solid #cbd5e1;
+            background: #f8fafc;
+            padding: 8mm 10mm;
+            overflow: hidden;
         }
-        .spec-cell:last-child {
-            border-bottom: none;
+        .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        .spec-label {
-            font-size: 15pt;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1.5mm;
-        }
-        .spec-value {
-            font-size: 26pt;
-            font-weight: 700;
+        .spec-item {
+            font-size: 14pt;
+            font-weight: 600;
             color: #0f172a;
-            line-height: 1.2;
+            line-height: 1.25;
+            display: flex;
+            align-items: flex-start;
+        }
+        .spec-bullet {
+            color: #e30613;
+            font-weight: bold;
+            margin-right: 3mm;
+            font-size: 16pt;
+            line-height: 1;
+        }
+        .spec-text {
+            word-break: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            max-width: 100%;
         }
 
         /* Columna Derecha (Foto) */
         .image-column {
-            width: 60%;
+            width: 58%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -217,24 +219,11 @@
 
     <!-- Body Grid -->
     <div class="body-grid">
-        <!-- Columna Izquierda (4 especificaciones principales) -->
+        <!-- Columna Izquierda (Especificaciones Dinámicas) -->
         <div class="specs-column">
-            <div class="spec-cell">
-                <span class="spec-label">{{spec1_label}}</span>
-                <span class="spec-value">{{spec1_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec2_label}}</span>
-                <span class="spec-value">{{spec2_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec3_label}}</span>
-                <span class="spec-value">{{spec3_value}}</span>
-            </div>
-            <div class="spec-cell">
-                <span class="spec-label">{{spec4_label}}</span>
-                <span class="spec-value">{{spec4_value}}</span>
-            </div>
+            <ul class="specs-list">
+                {{specs_html}}
+            </ul>
         </div>
 
         <!-- Columna Derecha (Foto del Producto) -->
@@ -243,12 +232,8 @@
         </div>
     </div>
 
-    <!-- Footer Grid (3 especificaciones complementarias/origen/garantia) -->
+    <!-- Footer Grid (Origen y Garantía) -->
     <div class="footer-grid">
-        <div class="footer-cell">
-            <span class="footer-label">{{spec5_label}}</span>
-            <span class="footer-value">{{spec5_value}}</span>
-        </div>
         <div class="footer-cell">
             <span class="footer-label">Origen</span>
             <span class="footer-value">{{origen}}</span>
