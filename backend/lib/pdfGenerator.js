@@ -128,8 +128,8 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   html = html.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
   html = html.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
   html = html.replace(/\{\{foto_url\}\}/g, ficha_tecnica.foto_url || 'https://placehold.co/400x300?text=Sin+Foto');
-  html = html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
-  html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+  html = html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || 'S/D'));
+  html = html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || 'Legal'));
   html = html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
   html = html.replace(/\{\{garantia_numero\}\}/g, escapeHtml(garantiaNumero || ''));
   html = html.replace(/\{\{aprobado_por\}\}/g, escapeHtml(aprobado_por));
@@ -312,8 +312,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
       a4Html = a4Html.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
       a4Html = a4Html.replace(/\{\{foto_url\}\}/g, foto_url);
-      a4Html = a4Html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
-      a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      a4Html = a4Html.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || 'S/D'));
+      a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || 'Legal'));
       a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
       for (let c = 0; c < (item.cantidad || 1); c++) {
@@ -339,8 +339,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
       cardHtml = cardHtml.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
       cardHtml = cardHtml.replace(/\{\{foto_url\}\}/g, foto_url);
-      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
-      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || 'S/D'));
+      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || 'Legal'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
       for (let c = 0; c < (item.cantidad || 1); c++) {
@@ -365,8 +365,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{descripcion\}\}/g, escapeHtml(producto.descripcion || ''));
       cardHtml = cardHtml.replace(/\{\{proveedor\}\}/g, escapeHtml(producto.proveedor || 'DESCONOCIDO'));
       cardHtml = cardHtml.replace(/\{\{foto_url\}\}/g, foto_url);
-      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || ''));
-      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || ''));
+      cardHtml = cardHtml.replace(/\{\{origen\}\}/g, escapeHtml(origenVal || 'S/D'));
+      cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || 'Legal'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
       for (let c = 0; c < (item.cantidad || 1); c++) {
