@@ -128,7 +128,7 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
   }
 
   // Tratamiento especial para plantillas dinámicas ROBUST
-  if (brandLower.includes('robust')) {
+  if (normBrand.includes('robust')) {
     let robustLogoHeight = '8mm';
     let robustLogoWidth = '38mm';
     if (templateName === 'a4') {
