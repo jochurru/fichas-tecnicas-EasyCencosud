@@ -378,9 +378,10 @@ export class SupabaseProvider {
    */
   async getMarcaBySlug(slug) {
     const rawSlug = (slug || '').trim().toLowerCase();
-    const cleanSlug = rawSlug.replace(/[^a-z0-9]/g, '');
+    const normSlug = rawSlug.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const cleanSlug = normSlug.replace(/[^a-z0-9]/g, '');
 
-    // 1. Búsqueda directa por slug exacto
+    // 1. Búsqueda por rawSlug
     const { data: exact, error } = await supabase
       .from('marcas')
       .select('*')
@@ -389,8 +390,19 @@ export class SupabaseProvider {
 
     if (!error && exact) return exact;
 
-    // 2. Búsqueda por slug limpio (sin espacios ni caracteres especiales)
-    if (cleanSlug && cleanSlug !== rawSlug) {
+    // 2. Búsqueda por normSlug (sin acentos: ej. kärcher -> karcher)
+    if (normSlug && normSlug !== rawSlug) {
+      const { data: norm } = await supabase
+        .from('marcas')
+        .select('*')
+        .eq('slug', normSlug)
+        .maybeSingle();
+
+      if (norm) return norm;
+    }
+
+    // 3. Búsqueda por cleanSlug (sin espacios ni especiales)
+    if (cleanSlug) {
       const { data: cleaned } = await supabase
         .from('marcas')
         .select('*')
@@ -400,23 +412,22 @@ export class SupabaseProvider {
       if (cleaned) return cleaned;
     }
 
-    // 3. Búsqueda flexible comparando la lista de marcas (ej: "black & decker" vs "blackdecker" vs "black and decker")
+    // 4. Búsqueda flexible comparando normSlug y cleanSlug con todas las marcas de la BD
     try {
       const { data: allMarcas } = await supabase.from('marcas').select('*');
       if (allMarcas && allMarcas.length > 0) {
         const match = allMarcas.find(m => {
-          const mSlugClean = (m.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-          const mNameClean = (m.nombre || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-          const normClean = cleanSlug.replace(/and/g, '');
-          const normMSlug = mSlugClean.replace(/and/g, '');
-          const normMName = mNameClean.replace(/and/g, '');
+          const mSlug = (m.slug || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          const mName = (m.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          const mSlugClean = mSlug.replace(/[^a-z0-9]/g, '');
+          const mNameClean = mName.replace(/[^a-z0-9]/g, '');
 
           return (
+            mSlug === normSlug ||
+            mName === normSlug ||
             mSlugClean === cleanSlug ||
             mNameClean === cleanSlug ||
-            normMSlug === normClean ||
-            normMName === normClean
+            (cleanSlug && mSlugClean && (cleanSlug.includes(mSlugClean) || mSlugClean.includes(cleanSlug)))
           );
         });
         if (match) return match;

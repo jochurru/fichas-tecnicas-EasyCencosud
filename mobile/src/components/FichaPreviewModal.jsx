@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
+// Caché global en memoria para evitar latencias HTTP repetidas en cada apertura de modal
+let cachedMarcasList = null;
+
 export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, templateName = 'fleje3', onClose }) {
   const { marca = 'GENÉRICA', tipo_herramienta = 'HERRAMIENTA', especificaciones = [] } = currentSpecs || {};
   const [dynamicLogoUrl, setDynamicLogoUrl] = useState(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // Logo de marcas (Fallback estático en caso de no estar en DB)
   const brandLogoMap = {
@@ -27,11 +31,39 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
     'daewoo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Daewoo-logo.svg/1200px-Daewoo-logo.svg.png'
   };
 
-  const brandLower = marca.toLowerCase();
+  const rawBrand = (marca || '').trim();
+  const normBrand = rawBrand.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const cleanBrand = normBrand.replace(/[^a-z0-9]/g, '');
 
-  // Consultar la base de datos de Marcas Dinámicas para obtener el logo oficial subido
+  // Consultar marcas dinámicas (con caché instantáneo)
   useEffect(() => {
     let isMounted = true;
+
+    const applyFromList = (list) => {
+      if (!Array.isArray(list)) return;
+      const matched = list.find(b => {
+        const bSlug = (b.slug || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const bName = (b.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const bSlugClean = bSlug.replace(/[^a-z0-9]/g, '');
+        const bNameClean = bName.replace(/[^a-z0-9]/g, '');
+
+        return (
+          bSlug === normBrand ||
+          bName === normBrand ||
+          (cleanBrand && bSlugClean && (cleanBrand.includes(bSlugClean) || bSlugClean.includes(cleanBrand))) ||
+          (cleanBrand && bNameClean && (cleanBrand.includes(bNameClean) || bNameClean.includes(cleanBrand)))
+        );
+      });
+      if (matched && matched.logo_url && isMounted) {
+        setDynamicLogoUrl(matched.logo_url);
+      }
+    };
+
+    if (cachedMarcasList) {
+      applyFromList(cachedMarcasList);
+      return;
+    }
+
     const fetchDynamicBrand = async () => {
       try {
         const token = localStorage.getItem('userToken');
@@ -40,16 +72,8 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
         });
         if (res.ok) {
           const marcasList = await res.json();
-          if (Array.isArray(marcasList)) {
-            const cleanBrand = brandLower.replace(/[^a-z0-9]/g, '');
-            const matched = marcasList.find(b => {
-              const bSlug = (b.slug || b.nombre || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-              return cleanBrand.includes(bSlug) || bSlug.includes(cleanBrand);
-            });
-            if (matched && matched.logo_url && isMounted) {
-              setDynamicLogoUrl(matched.logo_url);
-            }
-          }
+          cachedMarcasList = marcasList;
+          applyFromList(marcasList);
         }
       } catch (err) {
         console.warn('[FichaPreviewModal] Error al obtener logo dinámico:', err);
@@ -57,11 +81,13 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
     };
     fetchDynamicBrand();
     return () => { isMounted = false; };
-  }, [marca, brandLower]);
+  }, [marca, normBrand, cleanBrand]);
 
   let staticLogoUrl = null;
   for (const key of Object.keys(brandLogoMap)) {
-    if (brandLower.includes(key)) {
+    const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const cleanKey = normKey.replace(/[^a-z0-9]/g, '');
+    if (normBrand.includes(normKey) || (cleanBrand && cleanKey && cleanBrand.includes(cleanKey))) {
       staticLogoUrl = brandLogoMap[key];
       break;
     }
@@ -216,8 +242,8 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     {destacado && <span className="text-[10px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
                   </div>
                   <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt={marca} className="h-5 object-contain" />
+                    {logoUrl && !logoFailed ? (
+                      <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-5 max-w-full object-contain bg-white/95 px-1 py-0.5 rounded shadow-sm" />
                     ) : (
                       <span className="font-black text-[10px] uppercase truncate text-white">{marca}</span>
                     )}
@@ -275,8 +301,8 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   {destacado && <span className="text-[7.5px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
                 </div>
                 <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={marca} className="h-3.5 object-contain" />
+                  {logoUrl && !logoFailed ? (
+                    <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-3.5 max-w-full object-contain bg-white/95 px-0.5 py-0.5 rounded shadow-sm" />
                   ) : (
                     <span className="font-black text-[8px] uppercase truncate text-white">{marca}</span>
                   )}

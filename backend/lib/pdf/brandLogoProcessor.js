@@ -52,11 +52,13 @@ const brandLogoMap = {
  * @returns {Promise<{ headerBrandHtml: string, logoUrl: string }>} Objeto con HTML del logo y URL resuelta
  */
 export async function processBrandLogo(brandName = '', templateName = 'fleje3') {
-  const brandLower = brandName.toLowerCase().trim();
+  const rawBrand = (brandName || '').trim();
+  const normBrand = rawBrand.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const cleanBrand = normBrand.replace(/[^a-z0-9]/g, '');
   let logoUrl = '';
 
   try {
-    const dbBrand = await dataService.getMarcaBySlug(brandLower);
+    const dbBrand = await dataService.getMarcaBySlug(rawBrand) || await dataService.getMarcaBySlug(normBrand);
     if (dbBrand && dbBrand.logo_url) {
       logoUrl = dbBrand.logo_url;
     }
@@ -65,13 +67,21 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
   }
 
   if (!logoUrl) {
-    logoUrl = brandLogoMap[brandLower] || '';
+    for (const key of Object.keys(brandLogoMap)) {
+      const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const cleanKey = normKey.replace(/[^a-z0-9]/g, '');
+      if (normBrand.includes(normKey) || (cleanBrand && cleanKey && cleanBrand.includes(cleanKey))) {
+        logoUrl = brandLogoMap[key];
+        break;
+      }
+    }
   }
 
   let headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
 
   if (logoUrl) {
-    let logoHeight = '65px';
+    let logoHeight = '36px';
+    if (templateName === 'a4') logoHeight = '55px';
     if (templateName === 'fleje3') logoHeight = '36px';
     if (templateName === 'fleje2') logoHeight = '22px';
 
@@ -79,16 +89,21 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
 
     try {
       if (isRaster) {
-        headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+        // Para imágenes PNG/JPG cargadas desde Supabase, envolver en fondo contrastante blanco suave para evitar que logos negros desaparezcan sobre la cabecera oscura (#222222)
+        headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
       } else {
         const response = await fetch(logoUrl);
         if (response.ok) {
           let svgText = await response.text();
 
-          if (brandLower.includes('dewalt') || brandLower.includes('stanley') || brandLower.includes('bosch') || brandLower.includes('einhell') || brandLower.includes('makita') || brandLower.includes('gamma')) {
+          if (normBrand.includes('dewalt') || normBrand.includes('stanley') || normBrand.includes('bosch') || normBrand.includes('einhell') || normBrand.includes('makita') || normBrand.includes('gamma')) {
             // Preservar colores oficiales originales
-          } else if (brandLower.includes('karcher') || brandLower.includes('kärcher')) {
-            svgText = svgText.replace(/<\/style>/g, 'path, polygon { fill: #ffffff !important; }</style>');
+          } else if (normBrand.includes('karcher')) {
+            if (svgText.includes('</style>')) {
+              svgText = svgText.replace(/<\/style>/g, 'path, polygon, text { fill: #ffffff !important; }</style>');
+            } else {
+              svgText = svgText.replace('<svg', '<svg><style>path, polygon, text { fill: #ffffff !important; }</style>');
+            }
           } else {
             svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff')
                              .replace(/fill="#000000"/g, 'fill="#ffffff"')
@@ -103,12 +118,12 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
           const base64Svg = Buffer.from(svgText).toString('base64');
           headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
         } else {
-          headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+          headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
         }
       }
     } catch (fetchErr) {
       console.warn(`[BrandLogoProcessor] Error al descargar logo de ${brandName}:`, fetchErr.message);
-      headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
     }
   }
 
