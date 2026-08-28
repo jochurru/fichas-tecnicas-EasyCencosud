@@ -44,7 +44,7 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['admin']), async 
     // Rate limiter check
     let rateLimiterStatus = 'fallback_memory';
     try {
-      const { data, error } = await supabaseDb.from('gemini_rate_limits').select('id').limit(1);
+      const { data, error } = await supabaseDb.from('gemini_rate_limits').select('*').limit(1);
       if (!error) {
         rateLimiterStatus = 'ok_db';
       }
