@@ -168,12 +168,12 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
               </div>
             ) : (
               /* ========================================================================= */
-              /* PLANTILLA ESTÁNDAR (Fleje 2, Fleje 3, A4 Estándar)                       */
+              /* PLANTILLA ESTÁNDAR (Fleje 3: 90x74mm)                                    */
               /* ========================================================================= */
               <div className={`${widthClass} ${heightClass} bg-white text-gray-900 shadow-xl border border-gray-300 rounded-lg flex flex-col justify-between overflow-hidden relative font-sans select-none`}>
                 {/* Header */}
-                <div className="bg-[#222222] text-white h-[65px] px-3 py-2 flex justify-between items-center">
-                  <div className="max-w-[60%] flex flex-col justify-center">
+                <div className="bg-[#222222] text-white h-[60px] px-3.5 py-2 flex justify-between items-center shrink-0">
+                  <div className="max-w-[60%] flex flex-col justify-center text-left">
                     <span className="font-black text-xs uppercase leading-tight truncate">{tipo_herramienta}</span>
                     {destacado && <span className="text-[10px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
                   </div>
@@ -181,108 +181,102 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     {logoUrl ? (
                       <img src={logoUrl} alt={marca} className="h-5 object-contain" />
                     ) : (
-                      <span className="font-bold text-[10px] uppercase truncate">{marca}</span>
+                      <span className="font-black text-[10px] uppercase truncate text-white">{marca}</span>
                     )}
-                    <span className="text-[8px] text-gray-400 leading-none mt-1">SAP {sku}</span>
+                    <span className="text-[8px] text-gray-400 leading-none mt-0.5">SAP {sku}</span>
                   </div>
                 </div>
 
-                {/* Body */}
-                <div className="flex-1 flex border-b border-gray-200 min-h-0">
-                  <div className="w-[42%] bg-gray-50 border-r border-gray-200 flex flex-col divide-y divide-gray-100 overflow-hidden text-center justify-center">
-                    {bodySpecs.slice(0, 4).map((spec, i) => (
-                      <div key={i} className="flex-1 flex flex-col justify-center py-0.5 px-1 min-h-0">
-                        <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">{spec.clave}</span>
-                        <span className="text-[9px] font-bold text-gray-800 leading-tight truncate">{spec.valor}</span>
-                      </div>
-                    ))}
-                    {bodySpecs.length < 4 && Array.from({ length: 4 - bodySpecs.length }).map((_, idx) => (
-                      <div key={idx} className="flex-1 flex flex-col justify-center min-h-0">
-                        <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide">-</span>
-                      </div>
-                    ))}
+                {/* Body Grid */}
+                <div className="flex-1 flex border-b border-[#cbd5e1] min-h-0 bg-white">
+                  {/* Columna Izquierda: Viñetas rojas */}
+                  <div className="w-[48%] bg-[#f8fafc] border-r border-[#cbd5e1] p-2.5 flex flex-col justify-center overflow-hidden text-left">
+                    <ul className="space-y-1.5 w-full">
+                      {bodySpecs.slice(0, 5).map((spec, i) => (
+                        <li key={i} className="text-[8.5px] font-medium text-[#0f172a] flex items-start leading-tight">
+                          <span className="text-[#e30613] font-black mr-1 text-[9px] leading-none shrink-0">▪</span>
+                          <span className="truncate"><strong>{spec.clave}:</strong> {spec.valor}</span>
+                        </li>
+                      ))}
+                      {bodySpecs.length === 0 && (
+                        <li className="text-[8px] text-gray-400 italic">Sin especificaciones cargadas</li>
+                      )}
+                    </ul>
                   </div>
-                  <div className="w-[58%] p-2 flex items-center justify-center">
+                  {/* Columna Derecha: Foto */}
+                  <div className="w-[52%] p-2 flex items-center justify-center bg-white">
                     <img src={currentFotoUrl || 'https://placehold.co/100?text=Sin+Foto'} alt="Foto" className="max-h-full max-w-full object-contain" />
                   </div>
                 </div>
 
-                {/* Footer Grid */}
-                <div className="h-[48px] bg-gray-100 flex divide-x divide-gray-200">
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
-                    <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">{bodySpecs[4]?.clave || '-'}</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{bodySpecs[4]?.valor || '-'}</span>
+                {/* Footer Grid (Origen y Garantía) */}
+                <div className="h-[40px] bg-[#f1f5f9] flex divide-x divide-[#cbd5e1] shrink-0">
+                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1">
+                    <span className="text-[7px] font-black uppercase text-[#64748b] tracking-wider">ORIGEN</span>
+                    <span className="text-[10px] font-bold text-[#0f172a] leading-tight truncate">{origenVal || 'S/D'}</span>
                   </div>
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
-                    <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">Origen</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{origenVal || '-'}</span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1 min-h-0">
-                    <span className="text-[7px] font-extrabold uppercase text-gray-400 tracking-wide truncate">Garantía</span>
-                    <span className="text-[9px] font-bold text-gray-800 leading-none truncate">{garantiaVal || '-'}</span>
+                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1">
+                    <span className="text-[7px] font-black uppercase text-[#64748b] tracking-wider">GARANTÍA</span>
+                    <span className="text-[10px] font-bold text-[#0f172a] leading-tight truncate">{garantiaVal || '6 MESES'}</span>
                   </div>
                 </div>
 
                 {/* Bottom bar */}
-                <div className="h-[8px] bg-[#e30613]"></div>
+                <div className="h-[6px] bg-[#e30613] w-full shrink-0"></div>
               </div>
             )
           )}
 
           {/* PLANTILLA: FLEJE 2 (80x40mm) */}
           {templateName === 'fleje2' && (
-            <div className={`${widthClass} ${heightClass} bg-white shadow-lg border border-dashed border-gray-400 flex flex-col overflow-hidden text-left relative font-sans select-none`}>
+            <div className={`${widthClass} ${heightClass} bg-white shadow-lg border border-dashed border-gray-400 rounded-md flex flex-col overflow-hidden text-left relative font-sans select-none`}>
               {/* Header */}
-              <div className="bg-[#222222] text-white h-[44px] px-2.5 py-1 flex justify-between items-center">
-                <div className="max-w-[60%] flex flex-col justify-center">
+              <div className="bg-[#222222] text-white h-[42px] px-2.5 py-1 flex justify-between items-center shrink-0">
+                <div className="max-w-[60%] flex flex-col justify-center text-left">
                   <span className="font-black text-[9px] uppercase leading-tight truncate">{tipo_herramienta}</span>
-                  {destacado && <span className="text-[8px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
+                  {destacado && <span className="text-[7.5px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
                 </div>
                 <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
                   {logoUrl ? (
-                    <img src={logoUrl} alt={marca} className="h-4 object-contain" />
+                    <img src={logoUrl} alt={marca} className="h-3.5 object-contain" />
                   ) : (
-                    <span className="font-bold text-[8px] uppercase truncate">{marca}</span>
+                    <span className="font-black text-[8px] uppercase truncate text-white">{marca}</span>
                   )}
                   <span className="text-[6.5px] text-gray-400 leading-none mt-0.5">SAP {sku}</span>
                 </div>
               </div>
 
               {/* Body */}
-              <div className="flex-1 flex border-b border-gray-200 min-h-0">
-                <div className="w-[50%] bg-gray-50 border-r border-gray-200 flex flex-col divide-y divide-gray-100 overflow-hidden justify-center px-1">
-                  {especificaciones.slice(0, 3).map((spec, i) => (
-                    <div key={i} className="flex justify-between items-center py-0.5 text-[8px] min-h-0">
-                      <span className="font-extrabold uppercase text-gray-400 truncate max-w-[45%]">{spec.clave}</span>
-                      <span className="font-bold text-gray-800 truncate max-w-[50%]">{spec.valor}</span>
-                    </div>
-                  ))}
-                  {especificaciones.length < 3 && Array.from({ length: 3 - especificaciones.length }).map((_, idx) => (
-                    <div key={idx} className="flex justify-between items-center py-0.5 text-[8px] min-h-0">
-                      <span className="font-extrabold uppercase text-gray-400">-</span>
-                      <span className="font-bold text-gray-800">-</span>
-                    </div>
-                  ))}
+              <div className="flex-1 flex border-b border-[#cbd5e1] min-h-0 bg-white">
+                <div className="w-[50%] bg-[#f8fafc] border-r border-[#cbd5e1] p-1.5 flex flex-col justify-center overflow-hidden text-left">
+                  <ul className="space-y-1 w-full">
+                    {bodySpecs.slice(0, 3).map((spec, i) => (
+                      <li key={i} className="text-[7.5px] font-medium text-[#0f172a] flex items-start leading-tight">
+                        <span className="text-[#e30613] font-black mr-0.5 text-[8px] leading-none shrink-0">▪</span>
+                        <span className="truncate"><strong>{spec.clave}:</strong> {spec.valor}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="w-[50%] p-1 flex items-center justify-center">
+                <div className="w-[50%] p-1 flex items-center justify-center bg-white">
                   <img src={currentFotoUrl || 'https://placehold.co/100?text=Sin+Foto'} alt="Foto" className="max-h-full max-w-full object-contain" />
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="h-[24px] bg-gray-100 flex items-center px-2 justify-between text-[7.5px] font-bold text-gray-800">
-                <div className="flex gap-1">
-                  <span className="text-gray-400 font-extrabold">ORIGEN:</span>
-                  <span>{origen}</span>
+              <div className="h-[24px] bg-[#f1f5f9] flex divide-x divide-[#cbd5e1] text-[7.5px] font-bold text-gray-800 shrink-0">
+                <div className="flex-1 flex items-center justify-center gap-1 text-center">
+                  <span className="text-[#64748b] font-black text-[6.5px]">ORIGEN:</span>
+                  <span className="text-[#0f172a] truncate">{origenVal || 'S/D'}</span>
                 </div>
-                <div className="flex gap-1">
-                  <span className="text-gray-400 font-extrabold">GARANTÍA:</span>
-                  <span>{garantia}</span>
+                <div className="flex-1 flex items-center justify-center gap-1 text-center">
+                  <span className="text-[#64748b] font-black text-[6.5px]">GARANTÍA:</span>
+                  <span className="text-[#0f172a] truncate">{garantiaVal || '6 MESES'}</span>
                 </div>
               </div>
 
               {/* Bottom bar */}
-              <div className="h-[5px] bg-[#e30613]"></div>
+              <div className="h-[4px] bg-[#e30613] w-full shrink-0"></div>
             </div>
           )}
 
