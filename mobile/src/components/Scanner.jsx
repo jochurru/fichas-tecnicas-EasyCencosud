@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera, RefreshCw, QrCode, Eye, Plus, ShieldCheck } from 'lucide-react';
+import { X, Camera, RefreshCw, QrCode, Eye, Plus, ShieldCheck, Check } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { getProduct, saveProduct, savePrintQueueItem } from '../lib/indexedDb';
 import FichaPreviewModal from './FichaPreviewModal';
@@ -190,15 +190,23 @@ export default function Scanner({ token, onScanSuccess, onClose }) {
 
   // Agregar item del Toast a la Cola de Impresión
   const handleAddToQueue = async () => {
-    if (!toastItem || toastItem.loading || toastItem.error) return;
+    if (!toastItem || toastItem.loading || toastItem.error || toastItem.added) return;
     
     await savePrintQueueItem(toastItem);
+    
+    // Vibración de confirmación
+    triggerHaptic();
+
+    // Mostrar estado de confirmación verde
+    setToastItem(prev => ({ ...prev, added: true }));
     
     // Disparar evento global para actualizar componentes y Drawer
     window.dispatchEvent(new Event('print-queue-updated'));
     
-    // Ocultar toast de confirmación
-    setToastItem(null);
+    // Ocultar toast de confirmación suavemente tras 1.4s
+    setTimeout(() => {
+      setToastItem(current => (current && current.added ? null : current));
+    }, 1400);
   };
 
   return (
@@ -267,12 +275,18 @@ export default function Scanner({ token, onScanSuccess, onClose }) {
             <div className="flex flex-col gap-1 shrink-0">
               {!toastItem.loading && !toastItem.error && (
                 <>
-                  <button
-                    onClick={handleAddToQueue}
-                    className="bg-easy-red hover:bg-red-700 text-white text-[9px] font-black uppercase px-2 py-1.5 rounded-lg active:scale-95 transition-all flex items-center gap-1 shadow-sm"
-                  >
-                    <Plus className="w-3 h-3" /> Cola
-                  </button>
+                  {toastItem.added ? (
+                    <span className="bg-emerald-600 text-white text-[9px] font-black uppercase px-2 py-1.5 rounded-lg flex items-center gap-1 shadow-sm animate-pulse">
+                      <Check className="w-3 h-3 text-white" /> Agregado
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleAddToQueue}
+                      className="bg-easy-red hover:bg-red-700 text-white text-[9px] font-black uppercase px-2 py-1.5 rounded-lg active:scale-95 transition-all flex items-center gap-1 shadow-sm"
+                    >
+                      <Plus className="w-3 h-3" /> Cola
+                    </button>
+                  )}
                   <button
                     onClick={() => setPreviewItem(toastItem)}
                     className="bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-black uppercase px-2 py-1.5 rounded-lg active:scale-95 transition-all flex items-center gap-1 shadow-sm"

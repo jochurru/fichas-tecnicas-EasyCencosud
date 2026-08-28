@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, X, Trash2, Plus, Minus, Eye, RefreshCw, FileText } from 'lucide-react';
+import { Printer, X, Trash2, Plus, Minus, Eye, RefreshCw, FileText, CheckCircle2, Check } from 'lucide-react';
 import { getPrintQueue, savePrintQueueItem, removePrintQueueItem, clearPrintQueue } from '../lib/indexedDb';
 import { API_BASE_URL } from '../config';
 import FichaPreviewModal from './FichaPreviewModal';
@@ -10,6 +10,7 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
   const [loading, setLoading] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [showClearToast, setShowClearToast] = useState(false);
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState(null);
 
   // Cargar cola desde IndexedDB al iniciar y al abrir el cajón
   const loadQueue = async () => {
@@ -139,7 +140,8 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
       const ss = String(now.getSeconds()).padStart(2, '0');
       const timestamp = `${YYYY}-${MM}-${DD}_${hh}-${mm}-${ss}`;
 
-      link.setAttribute('download', `lote_impresion_${timestamp}.pdf`);
+      const filename = `lote_impresion_${timestamp}.pdf`;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -150,6 +152,12 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
       loadQueue();
       setIsOpen(false);
       
+      // Mostrar cartel de confirmación visual flotante
+      setDownloadSuccessToast(filename);
+      setTimeout(() => {
+        setDownloadSuccessToast(null);
+      }, 6000);
+
       if (onPrintSuccess) {
         onPrintSuccess();
       }
@@ -390,6 +398,29 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-easy-dark/95 backdrop-blur-sm text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2.5 z-50 animate-fade-in border border-white/10 select-none">
           <span className="text-green-500 text-sm">✓</span>
           <span>Cola de impresión vaciada</span>
+        </div>
+      )}
+
+      {/* Cartel Flotante de Confirmación de Descarga de Lote */}
+      {downloadSuccessToast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 max-w-md w-[92%] bg-emerald-600/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl z-[60] flex items-center justify-between border border-emerald-400/40 select-none animate-bounce">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="font-bold text-xs block leading-none">¡Lote PDF generado con éxito!</span>
+              <span className="text-[10px] text-emerald-100 font-semibold truncate block mt-1 font-mono">
+                {downloadSuccessToast}
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={() => setDownloadSuccessToast(null)} 
+            className="p-1.5 hover:bg-white/20 active:scale-95 rounded-lg text-emerald-100 hover:text-white transition-colors shrink-0 ml-2"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </>
