@@ -1,35 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, templateName = 'fleje3', onClose }) {
   const { marca = 'GENÉRICA', tipo_herramienta = 'HERRAMIENTA', especificaciones = [] } = currentSpecs || {};
+  const [dynamicLogoUrl, setDynamicLogoUrl] = useState(null);
 
-  // Logo de marcas
+  // Logo de marcas (Fallback estático en caso de no estar en DB)
   const brandLogoMap = {
     'einhell': 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Einhell_Germany_logo.svg',
     'bosch': 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Bosch-Logo.svg',
     'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/8/89/DeWalt_Logo.svg',
-    'stanley': 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Stanley_Hand_Tools_logo.svg',
-    'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
-    'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
-    'b&d': 'https://upload.wikimedia.org/wikipedia/commons/1/10/Black_%26_Decker_logo.svg',
-    'makita': 'https://upload.wikimedia.org/wikipedia/commons/7/71/Makita_Logo.svg',
-    'karcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
-    'dremel': 'https://upload.wikimedia.org/wikipedia/commons/7/79/Dremel_logo.svg',
-    'skil': 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Skil_logo_2019.svg',
-    'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
+    'stanley': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+    'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+    'black and decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+    'black+decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+    'b&d': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+    'makita': 'https://upload.wikimedia.org/wikipedia/commons/9/91/Makita_logo.svg',
+    'karcher': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/K%C3%A4rcher_Logo.svg',
+    'kärcher': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/K%C3%A4rcher_Logo.svg',
+    'dremel': 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Dremel_Logo.svg',
+    'skil': 'https://upload.wikimedia.org/wikipedia/commons/6/66/Skil_Logo.svg',
+    'gamma': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Gamma_logo.svg/320px-Gamma_logo.svg.png',
     'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
-    'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
+    'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png',
+    'daewoo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Daewoo-logo.svg/1200px-Daewoo-logo.svg.png'
   };
 
   const brandLower = marca.toLowerCase();
-  let logoUrl = null;
+
+  // Consultar la base de datos de Marcas Dinámicas para obtener el logo oficial subido
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDynamicBrand = async () => {
+      try {
+        const token = localStorage.getItem('userToken');
+        const res = await fetch(`${API_BASE_URL}/marcas`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          const marcasList = await res.json();
+          if (Array.isArray(marcasList)) {
+            const cleanBrand = brandLower.replace(/[^a-z0-9]/g, '');
+            const matched = marcasList.find(b => {
+              const bSlug = (b.slug || b.nombre || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+              return cleanBrand.includes(bSlug) || bSlug.includes(cleanBrand);
+            });
+            if (matched && matched.logo_url && isMounted) {
+              setDynamicLogoUrl(matched.logo_url);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[FichaPreviewModal] Error al obtener logo dinámico:', err);
+      }
+    };
+    fetchDynamicBrand();
+    return () => { isMounted = false; };
+  }, [marca, brandLower]);
+
+  let staticLogoUrl = null;
   for (const key of Object.keys(brandLogoMap)) {
     if (brandLower.includes(key)) {
-      logoUrl = brandLogoMap[key];
+      staticLogoUrl = brandLogoMap[key];
       break;
     }
   }
+
+  const logoUrl = dynamicLogoUrl || staticLogoUrl;
 
   const esElectrico = especificaciones.some(s => {
     const claveLower = (s.clave || '').toLowerCase();
