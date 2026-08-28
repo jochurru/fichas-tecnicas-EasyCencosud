@@ -1,35 +1,20 @@
 steps:
-  # 1. Instalar dependencias, configurar entorno Chromium y correr pruebas
-  - name: 'node:20-slim'
+  # 1. Compilar la imagen de Docker para Google Cloud Run aprovechando la caché de capas
+  - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    dir: 'backend'
     args:
       - '-c'
       - |
-        npm ci
-        apt-get update && apt-get install -y chromium fonts-freefont-ttf libxss1
-        npm test
-    env:
-      - 'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true'
-      - 'PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium'
+        docker pull us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest || true
+        docker build --cache-from us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest -t us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:$COMMIT_SHA -t us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest ./backend
 
-  # 2. Compilar la imagen de Docker para Google Cloud Run
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:$COMMIT_SHA'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest'
-      - './backend'
-
-  # 3. Empujar la imagen al Artifact Registry
+  # 2. Empujar la imagen al Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:$COMMIT_SHA'
 
-  # 4. Desplegar el servicio actualizado a Google Cloud Run
+  # 3. Desplegar el servicio actualizado a Google Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -47,7 +32,7 @@ images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:$COMMIT_SHA'
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/fichas-tecnicas-easycencosud:latest'
 
-timeout: '1200s'
+timeout: '600s'
 
 options:
   logging: CLOUD_LOGGING_ONLY
