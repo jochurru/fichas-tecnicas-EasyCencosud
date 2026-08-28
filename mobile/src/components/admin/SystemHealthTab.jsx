@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Database, FileText, Cpu, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Activity, Database, FileText, Cpu, AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 export default function SystemHealthTab() {
@@ -93,11 +93,15 @@ export default function SystemHealthTab() {
         </div>
 
         {/* Rate Limiter */}
-        <div className="border p-4 rounded-xl flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-amber-500" />
+        <div className={"border p-4 rounded-xl flex items-start gap-3 " + (health.rateLimiter.status === 'ok_db' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200')}>
+          {health.rateLimiter.status === 'ok_db' ? (
+            <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
+          )}
           <div>
             <h5 className="font-bold text-sm">Control de Tráfico (Rate Limiter)</h5>
-            <p className="text-xs">Modo: {health.rateLimiter.status}</p>
+            <p className="text-xs">Modo: {health.rateLimiter.status === 'ok_db' ? 'Base de Datos (Compartido)' : 'Memoria RAM (Local)'}</p>
           </div>
         </div>
       </div>
