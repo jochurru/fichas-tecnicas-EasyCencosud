@@ -66,7 +66,7 @@ export class SupabaseProvider {
     );
     if (data && data.sku) return data.sku;
 
-    // Fallback: Si tiene ceros a la izquierda, intentar buscando la versión desprovista de ceros iniciales
+    // Fallback 1: Si tiene ceros a la izquierda, intentar buscando la versión desprovista de ceros iniciales
     const eanNoZeros = cleanEan.replace(/^0+/, '');
     if (eanNoZeros && eanNoZeros !== cleanEan) {
       const data2 = await this._queryWithRetry(() => 
@@ -78,6 +78,20 @@ export class SupabaseProvider {
         'resolveSkuFromEan'
       );
       if (data2 && data2.sku) return data2.sku;
+    }
+
+    // Fallback 2: Si tiene 12 dígitos (UPC-A americano), intentar anteponiendo el '0' para EAN-13 internacional
+    if (cleanEan.length === 12) {
+      const eanWithZero = '0' + cleanEan;
+      const data3 = await this._queryWithRetry(() => 
+        supabase
+          .from('codigos_ean')
+          .select('sku')
+          .eq('ean', eanWithZero)
+          .maybeSingle(),
+        'resolveSkuFromEan'
+      );
+      if (data3 && data3.sku) return data3.sku;
     }
 
     return null;
