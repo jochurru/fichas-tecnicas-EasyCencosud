@@ -31,8 +31,8 @@ const brandLogoMap = {
   'black+decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
   'skil': 'https://upload.wikimedia.org/wikipedia/commons/6/66/Skil_Logo.svg',
   'dremel': 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Dremel_Logo.svg',
-  'karcher': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/K%C3%A4rcher_Logo.svg',
-  'kärcher': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/K%C3%A4rcher_Logo.svg',
+  'karcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
+  'kärcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
   'gamma': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Gamma_logo.svg/320px-Gamma_logo.svg.png',
   'robust': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Robust_Logo.png/320px-Robust_Logo.png'
 };
@@ -92,7 +92,9 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
         // Para imágenes PNG/JPG cargadas desde Supabase, envolver en fondo contrastante blanco suave para evitar que logos negros desaparezcan sobre la cabecera oscura (#222222)
         headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
       } else {
-        const response = await fetch(logoUrl);
+        const response = await fetch(logoUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
         if (response.ok) {
           let svgText = await response.text();
 
@@ -107,7 +109,7 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
           } else {
             svgText = svgText.replace(/fill:#000000/g, 'fill:#ffffff')
                              .replace(/fill="#000000"/g, 'fill="#ffffff"')
-                             .replace(/fill="#000"/g, 'fill="#ffffff"')
+                             .replace(/fill="#000"/g, 'fill:#ffffff"')
                              .replace(/fill="black"/g, 'fill="white"')
                              .replace(/stroke:#000000/g, 'stroke:#ffffff')
                              .replace(/stroke="#000000"/g, 'stroke:#ffffff')
@@ -118,12 +120,13 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
           const base64Svg = Buffer.from(svgText).toString('base64');
           headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
         } else {
-          headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
+          // Si el servidor remoto devuelve 404 o error, caer a texto institucional limpio en vez de un icono roto
+          headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
         }
       }
     } catch (fetchErr) {
       console.warn(`[BrandLogoProcessor] Error al descargar logo de ${brandName}:`, fetchErr.message);
-      headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
+      headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
     }
   }
 
