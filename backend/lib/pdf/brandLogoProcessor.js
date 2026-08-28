@@ -89,8 +89,7 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
 
     try {
       if (isRaster) {
-        // Para imágenes PNG/JPG cargadas desde Supabase, envolver en fondo contrastante blanco suave para evitar que logos negros desaparezcan sobre la cabecera oscura (#222222)
-        headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle; background: rgba(255,255,255,0.92); padding: 2px 5px; border-radius: 4px;" />`;
+        headerBrandHtml = `<img src="${logoUrl}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
       } else {
         const response = await fetch(logoUrl, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }

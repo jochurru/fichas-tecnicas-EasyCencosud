@@ -243,7 +243,7 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   </div>
                   <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
                     {logoUrl && !logoFailed ? (
-                      <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-5 max-w-full object-contain bg-white/95 px-1 py-0.5 rounded shadow-sm" />
+                      <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-5 max-w-full object-contain" />
                     ) : (
                       <span className="font-black text-[10px] uppercase truncate text-white">{marca}</span>
                     )}
@@ -302,7 +302,7 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                 </div>
                 <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
                   {logoUrl && !logoFailed ? (
-                    <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-3.5 max-w-full object-contain bg-white/95 px-0.5 py-0.5 rounded shadow-sm" />
+                    <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-3.5 max-w-full object-contain" />
                   ) : (
                     <span className="font-black text-[8px] uppercase truncate text-white">{marca}</span>
                   )}
