@@ -42,7 +42,18 @@ export default function ForcePasswordChangeModal({ user, onPasswordChanged }) {
         body: JSON.stringify({ newPassword })
       });
 
-      const data = await res.json();
+      if (res.status === 401) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userNombre');
+        localStorage.removeItem('userMustChangePassword');
+        setError('Tu sesión anterior expiró. Reiniciando para que inicies sesión nuevamente...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1800);
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Error al cambiar la contraseña.');
