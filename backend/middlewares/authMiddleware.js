@@ -27,20 +27,33 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Resolver rol a partir del lookup exacto en usuarios_roles
-    let role = 'operator';
+    // Resolver rol y sector a partir de la tabla profiles
+    let role = 'operador';
+    let sectorId = 1;
+
     try {
-      const { data: roleRow, error: roleError } = await supabaseDb
-        .from('usuarios_roles')
-        .select('role')
-        .eq('email', user.email)
+      const { data: profileRow } = await supabaseDb
+        .from('profiles')
+        .select('rol, sector_id')
+        .eq('id', user.id)
         .maybeSingle();
 
-      if (!roleError && roleRow) {
-        role = roleRow.role;
+      if (profileRow) {
+        role = profileRow.rol || 'operador';
+        sectorId = profileRow.sector_id || 1;
+      } else {
+        const { data: roleRow } = await supabaseDb
+          .from('usuarios_roles')
+          .select('role')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        if (roleRow && roleRow.role) {
+          role = roleRow.role;
+        }
       }
     } catch (dbErr) {
-      console.error('[AuthMiddleware] Error buscando rol en base de datos:', dbErr.message);
+      console.error('[AuthMiddleware] Error buscando perfil en base de datos:', dbErr.message);
     }
     
     // Fallback de emergencia
@@ -50,6 +63,7 @@ export async function requireAuth(req, res, next) {
     }
 
     user.role = role;
+    user.sector_id = sectorId;
 
     // Inyectar el usuario en la request para controladores posteriores
     req.user = user;

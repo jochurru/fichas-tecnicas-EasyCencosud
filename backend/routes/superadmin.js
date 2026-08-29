@@ -13,7 +13,7 @@ const router = express.Router();
  * GET /api/admin/estado-sistema
  * Retorna métricas en vivo del backend. Accesible para admin y superadmin.
  */
-router.get('/admin/estado-sistema', requireAuth, requireRoles(['admin']), async (req, res) => {
+router.get('/admin/estado-sistema', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin']), async (req, res) => {
   try {
     // DB Check
     let dbStatus = 'error';

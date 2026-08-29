@@ -28,7 +28,7 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
       query = query.eq('sector_id', parseInt(sector_id, 10));
     }
 
-    const { data: fichas, error } = await query.order('created_at', { ascending: false });
+    const { data: fichas, error } = await query.order('updated_at', { ascending: false });
 
     if (error) throw error;
     return res.json(fichas || []);
