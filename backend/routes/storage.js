@@ -11,7 +11,7 @@ const router = Router();
  * @route   POST /api/upload/imagen
  * @desc    Sube una imagen de producto o de marca a Supabase Storage y actualiza la base de datos.
  */
-router.post('/upload/imagen', requireAuth, requireRoles(['admin', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
+router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
   const { tipo, id, fileBase64, nombre } = req.body;
 
   try {
@@ -155,7 +155,7 @@ router.get('/marcas', requireAuth, async (req, res, next) => {
  * @route   POST /api/marcas
  * @desc    Crea o edita una marca manualmente.
  */
-router.post('/marcas', requireAuth, requireRoles(['admin', 'coordinator']), async (req, res, next) => {
+router.post('/marcas', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
   const { slug, nombre, logo_url } = req.body;
   if (!slug || !nombre || !logo_url) {
     return res.status(400).json({ error: 'Faltan parámetros obligatorios: slug, nombre, logo_url' });
