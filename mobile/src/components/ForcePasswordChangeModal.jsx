@@ -48,6 +48,8 @@ export default function ForcePasswordChangeModal({ user, onPasswordChanged }) {
         throw new Error(data.error || 'Error al cambiar la contraseña.');
       }
 
+      // Actualizar localStorage para evitar que vuelva a pedir en recargas
+      localStorage.setItem('userMustChangePassword', 'false');
       setSuccess(true);
       setTimeout(() => {
         if (onPasswordChanged) onPasswordChanged();

@@ -533,9 +533,10 @@ router.post('/auth/change-password', async (req, res, next) => {
 
   try {
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !userData.user) {
+      console.error('[Auth] Error validando token en cambio de clave:', userError?.message);
       return res.status(401).json({ error: 'Sesión inválida o expirada.' });
     }
 
