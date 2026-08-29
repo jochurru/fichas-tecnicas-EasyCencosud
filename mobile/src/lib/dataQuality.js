@@ -194,15 +194,19 @@ export function detectInconsistencies(producto, ficha, eanList = [], brandSlugsW
  */
 export function getEstadoMetadata(estado) {
   const map = {
-    'SIN_FICHA': { label: 'Sin Ficha', bg: 'bg-gray-100', text: 'text-gray-600' },
-    'BORRADOR': { label: 'Borrador', bg: 'bg-orange-100', text: 'text-orange-700' },
-    'GENERADA_POR_IA': { label: 'Generada por IA', bg: 'bg-purple-100', text: 'text-purple-700' },
-    'PENDIENTE_VALIDACION': { label: 'Pendiente Validación', bg: 'bg-blue-100', text: 'text-blue-700' },
-    'APROBADA': { label: 'Aprobada', bg: 'bg-green-100', text: 'text-green-700' },
-    'OBSERVADA': { label: 'Observada', bg: 'bg-rose-100', text: 'text-rose-700' },
-    'DESACTUALIZADA': { label: 'Desactualizada', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-    'VENCIDA': { label: 'Vencida', bg: 'bg-red-100', text: 'text-red-700' }
+    'SIN_FICHA': { label: 'Sin Ficha', bg: 'bg-slate-100 border border-slate-200', text: 'text-slate-600' },
+    'BORRADOR': { label: 'Borrador', bg: 'bg-amber-100 border border-amber-300', text: 'text-amber-800' },
+    'GENERADA_POR_IA': { label: '🤖 Borrador IA', bg: 'bg-purple-100 border border-purple-200', text: 'text-purple-800' },
+    'generada_ia': { label: '🤖 Borrador IA', bg: 'bg-purple-100 border border-purple-200', text: 'text-purple-800' },
+    'PENDIENTE_VALIDACION': { label: '⌛ Pendiente de Revisión', bg: 'bg-blue-100 border border-blue-300', text: 'text-blue-800' },
+    'pendiente_revision': { label: '⌛ Pendiente de Revisión', bg: 'bg-blue-100 border border-blue-300', text: 'text-blue-800' },
+    'APROBADA': { label: '✓ Aprobada — Lista para Imprimir', bg: 'bg-emerald-100 border border-emerald-300', text: 'text-emerald-800' },
+    'aprobado': { label: '✓ Aprobada — Lista para Imprimir', bg: 'bg-emerald-100 border border-emerald-300', text: 'text-emerald-800' },
+    'OBSERVADA': { label: 'Observada / Devuelta', bg: 'bg-rose-100 border border-rose-300', text: 'text-rose-800' },
+    'rechazado': { label: 'Observada / Devuelta', bg: 'bg-rose-100 border border-rose-300', text: 'text-rose-800' },
+    'DESACTUALIZADA': { label: 'Desactualizada', bg: 'bg-yellow-100 border border-yellow-300', text: 'text-yellow-800' },
+    'VENCIDA': { label: 'Vencida', bg: 'bg-red-100 border border-red-300', text: 'text-red-800' }
   };
   
-  return map[estado] || { label: estado || 'Desconocido', bg: 'bg-gray-100', text: 'text-gray-600' };
+  return map[estado] || { label: estado || 'Desconocido', bg: 'bg-slate-100 border border-slate-200', text: 'text-slate-600' };
 }
