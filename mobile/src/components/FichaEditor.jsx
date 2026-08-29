@@ -648,23 +648,30 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         </div>
 
         {/* Sección: Estado de la Ficha (Ciclo de Vida P1.2) */}
-        <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1">Estado de la Ficha</label>
-          <select
-            disabled={isReadOnly || isOffline}
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50 font-semibold text-gray-700"
-          >
-            <option value="BORRADOR">Borrador</option>
-            <option value="GENERADA_POR_IA">Generada por IA</option>
-            <option value="PENDIENTE_VALIDACION">Pendiente de Validación</option>
-            <option value="APROBADA">Aprobada</option>
-            <option value="OBSERVADA">Observada</option>
-            <option value="DESACTUALIZADA">Desactualizada</option>
-            <option value="VENCIDA">Vencida</option>
-          </select>
-        </div>
+        {!isOperador ? (
+          <div>
+            <label className="block text-xs font-bold text-gray-600 mb-1">Estado de la Ficha</label>
+            <select
+              disabled={isOffline}
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
+              className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-easy-red focus:border-transparent transition-all disabled:opacity-60 disabled:bg-gray-50 font-semibold text-gray-700"
+            >
+              <option value="BORRADOR">Borrador</option>
+              <option value="GENERADA_POR_IA">Generada por IA</option>
+              <option value="PENDIENTE_VALIDACION">Pendiente de Validación</option>
+              <option value="APROBADA">Aprobada</option>
+              <option value="OBSERVADA">Observada</option>
+              <option value="DESACTUALIZADA">Desactualizada</option>
+              <option value="VENCIDA">Vencida</option>
+            </select>
+          </div>
+        ) : (
+          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-center justify-between text-xs text-amber-900 font-medium">
+            <span>Estado actual: <strong className="uppercase">{estado}</strong></span>
+            <span className="text-[10px] text-amber-700 font-bold">🔒 Revisión requerida por Encargado</span>
+          </div>
+        )}
 
         {/* Sección: Aprobador (Local) */}
         <div>
