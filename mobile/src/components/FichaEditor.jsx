@@ -647,8 +647,8 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
           </div>
         </div>
 
-        {/* Sección: Estado de la Ficha (Ciclo de Vida P1.2) */}
-        {!isOperador ? (
+        {/* Sección: Estado de la Ficha (Solo visible para coordinadores y gerencia) */}
+        {!isOperador && (
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1">Estado de la Ficha</label>
             <select
@@ -666,24 +666,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
               <option value="VENCIDA">Vencida</option>
             </select>
           </div>
-        ) : (
-          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-center justify-between text-xs text-amber-900 font-medium">
-            <span>Estado actual: <strong className="uppercase">{estado}</strong></span>
-            <span className="text-[10px] text-amber-700 font-bold">🔒 Revisión requerida por Encargado</span>
-          </div>
         )}
-
-        {/* Sección: Aprobador (Local) */}
-        <div>
-          <label className="block text-xs font-bold text-gray-600 mb-1">Aprobado Por (Nombre Operador)</label>
-          <input
-            type="text"
-            required
-            disabled={true}
-            value={aprobadoPor}
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 focus:outline-none cursor-not-allowed select-none"
-          />
-        </div>
 
         {/* Alerts de Feedback */}
         {errorMsg && (
