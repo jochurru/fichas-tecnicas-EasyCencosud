@@ -82,7 +82,7 @@ export default function ImageUploadSection({
             },
             body: JSON.stringify({
               tipo: 'producto',
-              id: sku,
+              id: String(sku),
               fileBase64: base64Data
             })
           })

@@ -70,7 +70,7 @@ export const pdfBatchSchema = z.object({
 
 export const uploadImageSchema = z.object({
   tipo: z.enum(['producto', 'marca']),
-  id: z.string().trim().min(1).max(50),
+  id: z.union([z.string(), z.number()]).transform(val => String(val).trim()),
   nombre: z.string().optional(),
   fileBase64: z.string()
     .min(1, "El archivo no puede estar vacío.")

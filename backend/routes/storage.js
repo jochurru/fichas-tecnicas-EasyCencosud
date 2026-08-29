@@ -19,7 +19,7 @@ router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 
     const base64Cleaned = fileBase64.replace(/^data:image\/\w+;base64,/, "");
     const fileBuffer = Buffer.from(base64Cleaned, 'base64');
 
-    const cleanId = id.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+    const cleanId = String(id || '').trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
     const folder = tipo === 'producto' ? 'productos' : 'marcas';
     const filePath = `${folder}/${cleanId}.webp`;
 
