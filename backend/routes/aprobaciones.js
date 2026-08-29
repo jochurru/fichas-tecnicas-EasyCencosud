@@ -58,7 +58,7 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
       updates.foto_url = foto_url;
     }
     if (especificaciones) {
-      updates.especificaciones = especificaciones;
+      updates.especificaciones_json = especificaciones;
     }
 
     const { data: ficha, error } = await supabaseDb
