@@ -393,10 +393,13 @@ export default function App() {
         </footer>
 
         {/* Modal de Cambio Obligatorio de Contraseña */}
-        {currentUser?.must_change_password && (
+        {currentUser && (currentUser.must_change_password === true || currentUser.must_change_password === 'true') && (
           <ForcePasswordChangeModal
             user={currentUser}
-            onPasswordChanged={() => setCurrentUser({ ...currentUser, must_change_password: false })}
+            onPasswordChanged={() => {
+              localStorage.setItem('userMustChangePassword', 'false');
+              setCurrentUser(prev => prev ? { ...prev, must_change_password: false } : null);
+            }}
           />
         )}
 
