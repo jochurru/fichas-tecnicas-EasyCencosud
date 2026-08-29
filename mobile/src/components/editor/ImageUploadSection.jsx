@@ -19,6 +19,11 @@ export default function ImageUploadSection({
   const [uploadState, setUploadState] = useState('idle'); // 'idle' | 'reading' | 'compressing' | 'uploading' | 'success' | 'error'
   const [statusMsg, setStatusMsg] = useState('');
   const [errorDetails, setErrorDetails] = useState('');
+  const [imgError, setImgError] = useState(false);
+
+  React.useEffect(() => {
+    setImgError(false);
+  }, [fotoUrl]);
 
   const fileInputRef = React.useRef(null);
 
@@ -160,12 +165,17 @@ export default function ImageUploadSection({
         <div className={`w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center p-2 shrink-0 relative transition-all duration-300 ${
           uploadState === 'success' ? 'ring-4 ring-emerald-500/50 border-emerald-500' : ''
         }`}>
-          {fotoUrl ? (
-            <img src={fotoUrl} alt="Producto" className="max-w-full max-h-full object-contain" />
+          {fotoUrl && !imgError ? (
+            <img 
+              src={fotoUrl} 
+              alt="Producto" 
+              onError={() => setImgError(true)}
+              className="max-w-full max-h-full object-contain" 
+            />
           ) : (
             <div className="text-center text-gray-400">
               <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-50" />
-              <span className="text-[10px] font-bold block">Sin Imagen</span>
+              <span className="text-[10px] font-bold block">{imgError ? 'Enlace Roto' : 'Sin Imagen'}</span>
             </div>
           )}
 
