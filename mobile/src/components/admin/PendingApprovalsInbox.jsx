@@ -22,7 +22,12 @@ export default function PendingApprovalsInbox({ user }) {
       const res = await fetch(`${API_BASE_URL}/aprobaciones/pendientes`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      if (!res.ok) throw new Error('Error al cargar la bandeja de aprobaciones.');
+      if (res.status === 401) {
+        localStorage.removeItem('userToken');
+        window.location.reload();
+        return;
+      }
+      if (!res.ok) throw new Error(`Error al cargar la bandeja de aprobaciones (HTTP ${res.status}).`);
       const data = await res.json();
       setFichas(data || []);
     } catch (err) {

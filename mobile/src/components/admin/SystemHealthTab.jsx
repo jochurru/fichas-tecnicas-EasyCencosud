@@ -17,7 +17,12 @@ export default function SystemHealthTab() {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!res.ok) throw new Error('Error fetching system health');
+      if (res.status === 401) {
+        localStorage.removeItem('userToken');
+        window.location.reload();
+        return;
+      }
+      if (!res.ok) throw new Error(`Error al consultar estado del sistema (HTTP ${res.status}).`);
       const data = await res.json();
       setHealth(data);
     } catch (err) {
