@@ -130,27 +130,63 @@ export default function PendingApprovalsInbox({ user }) {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !selectedFicha) return;
 
     setUploading(true);
     try {
       const token = localStorage.getItem('userToken');
-      const formData = new FormData();
-      formData.append('file', file);
+      const reader = new FileReader();
 
-      const res = await fetch(`${API_BASE_URL}/storage/upload`, {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formData
-      });
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+          } else {
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Data = canvas.toDataURL('image/webp', 0.8);
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al subir la foto.');
-
-      setPhotoUrlInput(data.publicUrl);
+          fetch(`${API_BASE_URL}/upload/imagen`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({
+              tipo: 'producto',
+              id: selectedFicha.sku,
+              fileBase64: base64Data
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.url) {
+              setPhotoUrlInput(data.url);
+            } else {
+              alert(data.error || 'Error al subir la imagen');
+            }
+          })
+          .catch(err => alert('Error subiendo imagen: ' + err.message))
+          .finally(() => setUploading(false));
+        };
+        img.onerror = () => {
+          alert('Archivo de imagen inválido.');
+          setUploading(false);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       alert('Error subiendo imagen: ' + err.message);
-    } finally {
       setUploading(false);
     }
   };
