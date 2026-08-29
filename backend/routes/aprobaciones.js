@@ -19,7 +19,7 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
     let query = supabaseDb
       .from('fichas_tecnicas')
       .select('*, sectores(nombre)')
-      .in('estado', ['generada_ia', 'pendiente_revision']);
+      .in('estado', ['GENERADA_POR_IA', 'PENDIENTE_VALIDACION', 'generada_ia', 'pendiente_revision']);
 
     // Si es Coordinador o Jefe de Sector, filtra por su sector asignado
     if (userRole === 'jefe_sector' || userRole === 'coordinador') {
@@ -48,7 +48,7 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
 
   try {
     const updates = {
-      estado: 'aprobado',
+      estado: 'APROBADA',
       aprobado_por: req.user.id,
       observaciones_revision: observaciones || null,
       updated_at: new Date().toISOString()
@@ -74,7 +74,7 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
       accion: 'APPROVE_FICHA',
       entidad: 'FICHA_TECNICA',
       entidad_id: id,
-      valores_nuevos: { estado: 'aprobado', aprobado_por: req.user.id }
+      valores_nuevos: { estado: 'APROBADA', aprobado_por: req.user.id }
     });
 
     return res.json({
@@ -104,7 +104,7 @@ router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 
     const { data: ficha, error } = await supabaseDb
       .from('fichas_tecnicas')
       .update({
-        estado: 'rechazado',
+        estado: 'OBSERVADA',
         observaciones_revision: observaciones.trim(),
         updated_at: new Date().toISOString()
       })

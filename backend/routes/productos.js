@@ -236,7 +236,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['gerente', 'subadmin',
   const verfiedEmail = req.user.email;
   const userRole = req.user.role || 'operador';
   const isOperador = userRole === 'operador' || userRole === 'operator';
-  const targetEstado = isOperador ? 'pendiente_revision' : (estado || 'aprobado');
+  const targetEstado = isOperador ? 'PENDIENTE_VALIDACION' : (estado || 'APROBADA');
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
