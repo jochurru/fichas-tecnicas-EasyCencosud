@@ -173,15 +173,15 @@ export default function PendingApprovalsInbox({ user }) {
 
   return (
     <div className="space-y-5 font-sans">
-      {/* Header de la Bandeja con Métricas */}
+      {/* Header de la Bandeja */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
             <Inbox className="w-5 h-5 text-red-600" />
-            <span>Bandeja de Pendientes por Sector</span>
+            <span>Bandeja de Pendientes — Sector {user?.sector_nombre || 'Herramientas'}</span>
           </h4>
           <p className="text-xs text-slate-500 mt-0.5">
-            Fichas que requieren validación técnica y foto oficial antes de ser impresas en tienda.
+            Fichas enviadas por vendedores de tu sector que requieren validación técnica y foto oficial antes de ser impresas.
           </p>
         </div>
         
@@ -190,43 +190,6 @@ export default function PendingApprovalsInbox({ user }) {
           className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0"
         >
           <span>↻ Actualizar</span>
-        </button>
-      </div>
-
-      {/* Selector de Sub-Pestañas: Vendedores vs Borradores IA */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setActiveSubTab('vendedores')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all relative ${
-            activeSubTab === 'vendedores'
-              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          <span>⌛ Enviadas por Vendedor</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            activeSubTab === 'vendedores' ? 'bg-white text-red-600' : 'bg-red-100 text-red-700'
-          }`}>
-            {vendorPendingList.length}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab('ia')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-            activeSubTab === 'ia'
-              ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>🤖 Borradores IA</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-            activeSubTab === 'ia' ? 'bg-white text-red-600' : 'bg-slate-200 text-slate-700'
-          }`}>
-            {aiPendingList.length}
-          </span>
         </button>
       </div>
 
@@ -244,24 +207,20 @@ export default function PendingApprovalsInbox({ user }) {
         </div>
       )}
 
-      {/* Lista de Fichas Filtrada */}
+      {/* Lista de Fichas Enviadas por Vendedores */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando fichas pendientes...</div>
-      ) : currentList.length === 0 ? (
+        <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando solicitudes de vendedores...</div>
+      ) : fichas.length === 0 ? (
         <div className="bg-slate-50 p-8 rounded-2xl border border-dashed border-slate-200 text-center">
           <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-          <h5 className="font-bold text-sm text-slate-700">
-            {activeSubTab === 'vendedores' ? '¡Sin solicitudes pendientes de vendedores!' : '¡Borradores IA al día!'}
-          </h5>
+          <h5 className="font-bold text-sm text-slate-700">¡Bandeja al día!</h5>
           <p className="text-xs text-slate-400 mt-1">
-            {activeSubTab === 'vendedores' 
-              ? 'Cuando un vendedor edite un producto y toque "Enviar a Revisión", aparecerá aquí.' 
-              : 'No hay borradores generados automáticamente pendientes.'}
+            No hay solicitudes de revisión enviadas por vendedores en tu sector.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {currentList.map((f) => {
+          {fichas.map((f) => {
             const specData = f.especificaciones_json || {};
             const marca = specData.marca || f.marca || 'GENERICA';
             const tipoHerramienta = specData.tipo_herramienta || f.tipo_herramienta || f.nombre || 'Herramienta';

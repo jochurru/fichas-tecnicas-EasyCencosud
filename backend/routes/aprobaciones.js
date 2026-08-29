@@ -19,9 +19,9 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
     let query = supabaseDb
       .from('fichas_tecnicas')
       .select('*, sectores(nombre)')
-      .in('estado', ['GENERADA_POR_IA', 'PENDIENTE_VALIDACION', 'generada_ia', 'pendiente_revision']);
+      .in('estado', ['PENDIENTE_VALIDACION', 'pendiente_revision']);
 
-    // Si es Coordinador o Jefe de Sector, filtra por su sector asignado
+    // Si es Coordinador o Jefe de Sector, filtra estrictamente por su sector asignado
     if (userRole === 'jefe_sector' || userRole === 'coordinador') {
       query = query.eq('sector_id', userSector);
     } else if (sector_id) {
