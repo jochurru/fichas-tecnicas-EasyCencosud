@@ -13,7 +13,13 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('userToken') || null);
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || 'operator');
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const email = localStorage.getItem('userEmail');
+    const role = localStorage.getItem('userRole');
+    const nombre = localStorage.getItem('userNombre');
+    const mustChange = localStorage.getItem('userMustChangePassword') === 'true';
+    return email ? { email, role, nombre, must_change_password: mustChange } : null;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeScanner, setActiveScanner] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,6 +45,8 @@ export default function App() {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userNombre');
+    localStorage.removeItem('userMustChangePassword');
     setToken(null);
     setUserEmail('');
     setUserRole('operator');
@@ -52,6 +60,8 @@ export default function App() {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userNombre');
+    localStorage.removeItem('userMustChangePassword');
     setToken(null);
     setUserEmail('');
     setUserRole('operator');

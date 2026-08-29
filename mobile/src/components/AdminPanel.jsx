@@ -17,7 +17,26 @@ import UserManagementTab from './admin/UserManagementTab';
  */
 
 export default function AdminPanel({ token, userRole, onClose, onTokenExpired }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'ean' | 'metrics' | 'analytics' | 'brands' | 'health' | 'dbviewer'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (['coordinador', 'jefe_sector'].includes(userRole)) {
+      return 'inbox';
+    }
+    return 'catalog';
+  });
+
+  const allTabs = [
+    { id: 'inbox', name: 'Bandeja Pendientes', icon: Inbox, roles: ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin'] },
+    { id: 'users', name: 'Gestión Usuarios', icon: Users, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
+    { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
+    { id: 'ean', name: 'Mapeo EANs', icon: KeyRound, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
+    { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
+    { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
+    { id: 'brands', name: 'Marcas Dinámicas', icon: Layers, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
+    { id: 'health', name: 'Estado del Sistema', icon: Activity, roles: ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin'] },
+    { id: 'dbviewer', name: 'Base de Datos', icon: Database, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] }
+  ];
+
+  const visibleTabs = allTabs.filter(t => t.roles.includes(userRole));
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -83,19 +102,7 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
 
         {/* Pestañas de Navegación Responsivas (Wrap en desktop, scroll en mobile) */}
         <div className="px-3 sm:px-6 py-2.5 bg-gray-50/80 border-b border-gray-100 flex flex-nowrap sm:flex-wrap gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {[
-            { id: 'inbox', name: 'Bandeja Pendientes', icon: Inbox },
-            { id: 'users', name: 'Gestión Usuarios', icon: Users },
-            { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet },
-            { id: 'ean', name: 'Mapeo EANs', icon: KeyRound },
-            { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp },
-            { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2 },
-            { id: 'brands', name: 'Marcas Dinámicas', icon: Layers },
-            { id: 'health', name: 'Estado del Sistema', icon: Activity },
-            ...(['superadmin', 'admin', 'gerente'].includes(userRole)
-                ? [{ id: 'dbviewer', name: 'Base de Datos', icon: Database }] 
-                : [])
-          ].map((tab) => {
+          {visibleTabs.map((tab) => {
             const IconComponent = tab.icon;
             const isActive = activeTab === tab.id;
             return (
