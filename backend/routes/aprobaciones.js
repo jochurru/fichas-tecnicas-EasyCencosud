@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { deleteStorageFileByUrl } from '../lib/storageHelper.js';
 
 const router = Router();
 
@@ -47,6 +48,19 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
   const { foto_url, especificaciones, observaciones } = req.body;
 
   try {
+    // 1. Obtener la ficha técnica actual antes de modificar para verificar la foto previa
+    const { data: existingFicha } = await supabaseDb
+      .from('fichas_tecnicas')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    // 2. Si la foto asignada cambia y existía una foto previa en Supabase Storage, eliminar la foto vieja para mantener 1 sola foto por SKU
+    if (existingFicha && existingFicha.foto_url && foto_url && existingFicha.foto_url !== foto_url) {
+      console.log(`[Aprobaciones] Eliminando foto obsoleta anterior de la ficha ${existingFicha.sku}...`);
+      await deleteStorageFileByUrl(existingFicha.foto_url);
+    }
+
     const updates = {
       estado: 'APROBADA',
       aprobado_por: req.user.id,
@@ -89,7 +103,7 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
 
 /**
  * @route   POST /api/aprobaciones/:id/rechazar
- * @desc    Devuelve una ficha borrador con observaciones para corrección
+ * @desc    Devuelve una ficha borrador con observaciones y elimina imágenes de prueba rechazadas
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
 router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador']), async (req, res, next) => {
@@ -101,10 +115,24 @@ router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 
   }
 
   try {
+    // 1. Obtener la ficha actual antes de rechazar
+    const { data: existingFicha } = await supabaseDb
+      .from('fichas_tecnicas')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    // 2. Si la propuesta rechazada incluye una foto cargada en Supabase Storage, eliminarla para no dejar archivos basura
+    if (existingFicha && existingFicha.foto_url) {
+      console.log(`[Aprobaciones] Destruyendo foto propuesta de borrador rechazado: ${existingFicha.foto_url}...`);
+      await deleteStorageFileByUrl(existingFicha.foto_url);
+    }
+
     const { data: ficha, error } = await supabaseDb
       .from('fichas_tecnicas')
       .update({
         estado: 'OBSERVADA',
+        foto_url: null, // Restablecer foto vacía al rechazar propuesta no válida
         observaciones_revision: observaciones.trim(),
         updated_at: new Date().toISOString()
       })

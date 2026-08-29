@@ -414,6 +414,20 @@ export default function PendingApprovalsInbox({ user }) {
                 </div>
               </div>
 
+              {/* Alerta de Sanitización de Fotos */}
+              <div className="bg-amber-50/90 border border-amber-200 p-3.5 rounded-xl text-amber-900 text-xs font-medium space-y-1.5 shadow-sm">
+                <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Política de Almacenamiento Limpio (1 Foto por SKU):</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  • <strong>Al Aprobar:</strong> La foto seleccionada será la única versión oficial activa. Si existía una foto anterior en el servidor, se eliminará permanentemente.
+                </p>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  • <strong>Al Devolver:</strong> Si rechazas la propuesta, la foto subida por el vendedor se borrará automáticamente del servidor para evitar archivos basura o no deseados.
+                </p>
+              </div>
+
               {/* Formulario de Rechazo / Observaciones */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
                 <label className="block text-xs font-extrabold text-slate-800">
