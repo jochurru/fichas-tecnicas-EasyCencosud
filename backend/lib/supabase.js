@@ -45,3 +45,13 @@ export const supabaseDb = createClient(safeUrl, safeKey, {
     transport: ws
   }
 });
+
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || safeKey;
+export const supabaseAdmin = createClient(safeUrl, serviceRoleKey, {
+  auth: {
+    persistSession: false
+  },
+  realtime: {
+    transport: ws
+  }
+});

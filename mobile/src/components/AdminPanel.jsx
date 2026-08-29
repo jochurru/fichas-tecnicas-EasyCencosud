@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity, Database } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity, Database, Inbox, Users } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import CatalogImportTab from './admin/CatalogImportTab';
 import EanImportTab from './admin/EanImportTab';
@@ -8,6 +8,8 @@ import UsageMetricsTab from './admin/UsageMetricsTab';
 import DynamicBrandsTab from './admin/DynamicBrandsTab';
 import SystemHealthTab from './admin/SystemHealthTab';
 import DatabaseViewerTab from './admin/DatabaseViewerTab';
+import PendingApprovalsInbox from './admin/PendingApprovalsInbox';
+import UserManagementTab from './admin/UserManagementTab';
 
 /**
  * @fileoverview Modal contenedor principal del Panel de Administración.
@@ -82,13 +84,15 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
         {/* Pestañas de Navegación Responsivas (Wrap en desktop, scroll en mobile) */}
         <div className="px-3 sm:px-6 py-2.5 bg-gray-50/80 border-b border-gray-100 flex flex-nowrap sm:flex-wrap gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {[
+            { id: 'inbox', name: 'Bandeja Pendientes', icon: Inbox },
+            { id: 'users', name: 'Gestión Usuarios', icon: Users },
             { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet },
             { id: 'ean', name: 'Mapeo EANs', icon: KeyRound },
             { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp },
             { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2 },
             { id: 'brands', name: 'Marcas Dinámicas', icon: Layers },
             { id: 'health', name: 'Estado del Sistema', icon: Activity },
-            ...(userRole === 'superadmin' 
+            ...(['superadmin', 'admin', 'gerente'].includes(userRole)
                 ? [{ id: 'dbviewer', name: 'Base de Datos', icon: Database }] 
                 : [])
           ].map((tab) => {
@@ -130,6 +134,14 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
 
         {/* Contenido Dinámico de la Pestaña Activa */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {activeTab === 'inbox' && (
+            <PendingApprovalsInbox user={{ role: userRole }} />
+          )}
+
+          {activeTab === 'users' && (
+            <UserManagementTab currentUser={{ role: userRole }} />
+          )}
+
           {activeTab === 'catalog' && (
             <CatalogImportTab
               loading={loading}

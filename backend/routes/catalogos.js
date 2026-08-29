@@ -2,7 +2,7 @@ import { Router } from 'express';
 import XLSX from 'xlsx';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { dataService } from '../services/dataService.js';
-import { supabase, supabaseDb } from '../lib/supabase.js';
+import { supabase, supabaseDb, supabaseAdmin } from '../lib/supabase.js';
 import { taskManager } from '../lib/taskManager.js';
 import { validateSchema, loginSchema, excelUploadSchema } from '../middlewares/validation.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -449,23 +449,41 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
       });
     }
 
-    // Obtener el rol del usuario
-    let role = 'operator';
+    // Obtener el rol y perfil del usuario desde la tabla profiles
+    let role = 'operador';
+    let mustChangePassword = false;
+    let sectorId = 1;
+    let nombre = email;
+
     try {
-      const { data: roleRow, error: roleError } = await supabaseDb
-        .from('usuarios_roles')
-        .select('role')
-        .eq('email', email)
+      const { data: profileRow } = await supabaseDb
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
         .maybeSingle();
 
-      if (!roleError && roleRow) {
-        role = roleRow.role;
+      if (profileRow) {
+        role = profileRow.rol || 'operador';
+        mustChangePassword = profileRow.must_change_password ?? false;
+        sectorId = profileRow.sector_id || 1;
+        nombre = profileRow.nombre || email;
+      } else {
+        // Fallback a usuarios_roles si no tiene profile creado
+        const { data: roleRow } = await supabaseDb
+          .from('usuarios_roles')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (roleRow && roleRow.role) {
+          role = roleRow.role;
+        }
       }
     } catch (dbErr) {
-      console.error('[Auth] Error buscando rol en base de datos:', dbErr.message);
+      console.error('[Auth] Error buscando perfil en base de datos:', dbErr.message);
     }
 
-    req.user = { email: data.user.email, role };
+    req.user = { email: data.user.email, role, sector_id: sectorId };
     logAuditEvent(req, {
       accion: 'LOGIN',
       entidad: 'USUARIO',
@@ -477,7 +495,10 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
       user: {
         id: data.user.id,
         email: data.user.email,
-        role: role
+        nombre: nombre,
+        role: role,
+        sector_id: sectorId,
+        must_change_password: mustChangePassword
       }
     });
 
@@ -490,6 +511,54 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
       valores_nuevos: { error: err.message },
       resultado: 'ERROR'
     });
+    next(err);
+  }
+});
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Cambia la contraseña del usuario logueado y desactiva must_change_password
+ * @access  Privado (requiere token JWT)
+ */
+router.post('/auth/change-password', async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Token de autenticación requerido.' });
+  }
+
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !userData.user) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada.' });
+    }
+
+    const userId = userData.user.id;
+
+    // 1. Actualizar la contraseña en Supabase Auth
+    const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+
+    if (updateErr) {
+      return res.status(500).json({ error: 'Error actualizando contraseña: ' + updateErr.message });
+    }
+
+    // 2. Marcar must_change_password = false en profiles
+    await supabaseDb
+      .from('profiles')
+      .update({ must_change_password: false, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    return res.json({ success: true, message: 'Contraseña actualizada con éxito.' });
+  } catch (err) {
+    console.error('[Auth] Error en cambio de contraseña:', err.message);
     next(err);
   }
 });

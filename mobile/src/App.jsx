@@ -5,6 +5,7 @@ import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
 import WelcomeLogin from './components/WelcomeLogin';
 import PrintQueueDrawer from './components/PrintQueueDrawer';
+import ForcePasswordChangeModal from './components/ForcePasswordChangeModal';
 import { API_BASE_URL } from './config';
 import { saveProduct, getProduct } from './lib/indexedDb';
 
@@ -12,6 +13,7 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('userToken') || null);
   const [userEmail, setUserEmail] = useState(localStorage.getItem('userEmail') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || 'operator');
+  const [currentUser, setCurrentUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeScanner, setActiveScanner] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,6 +42,7 @@ export default function App() {
     setToken(null);
     setUserEmail('');
     setUserRole('operator');
+    setCurrentUser(null);
     setProductData(null);
     setSearchTerm('');
     setIsAdminOpen(false);
@@ -52,6 +55,7 @@ export default function App() {
     setToken(null);
     setUserEmail('');
     setUserRole('operator');
+    setCurrentUser(null);
     setProductData(null);
     setSearchTerm('');
     setIsAdminOpen(false);
@@ -377,6 +381,14 @@ export default function App() {
           <div className="font-bold text-gray-500">Easy Cencosud © 2026 - Fichas Técnicas</div>
           <div className="text-[9px] text-gray-400">Desarrollado por Jonatan Churruarin • Soluciones Digitales Retail</div>
         </footer>
+
+        {/* Modal de Cambio Obligatorio de Contraseña */}
+        {currentUser?.must_change_password && (
+          <ForcePasswordChangeModal
+            user={currentUser}
+            onPasswordChanged={() => setCurrentUser({ ...currentUser, must_change_password: false })}
+          />
+        )}
 
         {/* Cola de Impresión Flotante (FAB) P1.21 */}
         {token && (
