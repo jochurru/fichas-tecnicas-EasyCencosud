@@ -163,10 +163,24 @@ export default function App() {
         onLoginSuccess={(newToken, user) => {
           setToken(newToken);
           setUserEmail(user.email);
+          setCurrentUser(user);
           if (user.role) {
             setUserRole(user.role);
           }
         }} 
+      />
+    );
+  }
+
+  // Guard de Cambio Obligatorio de Contraseña
+  if (currentUser && (currentUser.must_change_password === true || currentUser.must_change_password === 'true')) {
+    return (
+      <ForcePasswordChangeModal
+        user={currentUser}
+        onPasswordChanged={() => {
+          localStorage.setItem('userMustChangePassword', 'false');
+          setCurrentUser(prev => prev ? { ...prev, must_change_password: false } : null);
+        }}
       />
     );
   }
