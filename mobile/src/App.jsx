@@ -217,12 +217,12 @@ export default function App() {
               )}
             </div>
 
-            {/* Botón de Administración - Solo para administradores y superadmins */}
-            {(userRole === 'admin' || userRole === 'superadmin') && (
+            {/* Botón de Panel Administrativo / Bandeja */}
+            {['admin', 'superadmin', 'gerente', 'subadmin', 'jefe_sector', 'coordinador', 'coordinator'].includes(userRole) && (
               <button 
                 onClick={() => setIsAdminOpen(true)}
                 className="p-1.5 hover:bg-red-800/45 rounded-xl text-white transition-all active:scale-90"
-                title="Administración SAP"
+                title="Panel y Bandeja de Aprobaciones"
               >
                 <Settings className="w-4.5 h-4.5 text-red-100 hover:text-white" />
               </button>
