@@ -142,7 +142,7 @@ export class SupabaseProvider {
 
     const payload = {
       especificaciones_json: especificacionesJson,
-      foto_url: fotoUrl,
+      foto_url: fotoUrl || existing?.foto_url || null,
       estado: 'GENERADA_POR_IA',
       template_preferido: existing?.template_preferido || 1
     };
@@ -184,7 +184,7 @@ export class SupabaseProvider {
     let queryResult;
 
     const payload = {
-      foto_url: foto_url || null,
+      foto_url: foto_url || existing?.foto_url || null,
       especificaciones_json: especificaciones_json || {},
       estado: estado || 'APROBADA',
       template_preferido: template_preferido || 1,
