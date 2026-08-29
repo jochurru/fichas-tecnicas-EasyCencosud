@@ -20,6 +20,7 @@ export default function ImageUploadSection({
   const [statusMsg, setStatusMsg] = useState('');
   const [errorDetails, setErrorDetails] = useState('');
   const [imgError, setImgError] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState(null);
 
   React.useEffect(() => {
     setImgError(false);
@@ -33,6 +34,9 @@ export default function ImageUploadSection({
     if (setSuccessMsg) setSuccessMsg('');
     setErrorDetails('');
 
+    const localUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(localUrl);
+    setFotoUrl(localUrl); // Actualización visual instantánea en la interfaz
     setUploadState('reading');
     setStatusMsg('Leyendo archivo de imagen...');
 
