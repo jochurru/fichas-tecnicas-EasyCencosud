@@ -229,11 +229,14 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
 
 /**
  * @route   POST /api/fichas/aprobar
- * @desc    Aprueba y consolida una ficha técnica editada por el usuario.
+ * @desc    Aprueba (o envía a revisión) una ficha técnica editada por el usuario.
  */
-router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator']), validateSchema(approveFichaSchema), async (req, res, next) => {
+router.post('/fichas/aprobar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador', 'admin', 'superadmin', 'operator', 'coordinator']), validateSchema(approveFichaSchema), async (req, res, next) => {
   const { sku, especificaciones_json, foto_url, template_preferido, eans, estado } = req.body;
   const verfiedEmail = req.user.email;
+  const userRole = req.user.role || 'operador';
+  const isOperador = userRole === 'operador' || userRole === 'operator';
+  const targetEstado = isOperador ? 'pendiente_revision' : (estado || 'aprobado');
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
@@ -256,7 +259,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
       });
     }
 
-    // 3. Guardar la ficha técnica aprobada a través de la abstracción
+    // 3. Guardar la ficha técnica a través de la abstracción
     const updatedFicha = await dataService.saveFichaAprobada({
       sku,
       especificaciones_json,
@@ -264,7 +267,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['admin', 'coordinator'
       template_preferido,
       aprobado_por: verfiedEmail,
       eans,
-      estado
+      estado: targetEstado
     });
 
     // 4. Registrar instantánea histórica en la tabla fichas_historial

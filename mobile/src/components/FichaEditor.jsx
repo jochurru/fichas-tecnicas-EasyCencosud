@@ -17,10 +17,11 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
   const { producto, ficha_tecnica } = data;
   const specData = ficha_tecnica?.especificaciones_json || {};
   const isOffline = data?.origen === 'local_offline';
-  
-  // Roles de permisos: Solo administradores y coordinadores de cartelería pueden editar/aprobar fichas
-  const canEdit = userRole === 'superadmin' || userRole === 'admin' || userRole === 'coordinator' || (userEmail && (userEmail.includes('admin') || userEmail.includes('coord')));
-  const isReadOnly = !canEdit;
+  // Roles y Permisos de Tienda
+  const isOperador = userRole === 'operador' || userRole === 'operator';
+  const canUploadPhoto = !isOperador; // Opción A: los vendedores/operadores no suben fotos
+  const canEdit = true; // Todos los empleados pueden sugerir correcciones y editar especificaciones
+  const isReadOnly = false;
 
   // Estados locales del formulario
   const [marca, setMarca] = useState('');
@@ -299,7 +300,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         throw new Error(result.error || 'Error al guardar la ficha');
       }
 
-      setSuccessMsg('Ficha técnica aprobada y guardada con éxito.');
+      setSuccessMsg(isOperador ? '¡Ficha enviada a la bandeja de revisión del encargado!' : 'Ficha técnica aprobada y guardada con éxito.');
       setTimeout(() => {
         onSaveSuccess(result.ficha_tecnica, eans.filter(Boolean));
       }, 1500);
@@ -700,7 +701,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
             className="w-full bg-easy-red hover:bg-red-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-md shadow-easy-red/25 hover:shadow-lg transition-all flex justify-center items-center gap-2 text-sm disabled:opacity-50 disabled:pointer-events-none"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'Guardando...' : 'Aprobar y Guardar Ficha'}
+            {loading ? 'Procesando...' : (isOperador ? '📤 Enviar a Revisión al Encargado' : '✓ Aprobar y Publicar Ficha')}
           </button>
         )}
 
