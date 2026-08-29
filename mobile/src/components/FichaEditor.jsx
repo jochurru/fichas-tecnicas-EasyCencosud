@@ -19,7 +19,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
   const isOffline = data?.origen === 'local_offline';
   // Roles y Permisos de Tienda
   const isOperador = userRole === 'operador' || userRole === 'operator';
-  const canUploadPhoto = !isOperador; // Opción A: los vendedores/operadores no suben fotos
+  const canUploadPhoto = true; // El vendedor puede proponer/subir la foto que será revisada por el encargado
   const canEdit = true; // Todos los empleados pueden sugerir correcciones y editar especificaciones
   const isReadOnly = false;
 

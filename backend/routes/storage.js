@@ -11,7 +11,7 @@ const router = Router();
  * @route   POST /api/upload/imagen
  * @desc    Sube una imagen de producto o de marca a Supabase Storage y actualiza la base de datos.
  */
-router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
+router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador', 'admin', 'superadmin', 'operator', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
   const { tipo, id, fileBase64, nombre } = req.body;
 
   try {
