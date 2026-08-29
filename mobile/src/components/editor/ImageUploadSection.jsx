@@ -150,24 +150,17 @@ export default function ImageUploadSection({
 
         {/* Acciones de carga */}
         <div className="flex-1 w-full space-y-2">
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full sm:w-auto text-xs font-bold px-4 py-3 rounded-xl bg-easy-dark text-white hover:bg-black transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <UploadCloud className="w-4 h-4" />}
+          <label className={`w-full sm:w-auto text-xs font-bold px-4 py-3 rounded-xl bg-easy-dark text-white hover:bg-black transition flex items-center justify-center gap-2 active:scale-95 cursor-pointer select-none ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" /> : <UploadCloud className="w-4 h-4 shrink-0" />}
             <span>{uploading ? statusMsg : 'Subir Nueva Foto (Auto WebP)'}</span>
-          </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            className="hidden"
-            onChange={handleFileSelect}
-          />
+            <input
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+          </label>
 
           {errorDetails && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-2 flex items-center gap-2 text-red-700 text-xs font-semibold">
