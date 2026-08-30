@@ -34,7 +34,7 @@ export async function requireAuth(req, res, next) {
     try {
       const { data: profileRow } = await supabaseDb
         .from('profiles')
-        .select('rol, sector_id, activo')
+        .select('rol, sector_id')
         .eq('id', user.id)
         .maybeSingle();
 
