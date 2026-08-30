@@ -608,6 +608,8 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
             fotoUrl={fotoUrl}
             setFotoUrl={setFotoUrl}
             sugerenciaImagen={sugerenciaImagen}
+            setErrorMsg={setErrorMsg}
+            setSuccessMsg={setSuccessMsg}
             token={token}
           />
 
