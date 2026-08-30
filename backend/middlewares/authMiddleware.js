@@ -105,3 +105,31 @@ export function requireRoles(allowedRoles) {
     });
   };
 }
+
+/**
+ * Jerarquía numérica de roles para control de acceso basado en nivel mínimo.
+ */
+export const ROLE_HIERARCHY = {
+  superadmin: 6,
+  gerente: 5,
+  subadmin: 4,
+  jefe_sector: 3,
+  coordinador: 2,
+  operador: 1
+};
+
+/**
+ * Middleware para requerir un nivel jerárquico mínimo.
+ */
+export function requireMinRole(minRole) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const userLevel = ROLE_HIERARCHY[req.user.role] || 0;
+    const requiredLevel = ROLE_HIERARCHY[minRole] || 99;
+    if (userLevel >= requiredLevel) return next();
+    return res.status(403).json({ 
+      error: 'Forbidden', 
+      message: `Se requiere nivel mínimo de ${minRole}.` 
+    });
+  };
+}

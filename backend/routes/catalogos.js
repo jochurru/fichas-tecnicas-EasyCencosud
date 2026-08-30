@@ -520,27 +520,14 @@ router.post('/auth/login', validateSchema(loginSchema), async (req, res, next) =
  * @desc    Cambia la contraseña del usuario logueado y desactiva must_change_password
  * @access  Privado (requiere token JWT)
  */
-router.post('/auth/change-password', async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Token de autenticación requerido.' });
-  }
-
+router.post('/auth/change-password', requireAuth, async (req, res, next) => {
   const { newPassword } = req.body;
   if (!newPassword || newPassword.length < 6) {
     return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
   }
 
   try {
-    const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !userData.user) {
-      console.error('[Auth] Error validando token en cambio de clave:', userError?.message);
-      return res.status(401).json({ error: 'Sesión inválida o expirada.' });
-    }
-
-    const userId = userData.user.id;
+    const userId = req.user.id;
 
     // 1. Actualizar la contraseña en Supabase Auth
     const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {

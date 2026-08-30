@@ -245,8 +245,21 @@ router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles
 router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(['gerente', 'subadmin']), async (req, res, next) => {
   const { id } = req.params;
   const { activo } = req.body;
+  const callerRole = req.user?.role || 'operador';
+
+  if (id === req.user?.id) {
+    return res.status(403).json({ error: 'Forbidden', message: 'No podés modificar tu propio estado.' });
+  }
 
   try {
+    const { data: targetUser } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+    if (['superadmin', 'gerente'].includes(targetUser.rol) && callerRole !== 'superadmin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'No tenés permisos para modificar el estado de un superior o par directivo.' });
+    }
+
     const { data: profile, error } = await supabaseDb
       .from('profiles')
       .update({ activo: !!activo, updated_at: new Date().toISOString() })
@@ -275,8 +288,21 @@ router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(['gerente',
  */
 router.delete('/admin/usuarios/:id', requireAuth, requireRoles(['gerente', 'subadmin']), async (req, res, next) => {
   const { id } = req.params;
+  const callerRole = req.user?.role || 'operador';
+
+  if (id === req.user?.id) {
+    return res.status(403).json({ error: 'Forbidden', message: 'No podés eliminar tu propia cuenta.' });
+  }
 
   try {
+    const { data: targetUser } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+    if (['superadmin', 'gerente'].includes(targetUser.rol) && callerRole !== 'superadmin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'No tenés permisos para eliminar a un superior o par directivo.' });
+    }
+
     // 1. Eliminar de Supabase Auth
     const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(id);
     if (authErr) throw authErr;

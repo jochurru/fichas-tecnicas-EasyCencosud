@@ -24,17 +24,7 @@ export async function logAuditEvent(req, {
   try {
     // 1. Resolver información del usuario autenticado
     const email = req?.user?.email || 'SYSTEM_GUEST';
-    let role = 'GUEST';
-    
-    if (email !== 'SYSTEM_GUEST') {
-      if (email.includes('admin')) {
-        role = 'ADMIN';
-      } else if (email.includes('coord')) {
-        role = 'COORDINADOR';
-      } else {
-        role = 'OPERADOR';
-      }
-    }
+    const role = req?.user?.role || req?.user?.rol || 'GUEST';
 
     // 2. Extraer IP del cliente
     let ip = req?.headers['x-forwarded-for'] || req?.socket?.remoteAddress || '127.0.0.1';

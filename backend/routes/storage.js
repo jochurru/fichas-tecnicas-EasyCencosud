@@ -253,7 +253,7 @@ router.post('/marcas', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_s
  * @route   DELETE /api/marcas/:slug
  * @desc    Elimina una marca por su slug.
  */
-router.delete('/marcas/:slug', requireAuth, requireRoles(['admin', 'coordinator']), async (req, res, next) => {
+router.delete('/marcas/:slug', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin']), async (req, res, next) => {
   const { slug } = req.params;
   if (!slug) {
     return res.status(400).json({ error: 'Falta el parámetro slug' });

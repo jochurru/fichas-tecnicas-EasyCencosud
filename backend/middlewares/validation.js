@@ -41,8 +41,11 @@ export const loginSchema = z.object({
     .min(1, 'El correo electrónico es obligatorio.')
     .email('El formato del correo electrónico es inválido.')
     .refine(
-      (val) => val.endsWith('@easy.com.ar') || val.endsWith('@cencosud.com.ar') || val.toLowerCase() === 'jonatan.churruarin@outlook.com',
-      { message: 'El dominio del correo debe ser institucional (@easy.com.ar o @cencosud.com.ar).' }
+      (val) => {
+        const allowedExternals = (process.env.ALLOWED_EXTERNAL_EMAILS || '').toLowerCase().split(',').map(e => e.trim()).filter(Boolean);
+        return val.endsWith('@easy.com.ar') || val.endsWith('@cencosud.com.ar') || allowedExternals.includes(val.toLowerCase());
+      },
+      { message: 'El dominio del correo debe ser institucional (@easy.com.ar o @cencosud.com.ar) o estar expresamente autorizado.' }
     ),
   password: z.string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres.')
