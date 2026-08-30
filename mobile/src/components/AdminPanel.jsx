@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity, Database, Inbox, Users } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity, Database, Inbox, Users, Crown } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { STORE_BLOCKS, ALL_SECTORS } from '../config/storeBlocks';
+import ExecutiveDashboardTab from './admin/ExecutiveDashboardTab';
 import CatalogImportTab from './admin/CatalogImportTab';
 import EanImportTab from './admin/EanImportTab';
 import QualityMetricsTab from './admin/QualityMetricsTab';
@@ -19,6 +20,9 @@ import UserManagementTab from './admin/UserManagementTab';
 
 export default function AdminPanel({ token, userRole, currentUser, onClose, onTokenExpired }) {
   const [activeTab, setActiveTab] = useState(() => {
+    if (userRole === 'gerente') {
+      return 'executive';
+    }
     if (['coordinador', 'jefe_sector'].includes(userRole)) {
       return 'inbox';
     }
@@ -26,6 +30,7 @@ export default function AdminPanel({ token, userRole, currentUser, onClose, onTo
   });
 
   const allTabs = [
+    { id: 'executive', name: '👑 Mando Gerencial', icon: Crown, roles: ['gerente', 'superadmin'] },
     { id: 'inbox', name: 'Bandeja Pendientes', icon: Inbox, roles: ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin'] },
     { id: 'users', name: 'Gestión Usuarios', icon: Users, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
     { id: 'brands', name: 'Marcas Dinámicas', icon: Layers, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
@@ -168,6 +173,10 @@ export default function AdminPanel({ token, userRole, currentUser, onClose, onTo
 
         {/* Contenido Dinámico de la Pestaña Activa */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+          {activeTab === 'executive' && (
+            <ExecutiveDashboardTab token={token} />
+          )}
+
           {activeTab === 'inbox' && (
             <PendingApprovalsInbox user={currentUser || { role: userRole }} />
           )}

@@ -82,6 +82,7 @@ app.get('/health', (req, res) => {
 import superadminRouter from './routes/superadmin.js';
 import usuariosRouter from './routes/usuarios.js';
 import aprobacionesRouter from './routes/aprobaciones.js';
+import gerenciaRouter from './routes/gerencia.js';
 
 // Rutas API
 app.use('/api', productosRouter);
@@ -91,6 +92,7 @@ app.use('/api', storageRouter);
 app.use('/api', superadminRouter);
 app.use('/api', usuariosRouter);
 app.use('/api', aprobacionesRouter);
+app.use('/api', gerenciaRouter);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
