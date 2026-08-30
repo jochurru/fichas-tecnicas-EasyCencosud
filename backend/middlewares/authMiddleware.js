@@ -27,16 +27,25 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    // Resolver rol y sector a partir de la tabla profiles
-    let role = 'operador';
-    let sectorId = 1;
+    // Resolver rol y sector con resolución multicapa (user_metadata, profiles por ID, profiles por email, usuarios_roles)
+    let role = user.user_metadata?.rol || user.user_metadata?.role || 'operador';
+    let sectorId = user.user_metadata?.sector_id || 1;
 
     try {
-      const { data: profileRow } = await supabaseDb
+      let { data: profileRow } = await supabaseDb
         .from('profiles')
         .select('rol, sector_id')
         .eq('id', user.id)
         .maybeSingle();
+
+      if (!profileRow && user.email) {
+        const { data: byEmail } = await supabaseDb
+          .from('profiles')
+          .select('rol, sector_id')
+          .eq('email', user.email.toLowerCase())
+          .maybeSingle();
+        if (byEmail) profileRow = byEmail;
+      }
 
       if (profileRow) {
         if (profileRow.activo === false) {
@@ -45,8 +54,8 @@ export async function requireAuth(req, res, next) {
             message: 'Tu cuenta ha sido desactivada por un administrador. Contactá a tu jefe de sector.' 
           });
         }
-        role = profileRow.rol || 'operador';
-        sectorId = profileRow.sector_id || 1;
+        role = profileRow.rol || role;
+        sectorId = profileRow.sector_id || sectorId;
       } else {
         const { data: roleRow } = await supabaseDb
           .from('usuarios_roles')
