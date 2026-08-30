@@ -397,7 +397,13 @@ export default function App() {
 
         {/* Modal de Administración SAP */}
         {isAdminOpen && (
-          <AdminPanel token={token} userRole={userRole} onTokenExpired={handleTokenExpiration} onClose={() => setIsAdminOpen(false)} />
+          <AdminPanel 
+            token={token} 
+            userRole={userRole} 
+            currentUser={currentUser}
+            onTokenExpired={handleTokenExpiration} 
+            onClose={() => setIsAdminOpen(false)} 
+          />
         )}
 
         {/* Footer simple de marca */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, FileSpreadsheet, KeyRound, BarChart2, Layers, TrendingUp, Activity, Database, Inbox, Users } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import { STORE_BLOCKS, ALL_SECTORS } from '../config/storeBlocks';
 import CatalogImportTab from './admin/CatalogImportTab';
 import EanImportTab from './admin/EanImportTab';
 import QualityMetricsTab from './admin/QualityMetricsTab';
@@ -16,7 +17,7 @@ import UserManagementTab from './admin/UserManagementTab';
  * Layout First Mobile, responsivo y sin barra de desplazamiento nativa visible en pestañas.
  */
 
-export default function AdminPanel({ token, userRole, onClose, onTokenExpired }) {
+export default function AdminPanel({ token, userRole, currentUser, onClose, onTokenExpired }) {
   const [activeTab, setActiveTab] = useState(() => {
     if (['coordinador', 'jefe_sector'].includes(userRole)) {
       return 'inbox';
@@ -27,16 +28,23 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
   const allTabs = [
     { id: 'inbox', name: 'Bandeja Pendientes', icon: Inbox, roles: ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin'] },
     { id: 'users', name: 'Gestión Usuarios', icon: Users, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
+    { id: 'brands', name: 'Marcas Dinámicas', icon: Layers, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
     { id: 'catalog', name: 'Catálogo SAP', icon: FileSpreadsheet, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
     { id: 'ean', name: 'Mapeo EANs', icon: KeyRound, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
-    { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
-    { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
-    { id: 'brands', name: 'Marcas Dinámicas', icon: Layers, roles: ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'] },
-    { id: 'health', name: 'Estado del Sistema', icon: Activity, roles: ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin'] },
+    { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
+    { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
+    { id: 'health', name: 'Estado del Sistema', icon: Activity, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
     { id: 'dbviewer', name: 'Base de Datos', icon: Database, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] }
   ];
 
   const visibleTabs = allTabs.filter(t => t.roles.includes(userRole));
+  const isGlobalAdmin = ['gerente', 'subadmin', 'admin', 'superadmin'].includes(userRole);
+
+  // Resolver bloque del usuario actual
+  const userBlock = userRole === 'jefe_sector'
+    ? (STORE_BLOCKS.find(b => b.jefe_email.toLowerCase() === (currentUser?.email || '').toLowerCase()) || STORE_BLOCKS[0])
+    : (STORE_BLOCKS.find(b => b.id === Number(currentUser?.bloque_id)) || STORE_BLOCKS[0]);
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -58,6 +66,7 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
   const [newBrandNombre, setNewBrandNombre] = useState('');
 
   const fetchStats = async () => {
+    if (!isGlobalAdmin) return;
     try {
       const res = await fetch(`${API_BASE_URL}/catalogos/metricas`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -84,13 +93,31 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-[95vw] lg:max-w-6xl w-full shadow-2xl overflow-hidden my-auto border border-gray-150 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         
-        {/* Header Modal */}
+        {/* Header Modal con Nombre de Usuario y Secciones Asignadas */}
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
           <div>
-            <h3 className="font-black text-gray-800 text-base sm:text-xl flex items-center gap-2">
-              <span>⚙️ Panel Administrativo</span>
-            </h3>
-            <p className="text-xs text-gray-500 font-medium">Gestión integral de catálogos SAP, marcas y analítica de datos</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-black text-gray-800 text-base sm:text-xl flex items-center gap-2">
+                <span>⚙️ Panel Administrativo</span>
+              </h3>
+              <span className="bg-red-50 text-easy-red border border-red-200 text-xs px-2.5 py-0.5 rounded-full font-black">
+                {currentUser?.nombre || (userRole === 'jefe_sector' ? userBlock.jefe_nombre : 'Administración')}
+              </span>
+              <span className="bg-slate-100 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-bold uppercase">
+                {userRole === 'jefe_sector' ? 'Jefe de Sector' : userRole}
+              </span>
+            </div>
+            
+            {userRole === 'jefe_sector' ? (
+              <p className="text-xs text-gray-500 font-medium mt-1 flex items-center gap-1.5 flex-wrap">
+                <span>📍 <strong>{userBlock.nombre}:</strong></span>
+                <span className="text-slate-700 font-bold">{userBlock.sectores.map(s => s.nombre).join(' • ')}</span>
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Supervisión Global de Tienda (Todos los 20 Sectores y 4 Bloques Habilitados)
+              </p>
+            )}
           </div>
           <button 
             onClick={onClose} 
@@ -142,11 +169,11 @@ export default function AdminPanel({ token, userRole, onClose, onTokenExpired })
         {/* Contenido Dinámico de la Pestaña Activa */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
           {activeTab === 'inbox' && (
-            <PendingApprovalsInbox user={{ role: userRole }} />
+            <PendingApprovalsInbox user={currentUser || { role: userRole }} />
           )}
 
           {activeTab === 'users' && (
-            <UserManagementTab currentUser={{ role: userRole }} />
+            <UserManagementTab currentUser={currentUser || { role: userRole }} />
           )}
 
           {activeTab === 'catalog' && (

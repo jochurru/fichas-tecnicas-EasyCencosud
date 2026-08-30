@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabase, supabaseDb, supabaseAdmin } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { getAllowedSectorsForUser } from '../config/storeBlocks.js';
 
 const router = Router();
 
@@ -43,7 +44,6 @@ router.get('/admin/usuarios/validar-email', requireAuth, async (req, res, next) 
       .maybeSingle();
 
     if (existing) {
-      // Generar sugerencia (ej: juan.perez -> juan.perez1@easy.com.ar)
       const parts = cleanEmail.split('@');
       const suggestedEmail = `${parts[0]}1@${parts[1] || 'easy.com.ar'}`;
       return res.json({
@@ -61,19 +61,25 @@ router.get('/admin/usuarios/validar-email', requireAuth, async (req, res, next) 
 
 /**
  * @route   GET /api/admin/usuarios
- * @desc    Lista los usuarios del local (filtrados por sector si es Jefe de Sector)
+ * @desc    Lista los usuarios (los Jefes solo ven hacia abajo: coordinadores y vendedores de su bloque)
  * @access  Privado
  */
 router.get('/admin/usuarios', requireAuth, async (req, res, next) => {
   try {
     const userRole = req.user.role || 'operador';
-    const userSector = req.user.sector_id || 1;
 
     let query = supabaseDb.from('profiles').select('*, sectores(nombre)');
 
-    // Si es Jefe de Sector o Coordinador, solo ve usuarios de su sector
-    if (userRole === 'jefe_sector' || userRole === 'coordinador') {
-      query = query.eq('sector_id', userSector);
+    // Si es Jefe de Sector: solo ve roles subordinados (coordinador y vendedor) de sus sectores
+    if (userRole === 'jefe_sector') {
+      query = query.in('rol', ['coordinador', 'operador', 'operator']);
+      const allowedSectors = getAllowedSectorsForUser(req.user);
+      if (allowedSectors.length > 0) {
+        query = query.in('sector_id', allowedSectors);
+      }
+    } else if (userRole === 'coordinador' || userRole === 'operador') {
+      // Un coordinador u operador no lista usuarios
+      return res.json([]);
     }
 
     const { data: users, error } = await query.order('created_at', { ascending: false });
@@ -102,6 +108,11 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
   const targetSector = sector_id || req.user.sector_id || 1;
 
   try {
+    // Si es Jefe de Sector, solo puede crear coordinadores o vendedores
+    if (req.user.role === 'jefe_sector' && !['coordinador', 'operador'].includes(rol)) {
+      return res.status(403).json({ error: 'Como Jefe de Sector solo podés dar de alta cuentas de Coordinadores y Vendedores.' });
+    }
+
     // 1. Verificar unicidad de email
     const { data: existing } = await supabaseDb
       .from('profiles')
@@ -176,9 +187,17 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
  */
 router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector']), async (req, res, next) => {
   const { id } = req.params;
+  const userRole = req.user.role || 'operador';
   const tempPassword = generateTempPassword();
 
   try {
+    // Si es Jefe de Sector, verificar que el usuario destino sea estrictamente subordinado
+    if (userRole === 'jefe_sector') {
+      const { data: targetUser } = await supabaseDb.from('profiles').select('rol, sector_id').eq('id', id).maybeSingle();
+      if (!targetUser || ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'].includes(targetUser.rol)) {
+        return res.status(403).json({ error: 'No tenés permisos para resetear la contraseña de un superior o par jerárquico.' });
+      }
+    }
     // Actualizar clave en Supabase Auth
     const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(id, {
       password: tempPassword

@@ -566,10 +566,10 @@ router.post('/auth/change-password', async (req, res, next) => {
 
 /**
  * @route   GET /api/catalogos/metricas
- * @desc    Obtiene métricas agregadas de los logs de auditoría para la gerencia.
- * @access  Privado (requiere privilegios de Administrador)
+ * @desc    Reporte de calidad y completitud del catálogo consolidado
+ * @access  Privado (Admin, Gerente, Subadmin, Jefe de Sector)
  */
-router.get('/catalogos/metricas', requireAuth, requireRoles(['admin']), async (req, res, next) => {
+router.get('/catalogos/metricas', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin']), async (req, res, next) => {
   try {
     // 1. Obtener los últimos 2500 registros de auditoría para procesar métricas de forma segura
     const { data: logs, error } = await supabaseDb

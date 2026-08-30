@@ -162,10 +162,16 @@ export default function UserManagementTab({ currentUser }) {
         <div>
           <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
             <Users className="w-5 h-5 text-red-600" />
-            <span>Usuarios de la Tienda</span>
+            <span>
+              {currentUser?.role === 'jefe_sector' 
+                ? 'Personal a Cargo (Coordinadores y Vendedores)' 
+                : 'Usuarios de la Tienda'}
+            </span>
           </h4>
           <p className="text-xs text-slate-500 mt-0.5">
-            Alta de personal, asignación de roles y control de credenciales temporales.
+            {currentUser?.role === 'jefe_sector'
+              ? 'Alta de personal y reseteo de claves para los empleados de tu bloque.'
+              : 'Alta de personal, asignación de roles y control de credenciales temporales.'}
           </p>
         </div>
         <button
@@ -173,7 +179,7 @@ export default function UserManagementTab({ currentUser }) {
           className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 transition"
         >
           <UserPlus className="w-4 h-4" />
-          <span>+ Nuevo Usuario</span>
+          <span>+ Nuevo Empleado</span>
         </button>
       </div>
 
@@ -187,6 +193,14 @@ export default function UserManagementTab({ currentUser }) {
       {/* Lista de Usuarios */}
       {loading ? (
         <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando usuarios...</div>
+      ) : users.length === 0 ? (
+        <div className="bg-slate-50 p-8 rounded-2xl border border-dashed border-slate-200 text-center">
+          <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <h5 className="font-bold text-sm text-slate-700">Sin empleados registrados</h5>
+          <p className="text-xs text-slate-400 mt-1">
+            No hay coordinadores ni vendedores registrados en tu bloque actualmente.
+          </p>
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse">
@@ -199,61 +213,66 @@ export default function UserManagementTab({ currentUser }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/50 transition">
-                  <td className="p-3.5">
-                    <div className="font-bold text-slate-800">{u.nombre}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
-                  </td>
-                  <td className="p-3.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
-                      {u.rol}
-                    </span>
-                  </td>
-                  <td className="p-3.5">
-                    {u.must_change_password ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                        <Key className="w-3 h-3" /> Pendiente Primer Login
+              {users.map((u) => {
+                const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
+                const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
+
+                return (
+                  <tr key={u.id} className="hover:bg-slate-50/50 transition">
+                    <td className="p-3.5">
+                      <div className="font-bold text-slate-800">{u.nombre}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                    </td>
+                    <td className="p-3.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
+                        {u.rol}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                        <Lock className="w-3 h-3" /> Clave Privada Personal
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3.5 text-right space-x-1">
-                    {u.must_change_password && (
-                      <button
-                        onClick={() => handleResetTempPassword(u.id)}
-                        title="Ver / Regenerar Clave Temporal"
-                        className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition"
-                      >
-                        <Key className="w-4 h-4" />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <>
+                    </td>
+                    <td className="p-3.5">
+                      {u.must_change_password ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <Key className="w-3 h-3" /> Pendiente Primer Login
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <Lock className="w-3 h-3" /> Clave Privada Personal
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-right space-x-1">
+                      {u.must_change_password && canResetThisUser && (
                         <button
-                          onClick={() => handleToggleStatus(u.id, u.activo)}
-                          title={u.activo ? 'Desactivar Usuario' : 'Activar Usuario'}
-                          className={`p-1.5 rounded-lg text-xs font-bold transition ${
-                            u.activo ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
-                          }`}
+                          onClick={() => handleResetTempPassword(u.id)}
+                          title="Ver / Regenerar Clave Temporal"
+                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition"
                         >
-                          <Power className="w-4 h-4" />
+                          <Key className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.email)}
-                          title="Eliminar Permanente"
-                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                      )}
+                      {canDelete && (
+                        <>
+                          <button
+                            onClick={() => handleToggleStatus(u.id, u.activo)}
+                            title={u.activo ? 'Desactivar Usuario' : 'Activar Usuario'}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                              u.activo ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                            }`}
+                          >
+                            <Power className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.email)}
+                            title="Eliminar Permanente"
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
