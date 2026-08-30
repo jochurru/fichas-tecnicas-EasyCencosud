@@ -76,24 +76,27 @@ export default function UsageMetricsTab({ stats }) {
       </div>
 
       {/* 2. Indicadores Secundarios de Operación */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white border border-gray-150 p-3.5 rounded-2xl text-center shadow-xs">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-            <FileText className="w-4 h-4 text-gray-500" /> Aprobaciones
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="bg-white border border-gray-150 p-3 sm:p-4 rounded-2xl flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center shadow-xs">
+          <div className="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <FileText className="w-4 h-4 text-gray-500 shrink-0" />
+            <span>Aprobaciones</span>
           </div>
           <div className="text-xl sm:text-2xl font-black text-gray-800">{resumen.aprobaciones || 0}</div>
         </div>
 
-        <div className="bg-white border border-gray-150 p-3.5 rounded-2xl text-center shadow-xs">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-            <Eye className="w-4 h-4 text-blue-500" /> Previsualizaciones
+        <div className="bg-white border border-gray-150 p-3 sm:p-4 rounded-2xl flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center shadow-xs">
+          <div className="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-blue-500 shrink-0" />
+            <span>Previsualizaciones</span>
           </div>
           <div className="text-xl sm:text-2xl font-black text-blue-900">{resumen.vistasPrevias || 0}</div>
         </div>
 
-        <div className="bg-white border border-gray-150 p-3.5 rounded-2xl text-center shadow-xs">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
-            <ShieldAlert className="w-4 h-4 text-red-500" /> Logins Fallidos
+        <div className="bg-white border border-gray-150 p-3 sm:p-4 rounded-2xl flex sm:flex-col items-center justify-between sm:justify-center text-left sm:text-center shadow-xs">
+          <div className="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <ShieldAlert className="w-4 h-4 text-red-500 shrink-0" />
+            <span>Logins Fallidos</span>
           </div>
           <div className="text-xl sm:text-2xl font-black text-red-900">{resumen.loginFailed || 0}</div>
         </div>

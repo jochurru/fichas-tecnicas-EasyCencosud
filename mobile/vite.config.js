@@ -16,7 +16,7 @@ export default defineConfig({
         theme_color: '#e30613', // Rojo Easy
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         icons: [
           {
             src: 'easy-logo.png',

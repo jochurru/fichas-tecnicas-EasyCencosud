@@ -158,10 +158,10 @@ export default function UserManagementTab({ currentUser }) {
   return (
     <div className="space-y-6 font-sans">
       {/* Cabecera */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
-            <Users className="w-5 h-5 text-red-600" />
+          <h4 className="font-black text-slate-800 text-sm sm:text-base flex items-center gap-2">
+            <Users className="w-5 h-5 text-red-600 shrink-0" />
             <span>
               {currentUser?.role === 'jefe_sector' 
                 ? 'Personal a Cargo (Coordinadores y Vendedores)' 
@@ -176,7 +176,7 @@ export default function UserManagementTab({ currentUser }) {
         </div>
         <button
           onClick={() => { setIsModalOpen(true); setCreatedResult(null); setEmailInput(''); setNombreInput(''); }}
-          className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 transition"
+          className="w-full sm:w-auto justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 transition active:scale-98 shrink-0"
         >
           <UserPlus className="w-4 h-4" />
           <span>+ Nuevo Empleado</span>
@@ -185,7 +185,7 @@ export default function UserManagementTab({ currentUser }) {
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-500" />
+          <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -202,49 +202,44 @@ export default function UserManagementTab({ currentUser }) {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                <th className="p-3.5">Usuario / Email</th>
-                <th className="p-3.5">Rol</th>
-                <th className="p-3.5">Estado Clave</th>
-                <th className="p-3.5 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {users.map((u) => {
-                const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
-                const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
+        <>
+          {/* Vista Mobile (Tarjetas) */}
+          <div className="block sm:hidden space-y-3">
+            {users.map((u) => {
+              const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
+              const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
 
-                return (
-                  <tr key={u.id} className="hover:bg-slate-50/50 transition">
-                    <td className="p-3.5">
-                      <div className="font-bold text-slate-800">{u.nombre}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
-                    </td>
-                    <td className="p-3.5">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
-                        {u.rol}
-                      </span>
-                    </td>
-                    <td className="p-3.5">
+              return (
+                <div key={u.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-slate-800 text-sm truncate">{u.nombre}</div>
+                      <div className="text-[11px] text-slate-400 font-mono truncate">{u.email}</div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 shrink-0">
+                      {u.rol}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                    <div>
                       {u.must_change_password ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
                           <Key className="w-3 h-3" /> Pendiente Primer Login
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          <Lock className="w-3 h-3" /> Clave Privada Personal
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <Lock className="w-3 h-3" /> Clave Personal
                         </span>
                       )}
-                    </td>
-                    <td className="p-3.5 text-right space-x-1">
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {u.must_change_password && canResetThisUser && (
                         <button
                           onClick={() => handleResetTempPassword(u.id)}
                           title="Ver / Regenerar Clave Temporal"
-                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition"
+                          className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold transition active:scale-95"
                         >
                           <Key className="w-4 h-4" />
                         </button>
@@ -254,7 +249,7 @@ export default function UserManagementTab({ currentUser }) {
                           <button
                             onClick={() => handleToggleStatus(u.id, u.activo)}
                             title={u.activo ? 'Desactivar Usuario' : 'Activar Usuario'}
-                            className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                            className={`p-2 rounded-xl text-xs font-bold transition active:scale-95 ${
                               u.activo ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
                             }`}
                           >
@@ -263,19 +258,97 @@ export default function UserManagementTab({ currentUser }) {
                           <button
                             onClick={() => handleDeleteUser(u.id, u.email)}
                             title="Eliminar Permanente"
-                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+                            className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition active:scale-95"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
                       )}
-                    </td>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Vista Tablet / Desktop (Tabla completa con scroll horizontal fluido) */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[550px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                    <th className="p-3.5">Usuario / Email</th>
+                    <th className="p-3.5">Rol</th>
+                    <th className="p-3.5">Estado Clave</th>
+                    <th className="p-3.5 text-right">Acciones</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {users.map((u) => {
+                    const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
+                    const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
+
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50/50 transition">
+                        <td className="p-3.5">
+                          <div className="font-bold text-slate-800">{u.nombre}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700">
+                            {u.rol}
+                          </span>
+                        </td>
+                        <td className="p-3.5">
+                          {u.must_change_password ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                              <Key className="w-3 h-3" /> Pendiente Primer Login
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              <Lock className="w-3 h-3" /> Clave Privada Personal
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right space-x-1 whitespace-nowrap">
+                          {u.must_change_password && canResetThisUser && (
+                            <button
+                              onClick={() => handleResetTempPassword(u.id)}
+                              title="Ver / Regenerar Clave Temporal"
+                              className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <>
+                              <button
+                                onClick={() => handleToggleStatus(u.id, u.activo)}
+                                title={u.activo ? 'Desactivar Usuario' : 'Activar Usuario'}
+                                className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                                  u.activo ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                                }`}
+                              >
+                                <Power className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                title="Eliminar Permanente"
+                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Modal de Creación de Usuario */}
