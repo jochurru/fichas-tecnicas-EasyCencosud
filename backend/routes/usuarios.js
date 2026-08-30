@@ -156,9 +156,7 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
         nombre: nombre.trim(),
         rol: rol,
         sector_id: targetSector,
-        must_change_password: true,
-        temp_password: bcrypt.hashSync(tempPassword, 10),
-        activo: true
+        must_change_password: true
       })
       .select()
       .single();
@@ -219,7 +217,6 @@ router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles
       .from('profiles')
       .update({
         must_change_password: true,
-        temp_password: bcrypt.hashSync(tempPassword, 10),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

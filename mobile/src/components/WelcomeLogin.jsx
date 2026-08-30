@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ShieldAlert, LogIn, Activity, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ShieldAlert, LogIn, Activity, ExternalLink, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 export default function WelcomeLogin({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -9,6 +10,7 @@ export default function WelcomeLogin({ onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [ssoSimulated, setSsoSimulated] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleStandardSubmit = async (e) => {
     e.preventDefault();
@@ -153,6 +155,15 @@ export default function WelcomeLogin({ onLoginSuccess }) {
                       )}
                     </button>
                   </div>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(true)}
+                      className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline transition"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
                 </div>
 
                 {/* Mensaje de Error */}
@@ -176,6 +187,12 @@ export default function WelcomeLogin({ onLoginSuccess }) {
               </form>
             </>
           )}
+
+          {/* Modal de Recuperación de Contraseña */}
+          <ForgotPasswordModal 
+            isOpen={showForgotModal} 
+            onClose={() => setShowForgotModal(false)} 
+          />
 
           {/* Información de Contingencia */}
           <div className="mt-8 text-center text-[10px] text-gray-400">

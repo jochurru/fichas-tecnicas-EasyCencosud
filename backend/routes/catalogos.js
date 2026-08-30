@@ -552,6 +552,73 @@ router.post('/auth/change-password', requireAuth, async (req, res, next) => {
 });
 
 /**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Solicita el envío de un correo de restablecimiento de contraseña vía Supabase Auth
+ * @access  Público
+ */
+router.post('/auth/forgot-password', async (req, res, next) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Debes proporcionar un correo electrónico válido.' });
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+
+  try {
+    // Si se solicita recuperación para cuentas administrativas genéricas sin buzón real (ej: admin@easy.com.ar / admin@cencosud.com.ar),
+    // se redirige el enlace de recuperación a la casilla real del administrador
+    const adminAliases = ['admin@easy.com.ar', 'admin@cencosud.com.ar'];
+    const forwardingEmail = process.env.ADMIN_FORWARDING_EMAIL || 'jonatan.churruarin@outlook.com';
+    const isSpecialAdmin = adminAliases.includes(cleanEmail);
+    const emailToDispatch = isSpecialAdmin ? forwardingEmail : cleanEmail;
+
+    // 1. Verificar si el usuario existe en profiles
+    const { data: profile } = await supabaseDb
+      .from('profiles')
+      .select('id, email, nombre')
+      .or(`email.eq.${cleanEmail},email.eq.${emailToDispatch}`)
+      .maybeSingle();
+
+    // Por seguridad (prevenir enumeración de usuarios), si no existe respondemos igualmente OK
+    if (!profile && !isSpecialAdmin) {
+      return res.json({ 
+        success: true, 
+        message: 'Si el correo está registrado en la base institucional, recibirás las instrucciones para restablecer tu contraseña.' 
+      });
+    }
+
+    // 2. Generar el enlace de recuperación con Supabase Auth hacia la casilla de destino real
+    const redirectTo = process.env.NODE_ENV === 'production'
+      ? 'https://easy-fichas-tecnicas.web.app/#reset-password'
+      : 'http://localhost:5173/#reset-password';
+
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(emailToDispatch, {
+      redirectTo
+    });
+
+    if (resetErr) {
+      console.warn('[Auth] Error de Supabase al enviar correo de reseteo:', resetErr.message);
+    }
+
+    req.user = { email: cleanEmail };
+    logAuditEvent(req, {
+      accion: 'PASSWORD_RESET_REQUESTED',
+      entidad: 'USUARIO',
+      resultado: 'SUCCESS'
+    });
+
+    return res.json({ 
+      success: true, 
+      message: 'Si el correo está registrado en la base institucional, recibirás las instrucciones para restablecer tu contraseña.' 
+    });
+
+  } catch (err) {
+    console.error('[Auth] Error en forgot-password:', err.message);
+    next(err);
+  }
+});
+
+/**
  * @route   GET /api/catalogos/metricas
  * @desc    Reporte de calidad y completitud del catálogo consolidado
  * @access  Privado (Admin, Gerente, Subadmin, Jefe de Sector)
