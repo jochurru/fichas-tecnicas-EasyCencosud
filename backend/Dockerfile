@@ -33,5 +33,8 @@ COPY . .
 # Exponer el puerto por el que escucha Express (3000 por defecto)
 EXPOSE 3000
 
+# Usuario no-root para seguridad en contenedor
+USER node
+
 # Comando de arranque del servidor
 CMD [ "node", "index.js" ]

@@ -109,9 +109,17 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
   const targetSector = sector_id || req.user.sector_id || 1;
 
   try {
-    // Si es Jefe de Sector, solo puede crear coordinadores o vendedores
-    if (req.user.role === 'jefe_sector' && !['coordinador', 'operador'].includes(rol)) {
-      return res.status(403).json({ error: 'Como Jefe de Sector solo podés dar de alta cuentas de Coordinadores y Vendedores.' });
+    // Si es Jefe de Sector, solo puede crear coordinadores o vendedores dentro de su bloque asignado
+    if (req.user.role === 'jefe_sector') {
+      if (!['coordinador', 'operador'].includes(rol)) {
+        return res.status(403).json({ error: 'Como Jefe de Sector solo podés dar de alta cuentas de Coordinadores y Vendedores.' });
+      }
+      const allowedSectors = getAllowedSectorsForUser(req.user);
+      if (!allowedSectors.includes(Number(targetSector))) {
+        return res.status(403).json({ 
+          error: 'No podés crear usuarios fuera de los sectores de tu bloque asignado.' 
+        });
+      }
     }
 
     // 1. Verificar unicidad de email

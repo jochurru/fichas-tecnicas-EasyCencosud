@@ -170,11 +170,15 @@ router.get('/marcas', requireAuth, async (req, res, next) => {
       const cleanSlug = marca.slug.toLowerCase().trim();
       const cleanNombre = marca.nombre.toLowerCase().trim();
 
+      const escapeLike = (str) => str.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      const safeName = escapeLike(cleanNombre);
+      const safeSlug = escapeLike(cleanSlug);
+
       // Consultar si existen productos en el catálogo para esta marca
       const { data: prods } = await supabaseDb
         .from('productos')
         .select('grupo_articulos')
-        .or(`descripcion.ilike.%${cleanNombre}%,descripcion.ilike.%${cleanSlug}%`)
+        .or(`descripcion.ilike.%${safeName}%,descripcion.ilike.%${safeSlug}%`)
         .limit(5);
 
       if (prods && prods.length > 0) {

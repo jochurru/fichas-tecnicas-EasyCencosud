@@ -55,8 +55,10 @@ export default function ForcePasswordChangeModal({ user, onPasswordChanged }) {
         return;
       }
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error(data.error || 'Error al cambiar la contraseña.');
+        throw new Error(data.error || data.message || 'Error al cambiar la contraseña.');
       }
 
       // Actualizar localStorage para evitar que vuelva a pedir en recargas
