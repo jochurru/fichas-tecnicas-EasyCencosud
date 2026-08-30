@@ -3,18 +3,18 @@ import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { deleteStorageFileByUrl } from '../lib/storageHelper.js';
+import { getAllowedSectorsForUser } from '../config/storeBlocks.js';
 
 const router = Router();
 
 /**
  * @route   GET /api/aprobaciones/pendientes
- * @desc    Obtiene las fichas borradores pendientes de aprobación (filtradas por sector)
+ * @desc    Obtiene la lista de fichas en borrador o pendientes de validación
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
 router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador']), async (req, res, next) => {
   try {
     const userRole = req.user.role || 'operador';
-    const userSector = req.user.sector_id || 1;
     const { sector_id } = req.query;
 
     let query = supabaseDb
@@ -22,9 +22,14 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
       .select('*, sectores(nombre)')
       .in('estado', ['PENDIENTE_VALIDACION', 'pendiente_revision']);
 
-    // Si es Coordinador o Jefe de Sector, filtra estrictamente por su sector asignado
+    // Si es Coordinador o Jefe de Sector, filtra por los sectores que integran su bloque
     if (userRole === 'jefe_sector' || userRole === 'coordinador') {
-      query = query.eq('sector_id', userSector);
+      const allowedSectors = getAllowedSectorsForUser(req.user);
+      if (sector_id) {
+        query = query.eq('sector_id', parseInt(sector_id, 10));
+      } else if (allowedSectors.length > 0) {
+        query = query.in('sector_id', allowedSectors);
+      }
     } else if (sector_id) {
       query = query.eq('sector_id', parseInt(sector_id, 10));
     }

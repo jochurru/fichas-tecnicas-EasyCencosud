@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, CheckCircle, XCircle, Upload, AlertTriangle, FileText, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Sparkles, Layers, Award } from 'lucide-react';
+import { Inbox, CheckCircle, XCircle, Upload, AlertTriangle, FileText, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Sparkles, Layers, Award, Filter } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import { STORE_BLOCKS, ALL_SECTORS, getSectorName, getBlockBySectorId } from '../../config/storeBlocks';
 
 export default function PendingApprovalsInbox({ user }) {
   const [fichas, setFichas] = useState([]);
@@ -9,6 +10,7 @@ export default function PendingApprovalsInbox({ user }) {
   const [error, setError] = useState(null);
   const [selectedFicha, setSelectedFicha] = useState(null);
   const [activeSubTab, setActiveSubTab] = useState('vendedores'); // 'vendedores' | 'ia'
+  const [selectedSector, setSelectedSector] = useState('ALL');
   const [uploading, setUploading] = useState(false);
   const [photoUrlInput, setPhotoUrlInput] = useState('');
   const [rejectReason, setRejectReason] = useState('');
@@ -209,6 +211,22 @@ export default function PendingApprovalsInbox({ user }) {
   
   const currentList = activeSubTab === 'vendedores' ? vendorPendingList : aiPendingList;
 
+  // Obtener los sectores del bloque del usuario
+  const userBlock = user?.role === 'jefe_sector' 
+    ? (STORE_BLOCKS.find(b => b.jefe_email.toLowerCase() === (user.email || '').toLowerCase()) || STORE_BLOCKS[0])
+    : (STORE_BLOCKS.find(b => b.id === Number(user?.bloque_id)) || STORE_BLOCKS[0]);
+
+  const blockSectors = ['gerente', 'subadmin', 'admin', 'superadmin'].includes(user?.role)
+    ? ALL_SECTORS
+    : userBlock.sectores;
+
+  // Filtrado por sector seleccionado
+  const filteredFichas = fichas.filter(f => {
+    if (selectedSector === 'ALL') return true;
+    const fSector = Number(f.sector_id);
+    return fSector === Number(selectedSector) || (Number(selectedSector) === 45 && fSector === 1);
+  });
+
   if (!isBossOrAbove) {
     return (
       <div className="p-8 text-center text-slate-500 font-sans">
@@ -226,10 +244,10 @@ export default function PendingApprovalsInbox({ user }) {
         <div>
           <h4 className="font-black text-slate-800 text-base flex items-center gap-2">
             <Inbox className="w-5 h-5 text-red-600" />
-            <span>Bandeja de Pendientes — Sector {user?.sector_nombre || 'Herramientas'}</span>
+            <span>Bandeja de Pendientes — {userBlock.nombre}</span>
           </h4>
           <p className="text-xs text-slate-500 mt-0.5">
-            Fichas enviadas por vendedores de tu sector que requieren validación técnica y foto oficial antes de ser impresas.
+            Fichas enviadas por vendedores de tu bloque que requieren validación técnica y foto oficial antes de ser impresas.
           </p>
         </div>
         
@@ -240,6 +258,48 @@ export default function PendingApprovalsInbox({ user }) {
           <span>↻ Actualizar</span>
         </button>
       </div>
+
+      {/* Selector / Filtro por Sector del Bloque */}
+      {blockSectors.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 select-none">
+          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0">
+            <Filter className="w-3.5 h-3.5" /> Sectores:
+          </span>
+          <button
+            onClick={() => setSelectedSector('ALL')}
+            className={`text-xs px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition ${
+              selectedSector === 'ALL'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Todos ({fichas.length})
+          </button>
+          {blockSectors.map((s) => {
+            const count = fichas.filter(f => Number(f.sector_id) === s.id || (s.id === 45 && Number(f.sector_id) === 1)).length;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSector(s.id)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                  Number(selectedSector) === s.id
+                    ? 'bg-easy-red text-white shadow-sm'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <span>{s.nombre}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    Number(selectedSector) === s.id ? 'bg-white text-easy-red' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {actionSuccess && (
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 flex items-center gap-2">
@@ -258,36 +318,42 @@ export default function PendingApprovalsInbox({ user }) {
       {/* Lista de Fichas Enviadas por Vendedores */}
       {loading ? (
         <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando solicitudes de vendedores...</div>
-      ) : fichas.length === 0 ? (
+      ) : filteredFichas.length === 0 ? (
         <div className="bg-slate-50 p-8 rounded-2xl border border-dashed border-slate-200 text-center">
           <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
           <h5 className="font-bold text-sm text-slate-700">¡Bandeja al día!</h5>
           <p className="text-xs text-slate-400 mt-1">
-            No hay solicitudes de revisión enviadas por vendedores en tu sector.
+            No hay solicitudes de revisión pendientes en este sector.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fichas.map((f) => {
+          {filteredFichas.map((f) => {
             const specData = f.especificaciones_json || {};
             const marca = specData.marca || f.marca || 'GENERICA';
             const tipoHerramienta = specData.tipo_herramienta || f.tipo_herramienta || f.nombre || 'Herramienta';
             const specsList = Array.isArray(specData.especificaciones) ? specData.especificaciones : [];
             const emisor = f.aprobado_por || f.creado_por || 'vendedor.herramientas@easy.com.ar';
+            const sectorNombre = getSectorName(f.sector_id);
 
             return (
               <div key={f.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3">
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      f.estado === 'PENDIENTE_VALIDACION' || f.estado === 'pendiente_revision'
-                        ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                        : 'bg-purple-100 text-purple-800 border border-purple-200'
-                    }`}>
-                      {f.estado === 'PENDIENTE_VALIDACION' || f.estado === 'pendiente_revision'
-                        ? '⌛ Revisión Vendedor' 
-                        : '🤖 Borrador IA'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        f.estado === 'PENDIENTE_VALIDACION' || f.estado === 'pendiente_revision'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                          : 'bg-purple-100 text-purple-800 border border-purple-200'
+                      }`}>
+                        {f.estado === 'PENDIENTE_VALIDACION' || f.estado === 'pendiente_revision'
+                          ? '⌛ Revisión Vendedor' 
+                          : '🤖 Borrador IA'}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                        {sectorNombre}
+                      </span>
+                    </div>
                     <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
                       SKU {f.sku}
                     </span>
