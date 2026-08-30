@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, UploadCloud, Layers, Filter } from 'lucide-react';
+import { RefreshCw, UploadCloud, Layers, Filter, CheckCircle2 } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import { STORE_BLOCKS, ALL_SECTORS } from '../../config/storeBlocks';
-
-// Mapeo canónico de marcas conocidas a sus bloques de tienda
-const KNOWN_BRAND_BLOCK_MAP = {
-  // Bloque 1: Técnico / Taller (Herramientas, Electricidad, Ferretería, Automotor)
-  'bremen': 1, 'stanley': 1, 'blackdecker': 1, 'dewalt': 1, 'bosch': 1,
-  'einhell': 1, 'daewoo': 1, 'robust': 1, 'herramientasrobust': 1, 'makita': 1,
-  'gamma': 1, 'kushiro': 1, 'dowen pagio': 1, 'dowenpagio': 1, 'dremel': 1,
-  'skil': 1, 'karcher': 1,
-
-  // Bloque 2: Terminaciones / Obra (Pinturas, Plomería, Baños, Pisos, Maderas, Aberturas, Construcciones)
-  'alba': 2, 'sherwin': 2, 'sherwin williams': 2, 'sinteplast': 2, 'plasti-kote': 2,
-  'rustoleum': 2, 'ferrum': 2, 'roca': 2, 'tigre': 2, 'awaduct': 2, 'fv': 2,
-  'weber': 2, 'klaukol': 2, 'loma negra': 2, 'sika': 2,
-
-  // Bloque 3: Deco / Confort (Menaje y Deco, Iluminación, Deco Ventanas/Textil, Electro, Ampolletas)
-  'philips': 3, 'osram': 3, 'candil': 3, 'liliana': 3, 'moulinex': 3,
-  'oster': 3, 'peabody': 3, 'atma': 3,
-
-  // Bloque 4: Hogar / Aire Libre (Muebles, Outdoor, Organizadores, Jardín y Mascotas)
-  'tramontina': 4, 'colombraro': 4, 'keter': 4, 'mor': 4, 'coleman': 4
-};
 
 export default function DynamicBrandsTab({
   brands,
@@ -39,6 +18,7 @@ export default function DynamicBrandsTab({
   currentUser
 }) {
   const [selectedBlockFilter, setSelectedBlockFilter] = useState('ALL');
+  const [selectedSectorId, setSelectedSectorId] = useState('');
 
   const userRole = currentUser?.role || 'operador';
   const isGlobalAdmin = ['gerente', 'subadmin', 'admin', 'superadmin'].includes(userRole);
@@ -51,27 +31,28 @@ export default function DynamicBrandsTab({
     ? (selectedBlockFilter === 'ALL' ? null : Number(selectedBlockFilter))
     : userBlock.id;
 
-  const filteredBrands = brands.filter((brand) => {
-    if (!activeBlockId) return true;
-    const cleanSlug = (brand.slug || '').toLowerCase().trim();
-    const brandBlock = KNOWN_BRAND_BLOCK_MAP[cleanSlug] || brand.bloque_id || 1; // Default a bloque 1 si es genérica
-    return brandBlock === activeBlockId;
-  });
   const loadBrands = async () => {
     setBrandsLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/marcas`, {
+      const url = activeBlockId 
+        ? `${API_BASE_URL}/marcas?bloque_id=${activeBlockId}` 
+        : `${API_BASE_URL}/marcas`;
+      const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error(`Error ${res.status} al cargar marcas`);
       const data = await res.json();
-      setBrands(data);
+      setBrands(data || []);
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
       setBrandsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadBrands();
+  }, [activeBlockId]);
 
   useEffect(() => {
     loadBrands();
@@ -243,14 +224,14 @@ export default function DynamicBrandsTab({
               ? `Catálogo de Marcas (${selectedBlockFilter === 'ALL' ? 'Toda la Tienda' : STORE_BLOCKS.find(b => b.id === Number(selectedBlockFilter))?.nombre})` 
               : `Marcas de tu Bloque (${userBlock.nombre})`}
           </span>
-          <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">Total: {filteredBrands.length}</span>
+          <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">Total: {brands.length}</span>
         </div>
 
         {brandsLoading ? (
           <div className="flex justify-center items-center py-10 text-gray-400 gap-1.5 text-xs font-bold">
             <RefreshCw className="w-4 h-4 animate-spin text-easy-red" /> Cargando marcas...
           </div>
-        ) : filteredBrands.length === 0 ? (
+        ) : brands.length === 0 ? (
           <div className="py-12 text-center text-gray-400 text-xs font-bold">
             No hay marcas registradas para este bloque todavía. Podés registrar una nueva arriba.
           </div>
@@ -266,7 +247,7 @@ export default function DynamicBrandsTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-[11px]">
-                {filteredBrands.map((brand, idx) => (
+                {brands.map((brand, idx) => (
                   <tr key={brand.id || idx} className="hover:bg-gray-50/45">
                     <td className="px-4 py-3.5 font-bold text-gray-700 uppercase">
                       {brand.nombre}

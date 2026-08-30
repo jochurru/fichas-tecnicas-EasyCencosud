@@ -140,12 +140,27 @@ router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 
 
 /**
  * @route   GET /api/marcas
- * @desc    Obtiene la lista completa de marcas registradas.
+ * @desc    Obtiene la lista de marcas registradas filtradas por sector/bloque desde la base de datos
  */
 router.get('/marcas', requireAuth, async (req, res, next) => {
   try {
-    const marcas = await dataService.getAllMarcas();
-    return res.json(marcas);
+    const userRole = req.user.role || 'operador';
+    const { bloque_id, sector_id } = req.query;
+
+    let query = supabaseDb.from('marcas').select('*').order('nombre', { ascending: true });
+
+    if (bloque_id) {
+      query = query.eq('bloque_id', parseInt(bloque_id, 10));
+    } else if (sector_id) {
+      query = query.eq('sector_id', parseInt(sector_id, 10));
+    }
+
+    const { data: marcas, error } = await query;
+    if (error) {
+      const allMarcas = await dataService.getAllMarcas();
+      return res.json(allMarcas || []);
+    }
+    return res.json(marcas || []);
   } catch (err) {
     next(err);
   }
@@ -153,22 +168,40 @@ router.get('/marcas', requireAuth, async (req, res, next) => {
 
 /**
  * @route   POST /api/marcas
- * @desc    Crea o edita una marca manualmente.
+ * @desc    Crea o edita una marca en la base de datos asociada a un sector/bloque
  */
-router.post('/marcas', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
-  const { slug, nombre, logo_url } = req.body;
+router.post('/marcas', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin']), async (req, res, next) => {
+  const { slug, nombre, logo_url, sector_id, bloque_id } = req.body;
   if (!slug || !nombre || !logo_url) {
     return res.status(400).json({ error: 'Faltan parámetros obligatorios: slug, nombre, logo_url' });
   }
 
   try {
-    const data = await dataService.upsertMarca(slug, nombre, logo_url);
+    const cleanSlug = slug.toLowerCase().trim();
+    const cleanNombre = nombre.toUpperCase().trim();
+    const targetSector = sector_id ? parseInt(sector_id, 10) : 45;
+    const targetBlock = bloque_id ? parseInt(bloque_id, 10) : 1;
+
+    const { data, error } = await supabaseDb
+      .from('marcas')
+      .upsert({
+        slug: cleanSlug,
+        nombre: cleanNombre,
+        logo_url,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'slug' })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      await dataService.upsertMarca(cleanSlug, cleanNombre, logo_url);
+    }
     
     logAuditEvent(req, {
       accion: 'BRAND_UPSERTED',
       entidad: 'MARCA',
-      sku: slug.toLowerCase(),
-      valores_nuevos: { nombre, logo_url }
+      sku: cleanSlug,
+      valores_nuevos: { nombre: cleanNombre, logo_url, sector_id: targetSector, bloque_id: targetBlock }
     });
 
     return res.json({ success: true, data });
