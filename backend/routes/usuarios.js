@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabase, supabaseDb, supabaseAdmin } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
@@ -148,7 +149,7 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
         rol: rol,
         sector_id: targetSector,
         must_change_password: true,
-        temp_password: tempPassword, // Guardado temporalmente encriptado/visible solo hasta primer login
+        temp_password: bcrypt.hashSync(tempPassword, 10),
         activo: true
       })
       .select()
@@ -210,7 +211,7 @@ router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles
       .from('profiles')
       .update({
         must_change_password: true,
-        temp_password: tempPassword,
+        temp_password: bcrypt.hashSync(tempPassword, 10),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

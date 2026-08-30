@@ -53,12 +53,15 @@ const pdfLimiter = rateLimit({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargas de recursos cruzados entre Firebase y Cloud Run
 }));
+const allowedOrigins = [
+  'https://easy-fichas-tecnicas.web.app',
+  'https://fichastecnicas-abdb5.web.app'
+];
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173');
+}
 app.use(cors({
-  origin: [
-    'https://easy-fichas-tecnicas.web.app',
-    'https://fichastecnicas-abdb5.web.app',
-    'http://localhost:5173' // Desarrollo local con Vite
-  ],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -97,9 +100,10 @@ app.use('/api', gerenciaRouter);
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('Error no manejado:', err);
+  const isDev = process.env.NODE_ENV !== 'production';
   res.status(500).json({
     error: 'Internal Server Error',
-    message: err.message
+    message: isDev ? err.message : 'Ha ocurrido un error interno. Contacte al administrador.'
   });
 });
 

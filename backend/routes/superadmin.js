@@ -73,7 +73,8 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['gerente', 'subad
       }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ error: 'Internal Server Error', message: isDev ? error.message : 'Error interno del servidor.' });
   }
 });
 
@@ -120,7 +121,8 @@ router.get('/admin/database-viewer', requireAuth, requireRoles(['gerente', 'supe
     });
   } catch (error) {
     console.error('[DB Viewer] Error:', error.message);
-    res.status(500).json({ error: error.message });
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(500).json({ error: 'Internal Server Error', message: isDev ? error.message : 'Error interno al consultar la base de datos.' });
   }
 });
 

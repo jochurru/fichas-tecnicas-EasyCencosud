@@ -34,11 +34,17 @@ export async function requireAuth(req, res, next) {
     try {
       const { data: profileRow } = await supabaseDb
         .from('profiles')
-        .select('rol, sector_id')
+        .select('rol, sector_id, activo')
         .eq('id', user.id)
         .maybeSingle();
 
       if (profileRow) {
+        if (profileRow.activo === false) {
+          return res.status(403).json({ 
+            error: 'Account Disabled', 
+            message: 'Tu cuenta ha sido desactivada por un administrador. Contactá a tu jefe de sector.' 
+          });
+        }
         role = profileRow.rol || 'operador';
         sectorId = profileRow.sector_id || 1;
       } else {
@@ -56,10 +62,14 @@ export async function requireAuth(req, res, next) {
       console.error('[AuthMiddleware] Error buscando perfil en base de datos:', dbErr.message);
     }
     
-    // Fallback de emergencia
+    // Fallback de emergencia: solo en desarrollo o si no hay superadmins en DB
     const bootstrapEmail = process.env.SUPERADMIN_BOOTSTRAP_EMAIL;
     if (bootstrapEmail && user.email.toLowerCase() === bootstrapEmail.toLowerCase()) {
-      role = 'superadmin';
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (!isProduction) {
+        console.warn('[AuthMiddleware] ⚠️ SUPERADMIN_BOOTSTRAP activado para:', user.email);
+        role = 'superadmin';
+      }
     }
 
     user.role = role;
