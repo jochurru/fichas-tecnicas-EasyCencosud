@@ -242,6 +242,7 @@ export default function AdminPanel({ token, userRole, currentUser, onClose, onTo
               setErrorMsg={setErrorMsg}
               setSuccessMsg={setSuccessMsg}
               token={token}
+              currentUser={currentUser || { role: userRole }}
             />
           )}
         </div>
