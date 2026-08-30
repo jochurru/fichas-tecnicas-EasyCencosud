@@ -12,7 +12,7 @@ const router = Router();
  * @desc    Obtiene la lista de fichas en borrador o pendientes de validación
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador']), async (req, res, next) => {
+router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
   try {
     const userRole = req.user.role || 'operador';
     const { sector_id } = req.query;
@@ -23,7 +23,7 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
       .in('estado', ['PENDIENTE_VALIDACION', 'pendiente_revision']);
 
     // Si es Coordinador o Jefe de Sector, filtra por los sectores que integran su bloque
-    if (userRole === 'jefe_sector' || userRole === 'coordinador') {
+    if (['jefe_sector', 'coordinador', 'coordinator'].includes(userRole)) {
       const allowedSectors = getAllowedSectorsForUser(req.user);
       if (sector_id) {
         query = query.eq('sector_id', parseInt(sector_id, 10));
@@ -48,7 +48,7 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
  * @desc    Aprueba y publica oficialmente una ficha técnica borrador
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador']), async (req, res, next) => {
+router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
   const { id } = req.params;
   const { foto_url, especificaciones, observaciones } = req.body;
 
@@ -111,7 +111,7 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
  * @desc    Devuelve una ficha borrador con observaciones y elimina imágenes de prueba rechazadas
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador']), async (req, res, next) => {
+router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
   const { id } = req.params;
   const { observaciones } = req.body;
 
