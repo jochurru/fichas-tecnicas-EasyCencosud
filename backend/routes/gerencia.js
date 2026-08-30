@@ -368,7 +368,7 @@ router.get('/gerencia/reporte-pdf', requireAuth, requireRoles(['gerente', 'super
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Reporte_Ejecutivo_Easy_${new Date().toISOString().split('T')[0]}.pdf"`);
-    return res.send(pdfBuffer);
+    return res.end(Buffer.from(pdfBuffer));
 
   } catch (err) {
     console.error('[Gerencia] Error al generar PDF ejecutivo:', err.message);
@@ -418,7 +418,7 @@ router.get('/gerencia/reporte-excel', requireAuth, requireRoles(['gerente', 'sup
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="Auditoria_Catalogo_Easy_${new Date().toISOString().split('T')[0]}.xlsx"`);
-    return res.send(buffer);
+    return res.end(Buffer.from(buffer));
 
   } catch (err) {
     console.error('[Gerencia] Error al generar Excel ejecutivo:', err.message);
