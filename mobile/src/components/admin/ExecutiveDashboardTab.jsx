@@ -95,12 +95,32 @@ export default function ExecutiveDashboardTab({ token }) {
     }
   };
 
-  const handleExportExecutiveReport = () => {
+  const handleExportExecutiveReport = async (format = 'pdf') => {
     setExporting(true);
-    setTimeout(() => {
-      window.print();
+    try {
+      const endpoint = format === 'excel' ? '/gerencia/reporte-excel' : '/gerencia/reporte-pdf';
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `Reporte_Ejecutivo_Easy_${new Date().toISOString().split('T')[0]}.${ext}`;
+
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
+      if (!res.ok) throw new Error('Error al generar el reporte.');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      alert('Error al exportar reporte: ' + err.message);
+    } finally {
       setExporting(false);
-    }, 500);
+    }
   };
 
   if (loading) {
@@ -155,11 +175,21 @@ export default function ExecutiveDashboardTab({ token }) {
           </button>
 
           <button
-            onClick={handleExportExecutiveReport}
-            className="flex-1 sm:flex-none bg-easy-red hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition flex items-center justify-center gap-1.5 active:scale-95"
+            onClick={() => handleExportExecutiveReport('pdf')}
+            disabled={exporting}
+            className="flex-1 sm:flex-none bg-easy-red hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-900/40 transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
           >
             <FileDown className="w-4 h-4" />
-            <span>{exporting ? 'Generando...' : 'Descargar Informe'}</span>
+            <span>{exporting ? 'Generando PDF...' : 'Descargar Informe PDF'}</span>
+          </button>
+
+          <button
+            onClick={() => handleExportExecutiveReport('excel')}
+            disabled={exporting}
+            title="Descargar Planilla Excel con desglose completo"
+            className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 shrink-0"
+          >
+            <span className="text-[11px] font-black">XLSX</span>
           </button>
         </div>
       </div>
