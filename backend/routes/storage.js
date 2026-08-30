@@ -4,6 +4,7 @@ import { validateSchema, uploadImageSchema } from '../middlewares/validation.js'
 import { supabaseDb } from '../lib/supabase.js';
 import { dataService } from '../services/dataService.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { STORE_BLOCKS } from '../config/storeBlocks.js';
 
 const router = Router();
 
@@ -140,29 +141,67 @@ router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 
 
 /**
  * @route   GET /api/marcas
- * @desc    Obtiene la lista de marcas registradas filtradas por sector/bloque desde la base de datos
+ * @desc    Obtiene la lista de marcas registradas filtradas dinámicamente por bloque departamental
  */
 router.get('/marcas', requireAuth, async (req, res, next) => {
   try {
-    const userRole = req.user.role || 'operador';
-    const { bloque_id, sector_id } = req.query;
+    const { bloque_id } = req.query;
+    const allMarcas = await dataService.getAllMarcas();
 
-    let query = supabaseDb.from('marcas').select('*').order('nombre', { ascending: true });
-
-    if (bloque_id) {
-      query = query.eq('bloque_id', parseInt(bloque_id, 10));
-    } else if (sector_id) {
-      query = query.eq('sector_id', parseInt(sector_id, 10));
-    }
-
-    const { data: marcas, error } = await query;
-    if (error) {
-      const allMarcas = await dataService.getAllMarcas();
+    if (!bloque_id) {
       return res.json(allMarcas || []);
     }
-    return res.json(marcas || []);
+
+    const targetBlockId = parseInt(bloque_id, 10);
+    const targetBlock = STORE_BLOCKS.find(b => b.id === targetBlockId);
+
+    if (!targetBlock) {
+      return res.json(allMarcas || []);
+    }
+
+    // Sectores del bloque seleccionado
+    const allowedSectorCodes = targetBlock.sector_ids.map(id => String(id).padStart(2, '0'));
+
+    // Filtrar marcas: si la marca tiene productos en el catálogo SAP de ese bloque
+    // o está explícitamente registrada para ese bloque
+    const filteredMarcas = [];
+
+    for (const marca of allMarcas) {
+      const cleanSlug = marca.slug.toLowerCase().trim();
+      const cleanNombre = marca.nombre.toLowerCase().trim();
+
+      // Consultar si existen productos en el catálogo para esta marca
+      const { data: prods } = await supabaseDb
+        .from('productos')
+        .select('grupo_articulos')
+        .or(`descripcion.ilike.%${cleanNombre}%,descripcion.ilike.%${cleanSlug}%`)
+        .limit(5);
+
+      if (prods && prods.length > 0) {
+        // Verificar si algún producto de la marca coincide con los sectores del bloque
+        const matchesBlock = prods.some(p => {
+          if (!p.grupo_articulos) return false;
+          const secPrefix = p.grupo_articulos.substring(0, 2);
+          return targetBlock.sector_ids.includes(parseInt(secPrefix, 10)) || targetBlock.sector_ids.includes(Number(secPrefix));
+        });
+
+        if (matchesBlock) {
+          filteredMarcas.push(marca);
+          continue;
+        }
+      }
+
+      // Si no tiene productos vinculados aún pero es del bloque 1 por defecto histórico
+      if (targetBlockId === 1 && ['bremen', 'stanley', 'blackdecker', 'robust', 'einhell', 'daewoo'].includes(cleanSlug)) {
+        filteredMarcas.push(marca);
+      }
+    }
+
+    return res.json(filteredMarcas);
   } catch (err) {
-    next(err);
+    console.error('[Marcas] Error al filtrar marcas por bloque:', err.message);
+    const fallback = await dataService.getAllMarcas();
+    return res.json(fallback || []);
   }
 });
 
