@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, CheckCircle, XCircle, Upload, AlertTriangle, FileText, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Sparkles, Layers } from 'lucide-react';
+import { Inbox, CheckCircle, XCircle, Upload, AlertTriangle, FileText, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Sparkles, Layers, Award } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 
 export default function PendingApprovalsInbox({ user }) {
   const [fichas, setFichas] = useState([]);
+  const [brandsList, setBrandsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedFicha, setSelectedFicha] = useState(null);
@@ -44,6 +45,17 @@ export default function PendingApprovalsInbox({ user }) {
 
   useEffect(() => {
     fetchPending();
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      fetch(`${API_BASE_URL}/marcas`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setBrandsList(data);
+      })
+      .catch(err => console.error('Error fetching brands list:', err));
+    }
   }, []);
 
   // Seleccionar ficha para inspección completa
@@ -407,6 +419,87 @@ export default function PendingApprovalsInbox({ user }) {
                   </div>
                 </div>
               </div>
+
+              {/* Revisión del Logotipo de la Marca */}
+              {(() => {
+                const specData = selectedFicha?.especificaciones_json || {};
+                const marca = specData.marca || selectedFicha?.marca || '';
+                const cleanBrandSlug = (marca || '').toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
+                const currentBrandObj = brandsList.find(b => b.slug === cleanBrandSlug);
+
+                const brandLogoMap = {
+                  'einhell': 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Einhell_Germany_logo.svg',
+                  'bosch': 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Bosch-Logo.svg',
+                  'dewalt': 'https://upload.wikimedia.org/wikipedia/commons/8/89/DeWalt_Logo.svg',
+                  'stanley': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+                  'black & decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+                  'black+decker': 'https://upload.wikimedia.org/wikipedia/commons/0/07/Stanley_Black_%26_DeCKER_logo.svg',
+                  'makita': 'https://upload.wikimedia.org/wikipedia/commons/7/71/Makita_Logo.svg',
+                  'karcher': 'https://upload.wikimedia.org/wikipedia/commons/c/ce/K%C3%A4rcher_Logo_2015.svg',
+                  'dremel': 'https://upload.wikimedia.org/wikipedia/commons/7/79/Dremel_logo.svg',
+                  'skil': 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Skil_logo_2019.svg',
+                  'gamma': 'https://gammaherramientas.com.ar/wp-content/uploads/2016/09/LogoGamma.png',
+                  'kushiro': 'https://kushiro.com.ar/img/logo-kushiro.png',
+                  'dowen pagio': 'https://www.dowenpagio.com.ar/wp-content/themes/dowen-pagio/images/logo.png'
+                };
+
+                let resolvedLogoUrl = currentBrandObj?.logo_url || null;
+                if (!resolvedLogoUrl) {
+                  for (const key of Object.keys(brandLogoMap)) {
+                    if (cleanBrandSlug.includes(key)) {
+                      resolvedLogoUrl = brandLogoMap[key];
+                      break;
+                    }
+                  }
+                }
+
+                return (
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-red-600" />
+                        <span>Logotipo de Marca ("{marca.toUpperCase() || 'GENÉRICA'}")</span>
+                      </label>
+                      {resolvedLogoUrl ? (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-emerald-600" />
+                          Logo Registrado
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold uppercase">
+                          Logo Faltante (Texto Plano)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3.5">
+                      <div className="bg-slate-900 w-24 h-12 rounded-xl overflow-hidden flex items-center justify-center p-2 border border-slate-200 shrink-0 shadow-inner">
+                        {resolvedLogoUrl ? (
+                          <img
+                            src={resolvedLogoUrl}
+                            alt={marca}
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://placehold.co/60x30?text=Logo';
+                            }}
+                          />
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-extrabold uppercase select-none text-center">Sin Logo</span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-1">
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                          {resolvedLogoUrl 
+                            ? 'Este logotipo oficial se imprimirá en el encabezado de las cartelas y flejes de todos los productos de esta marca.' 
+                            : 'Esta marca no posee logotipo registrado aún. En la impresión se mostrará el nombre en texto.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Tabla Editable de Todas las Especificaciones */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
