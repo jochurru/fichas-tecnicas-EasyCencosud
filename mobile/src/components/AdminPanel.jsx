@@ -34,7 +34,7 @@ export default function AdminPanel({ token, userRole, currentUser, onClose, onTo
     { id: 'metrics', name: 'Métricas de Uso', icon: TrendingUp, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
     { id: 'analytics', name: 'Calidad de Datos', icon: BarChart2, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
     { id: 'health', name: 'Estado del Sistema', icon: Activity, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] },
-    { id: 'dbviewer', name: 'Base de Datos', icon: Database, roles: ['gerente', 'subadmin', 'admin', 'superadmin'] }
+    { id: 'dbviewer', name: 'Base de Datos', icon: Database, roles: ['gerente', 'superadmin'] }
   ];
 
   const visibleTabs = allTabs.filter(t => t.roles.includes(userRole));

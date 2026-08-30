@@ -15,7 +15,7 @@ const router = Router();
  * @desc    Procesa un reporte XLSX de SAP en base64, detecta nuevos productos y los carga a la base de datos.
  * @access  Privado (requiere privilegios de Administrador)
  */
-router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validateSchema(excelUploadSchema), async (req, res, next) => {
+router.post('/catalogos/importar', requireAuth, requireRoles(['gerente', 'subadmin', 'admin', 'superadmin']), validateSchema(excelUploadSchema), async (req, res, next) => {
   const { fileBase64 } = req.body;
 
   try {
@@ -273,7 +273,7 @@ router.post('/catalogos/importar', requireAuth, requireRoles(['admin']), validat
  * @desc    Procesa un reporte XLSX de códigos de barra en base64 y los asocia a los SKUs en codigos_ean.
  * @access  Privado (requiere JWT válido de Supabase)
  */
-router.post('/catalogos/importar-eans', requireAuth, requireRoles(['admin']), validateSchema(excelUploadSchema), async (req, res, next) => {
+router.post('/catalogos/importar-eans', requireAuth, requireRoles(['gerente', 'subadmin', 'admin', 'superadmin']), validateSchema(excelUploadSchema), async (req, res, next) => {
   const { fileBase64 } = req.body;
 
   try {
@@ -682,7 +682,7 @@ router.get('/catalogos/metricas', requireAuth, requireRoles(['gerente', 'subadmi
  * @desc    Obtiene métricas agregadas de calidad y completitud del catálogo en tiempo real.
  * @access  Privado (requiere privilegios de Administrador)
  */
-router.get('/admin/calidad-catalogo', requireAuth, requireRoles(['admin']), async (req, res, next) => {
+router.get('/admin/calidad-catalogo', requireAuth, requireRoles(['gerente', 'subadmin', 'admin', 'superadmin']), async (req, res, next) => {
   try {
     // 1. Obtener todos los productos y realizar left join con sus fichas_tecnicas
     const { data: records, error } = await supabaseDb
@@ -838,7 +838,7 @@ router.get('/admin/calidad-catalogo', requireAuth, requireRoles(['admin']), asyn
  * @desc    Obtiene el estado de progreso de una tarea de procesamiento de Excel en segundo plano.
  * @access  Privado (requiere privilegios de Administrador)
  */
-router.get('/catalogos/tareas/:id', requireAuth, requireRoles(['admin']), async (req, res) => {
+router.get('/catalogos/tareas/:id', requireAuth, requireRoles(['gerente', 'subadmin', 'admin', 'superadmin']), async (req, res) => {
   const task = await taskManager.getTask(req.params.id);
   if (!task) {
     return res.status(404).json({ error: 'Tarea no encontrada' });

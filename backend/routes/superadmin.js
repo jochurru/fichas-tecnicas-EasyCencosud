@@ -83,7 +83,7 @@ router.get('/admin/estado-sistema', requireAuth, requireRoles(['gerente', 'subad
  */
 const ALLOWED_TABLES = ['productos', 'fichas_historial', 'codigos_ean', 'usuarios_roles', 'audit_logs'];
 
-router.get('/admin/database-viewer', requireAuth, requireRoles(['superadmin']), async (req, res) => {
+router.get('/admin/database-viewer', requireAuth, requireRoles(['gerente', 'superadmin']), async (req, res) => {
   try {
     const { tableName, limit = 50, offset = 0 } = req.query;
 
