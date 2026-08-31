@@ -60,7 +60,7 @@
 
         /* 2. COLUMNA IZQUIERDA */
         .left-content {
-            width: 45%;
+            width: 49%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -71,33 +71,33 @@
 
         /* 3. TÍTULO EN 2 LÍNEAS (TALADRO / PERCUTOR) */
         .title-container {
-            margin-bottom: 2mm;
-            max-width: 36mm;
+            margin-bottom: 1.5mm;
+            max-width: 100%;
             overflow: hidden;
         }
         .title-primary {
-            font-size: 10pt;
+            font-size: 8.5pt;
             font-weight: 900;
             color: #ffffff;
             text-transform: uppercase;
-            line-height: 0.95;
+            line-height: 1.05;
             letter-spacing: 0.2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
         }
         .title-secondary {
-            font-size: 8pt;
+            font-size: 7.2pt;
             font-weight: 500;
             color: #ffffff;
             text-transform: uppercase;
-            line-height: 1.05;
+            line-height: 1.1;
             letter-spacing: 0.2px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            max-width: 36mm;
+            max-width: 100%;
+            word-break: break-word;
         }
 
         /* 4. BLOQUE DESTACADO (18V ⚡ BRUSHLESS) */
@@ -106,10 +106,10 @@
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 4px;
-            padding: 0.8mm 2.2mm;
-            font-size: 6.5pt;
+            padding: 0.6mm 1.8mm;
+            font-size: 6pt;
             font-weight: 700;
-            margin-bottom: 2mm;
+            margin-bottom: 1.5mm;
             width: fit-content;
             background: transparent;
             max-width: 100%;
@@ -122,7 +122,7 @@
         .pill-bolt {
             color: #ffffff;
             margin: 0 0.8mm;
-            font-size: 6pt;
+            font-size: 5.5pt;
         }
         .pill-text-cyan {
             color: #00c3e6;
@@ -134,12 +134,12 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 1mm;
-            margin-bottom: 2mm;
+            gap: 0.8mm;
+            margin-bottom: 1.5mm;
             max-width: 100%;
         }
         .spec-item {
-            font-size: 6.5pt;
+            font-size: 6pt;
             font-weight: 600;
             color: #ffffff;
             line-height: 1.15;
@@ -150,7 +150,7 @@
             color: #ffffff;
             font-weight: bold;
             margin-right: 1.2mm;
-            font-size: 7.5pt;
+            font-size: 7pt;
             line-height: 1;
         }
         .spec-text {

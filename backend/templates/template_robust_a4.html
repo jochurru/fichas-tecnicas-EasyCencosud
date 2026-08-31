@@ -203,6 +203,7 @@
         }
 
         .warranty-seal {
+            display: var(--warranty-display, flex);
             position: absolute;
             right: 8mm;
             bottom: 8mm;
@@ -210,10 +211,6 @@
             height: 44mm;
             object-fit: contain;
             z-index: 20;
-        }
-
-        .warranty-seal.hidden {
-            display: none;
         }
     </style>
 </head>
@@ -233,7 +230,7 @@
 
             <div class="body-grid">
                 <div class="specs-column">
-                    <div class="highlight-pill">
+                    <div class="highlight-pill" style="--pill-display: {{pill_display}};">
                         <span class="pill-text-white">{{destacado_val}}</span>
                         <span class="pill-bolt">⚡</span>
                         <span class="pill-text-cyan">{{destacado_lbl}}</span>
@@ -258,7 +255,7 @@
                 {{meta_info_html}}
             </div>
 
-            <img class="warranty-seal {% if not warranty_seal_display %}hidden{% endif %}" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
+            <img class="warranty-seal" style="--warranty-display: {{warranty_seal_display}};" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>
