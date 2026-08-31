@@ -57,6 +57,38 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
   const cleanBrand = normBrand.replace(/[^a-z0-9]/g, '');
   let logoUrl = '';
 
+  // 1. Verificar si existe el archivo SVG en backend/assets/logos/
+  const localAssetsDir = path.join(process.cwd(), 'assets', 'logos');
+  const fallbackAssetsDir = path.join(__dirname, '..', '..', 'assets', 'logos');
+  const targetDir = fs.existsSync(localAssetsDir) ? localAssetsDir : fallbackAssetsDir;
+
+  let localSvgFile = null;
+  for (const slug of [cleanBrand, normBrand]) {
+    const candidate = path.join(targetDir, `${slug}.svg`);
+    if (fs.existsSync(candidate)) {
+      localSvgFile = candidate;
+      break;
+    }
+  }
+
+  let headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
+  let logoHeight = '36px';
+  if (templateName === 'a4') logoHeight = '55px';
+  if (templateName === 'fleje3') logoHeight = '36px';
+  if (templateName === 'fleje2') logoHeight = '22px';
+
+  if (localSvgFile) {
+    try {
+      const svgText = fs.readFileSync(localSvgFile, 'utf8');
+      const base64Svg = Buffer.from(svgText).toString('base64');
+      headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+      return { headerBrandHtml, logoUrl: `local:${path.basename(localSvgFile)}` };
+    } catch (e) {
+      console.warn(`[BrandLogoProcessor] Error al leer SVG local ${localSvgFile}:`, e.message);
+    }
+  }
+
+  // 2. Si no hay archivo local, buscar en la base de datos o en el mapa remoto
   try {
     const dbBrand = await dataService.getMarcaBySlug(rawBrand) || await dataService.getMarcaBySlug(normBrand);
     if (dbBrand && dbBrand.logo_url) {
@@ -77,14 +109,7 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
     }
   }
 
-  let headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
-
   if (logoUrl) {
-    let logoHeight = '36px';
-    if (templateName === 'a4') logoHeight = '55px';
-    if (templateName === 'fleje3') logoHeight = '36px';
-    if (templateName === 'fleje2') logoHeight = '22px';
-
     const isRaster = logoUrl.match(/\.(webp|png|jpg|jpeg)(\?.*)?$/i);
 
     try {
