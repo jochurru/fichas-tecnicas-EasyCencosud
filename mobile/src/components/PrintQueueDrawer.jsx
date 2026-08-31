@@ -144,19 +144,20 @@ export default function PrintQueueDrawer({ token, onPrintSuccess }) {
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(fileUrl);
-
       // Limpiar cola local
       await clearPrintQueue();
       loadQueue();
       setIsOpen(false);
       
-      // Mostrar cartel de confirmación visual flotante
-      setDownloadSuccessToast(filename);
-      setTimeout(() => {
-        setDownloadSuccessToast(null);
-      }, 6000);
+      // Disparar Notificación de Descarga Global
+      window.dispatchEvent(new CustomEvent('pdf-downloaded', {
+        detail: {
+          url: fileUrl,
+          blob,
+          filename,
+          title: `Lote de Impresión (${totalLabelsCount} etiquetas)`
+        }
+      }));
 
       if (onPrintSuccess) {
         onPrintSuccess();

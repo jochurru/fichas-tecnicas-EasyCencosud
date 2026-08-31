@@ -222,6 +222,8 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
 
+      const filename = `ficha_tecnica_${producto.sku}_${templateName}.pdf`;
+
       if (action === 'preview') {
         // Abrir previsualización en pestaña nueva
         window.open(blobUrl, '_blank');
@@ -229,15 +231,20 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         // Forzar descarga del archivo PDF en el dispositivo móvil/computadora
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = `ficha_tecnica_${producto.sku}_${templateName}.pdf`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Liberar el objeto URL creado
-        setTimeout(() => {
-          window.URL.revokeObjectURL(blobUrl);
-        }, 1000);
+
+        // Notificación flotante global
+        window.dispatchEvent(new CustomEvent('pdf-downloaded', {
+          detail: {
+            url: blobUrl,
+            blob,
+            filename,
+            title: `Ficha SKU ${producto.sku} (${templateName.toUpperCase()})`
+          }
+        }));
       }
     } catch (err) {
       console.error('Error de impresión:', err);

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Camera, Info, HelpCircle, Settings, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Camera, Info, HelpCircle, Settings, LogOut, FileText, ExternalLink, Share2, CheckCircle2, X } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
@@ -29,15 +29,35 @@ export default function App() {
   
   // Conexión activa real (basada en el estado del navegador)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [downloadedPdf, setDownloadedPdf] = useState(null);
+  const pdfTimerRef = useRef(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    const handlePdfDownloaded = (e) => {
+      if (e.detail) {
+        if (navigator.vibrate) {
+          navigator.vibrate(60);
+        }
+        setDownloadedPdf(e.detail);
+        if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current);
+        pdfTimerRef.current = setTimeout(() => {
+          setDownloadedPdf(null);
+        }, 12000);
+      }
+    };
+
+    window.addEventListener('pdf-downloaded', handlePdfDownloaded);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('pdf-downloaded', handlePdfDownloaded);
+      if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current);
     };
   }, []);
 
@@ -411,6 +431,71 @@ export default function App() {
         {/* Cola de Impresión Flotante (FAB) P1.21 */}
         {token && (
           <PrintQueueDrawer token={token} />
+        )}
+
+        {/* Banner Flotante de Descarga de PDF con Acciones Directas */}
+        {downloadedPdf && (
+          <div className="fixed bottom-20 left-4 right-4 max-w-md mx-auto bg-gray-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-gray-700/80 z-50 animate-fade-in flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wide block leading-none">
+                    PDF Generado y Descargado
+                  </span>
+                  <p className="text-[11px] text-gray-300 font-medium truncate mt-0.5" title={downloadedPdf.filename}>
+                    {downloadedPdf.title || downloadedPdf.filename}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDownloadedPdf(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1 border-t border-gray-800">
+              <button
+                onClick={() => {
+                  if (downloadedPdf.url) {
+                    window.open(downloadedPdf.url, '_blank');
+                  }
+                }}
+                className="flex-1 bg-easy-red hover:bg-red-700 active:scale-95 text-white text-[11px] font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Abrir PDF
+              </button>
+
+              {downloadedPdf.blob && (
+                <button
+                  onClick={() => {
+                    try {
+                      if (navigator.share) {
+                        const file = new File([downloadedPdf.blob], downloadedPdf.filename, { type: 'application/pdf' });
+                        navigator.share({
+                          files: [file],
+                          title: downloadedPdf.filename,
+                          text: 'Ficha Técnica Easy Cencosud'
+                        }).catch(() => {});
+                      } else if (downloadedPdf.url) {
+                        window.open(downloadedPdf.url, '_blank');
+                      }
+                    } catch (e) {
+                      console.warn('Web Share no disponible:', e);
+                      if (downloadedPdf.url) window.open(downloadedPdf.url, '_blank');
+                    }
+                  }}
+                  className="bg-gray-800 hover:bg-gray-700 active:scale-95 text-white text-[11px] font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-gray-700 shadow-md transition-all"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Compartir
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
