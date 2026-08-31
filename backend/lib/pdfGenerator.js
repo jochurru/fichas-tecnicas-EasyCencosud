@@ -144,7 +144,7 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   try {
     page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
     const pdfBuffer = await page.pdf({
       width: '210mm',
       height: '297mm',
@@ -413,7 +413,7 @@ export async function generatePdfBatch(items, ds = dataService) {
   try {
     page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
-    await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(finalHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
     const pdfBuffer = await page.pdf({
       width: '210mm',
       height: '297mm',
