@@ -103,7 +103,7 @@
         }
 
         .highlight-pill {
-            display: {{pill_display}};
+            display: inline-flex;
             align-items: center;
             border: 0.8px solid rgba(255, 255, 255, 0.9);
             border-radius: 3px;
@@ -210,7 +210,7 @@
             width: 11mm;
             height: 11mm;
             object-fit: contain;
-            display: {{warranty_seal_display}};
+            display: block;
             z-index: 20;
         }
     </style>
@@ -228,7 +228,7 @@
                     <div class="title-secondary">{{titulo_linea2}}</div>
                 </div>
 
-                <div class="highlight-pill">
+                <div class="highlight-pill" style="display: {{pill_display}};">
                     <span class="pill-text-white">{{destacado_val}}</span>
                     <span class="pill-bolt">⚡</span>
                     <span class="pill-text-cyan">{{destacado_lbl}}</span>
@@ -249,7 +249,7 @@
 
         <div class="right-content">
             <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
-            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
+            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" style="display: {{warranty_seal_display}};" />
         </div>
     </div>
 </body>
