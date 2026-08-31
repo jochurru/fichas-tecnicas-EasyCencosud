@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <title>Impresión de Flejes por Lote</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Montserrat:wght@600;700;800;900&display=swap');
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        .card-robust-fleje3, .card-robust-fleje3 *,
+        .card-robust-fleje2, .card-robust-fleje2 *,
+        .page-robust-a4, .page-robust-a4 * {
+            font-family: 'Montserrat', 'Arial Black', sans-serif;
         }
         body {
             background: #ffffff;
@@ -131,46 +139,48 @@
             border-bottom: 1px solid #cbd5e1;
         }
         .card-fleje3 .specs-column {
-            width: 42%;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #cbd5e1;
-            background: #f8fafc;
-        }
-        .card-fleje3 .spec-cell {
-            flex: 1;
+            width: 44%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.5mm 1mm;
-            text-align: center;
+            border-right: 1px solid #cbd5e1;
+            background: #f8fafc;
+            padding: 2.5mm 3mm;
+            overflow: hidden;
         }
-        .card-fleje3 .spec-cell:last-child {
-            border-bottom: none;
+        .card-fleje3 .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        .card-fleje3 .spec-label {
-            font-size: 6pt;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.2px;
-            margin-bottom: 0.2mm;
-        }
-        .card-fleje3 .spec-value {
-            font-size: 10pt;
-            font-weight: 700;
+        .card-fleje3 .spec-item {
+            font-size: 6.5pt;
+            font-weight: 600;
             color: #0f172a;
-            line-height: 1.1;
+            line-height: 1.15;
+            display: flex;
+            align-items: flex-start;
+        }
+        .card-fleje3 .spec-bullet {
+            color: #e30613;
+            font-weight: bold;
+            margin-right: 1.2mm;
+            font-size: 7.5pt;
+            line-height: 1;
+        }
+        .card-fleje3 .spec-text {
+            word-break: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            max-width: 100%;
         }
         .card-fleje3 .image-column {
-            width: 58%;
+            width: 56%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -302,49 +312,52 @@
             border-bottom: 1px solid #cbd5e1;
         }
         .card-fleje2 .specs-column {
-            width: 50%;
+            width: 44%;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #cbd5e1;
+            justify-content: center;
+            border-right: 0.5px solid #cbd5e1;
             background: #f8fafc;
+            padding: 1.5mm 2mm;
+            overflow: hidden;
         }
-        .card-fleje2 .spec-cell {
-            flex: 1;
+        .card-fleje2 .specs-list {
+            list-style: none;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.2mm 1.5mm;
+            flex-direction: column;
+            gap: 0.6mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        .card-fleje2 .spec-cell:last-child {
-            border-bottom: none;
-        }
-        .card-fleje2 .spec-label {
-            font-size: 5pt;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            max-width: 45%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .card-fleje2 .spec-value {
-            font-size: 7.5pt;
-            font-weight: 700;
+        .card-fleje2 .spec-item {
+            font-size: 4.8pt;
+            font-weight: 600;
             color: #0f172a;
-            max-width: 50%;
+            line-height: 1.1;
+            display: flex;
+            align-items: flex-start;
+        }
+        .card-fleje2 .spec-bullet {
+            color: #e30613;
+            font-weight: bold;
+            margin-right: 0.8mm;
+            font-size: 5pt;
+            line-height: 1;
+        }
+        .card-fleje2 .spec-text {
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: right;
         }
         .card-fleje2 .image-column {
-            width: 50%;
+            width: 56%;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 1mm;
+            padding: 0.8mm;
             background: #ffffff;
         }
         .card-fleje2 .product-image {
@@ -466,48 +479,48 @@
         
         /* Columna Izquierda (Specs) */
         .page-a4 .specs-column {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            border-right: 2px solid #cbd5e1;
-            background: #f8fafc;
-        }
-        .page-a4 .spec-cell {
-            flex: 1;
+            width: 42%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 4mm;
-            text-align: center;
+            border-right: 2px solid #cbd5e1;
+            background: #f8fafc;
+            padding: 8mm 10mm;
+            overflow: hidden;
         }
-        .page-a4 .spec-cell:last-child {
-            border-bottom: none;
+        .page-a4 .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4mm;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
-        .page-a4 .spec-label {
-            font-size: 15pt;
-            font-weight: 800;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1.5mm;
-        }
-        .page-a4 .spec-value {
-            font-size: 26pt;
-            font-weight: 700;
+        .page-a4 .spec-item {
+            font-size: 14pt;
+            font-weight: 600;
             color: #0f172a;
-            line-height: 1.2;
+            line-height: 1.25;
+            display: flex;
+            align-items: flex-start;
+        }
+        .page-a4 .spec-bullet {
+            color: #e30613;
+            font-weight: bold;
+            margin-right: 3mm;
+            font-size: 16pt;
+            line-height: 1;
+        }
+        .page-a4 .spec-text {
+            word-break: break-word;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            max-width: 100%;
         }
-
-        /* Columna Derecha (Foto) */
         .page-a4 .image-column {
-            width: 60%;
+            width: 58%;
             display: flex;
             justify-content: center;
             align-items: center;
