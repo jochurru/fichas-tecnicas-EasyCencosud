@@ -325,16 +325,24 @@ export async function generatePdfBatch(items, ds = dataService) {
 
     const mostrarSelloGarantia = esElectrico && !garantiaVal;
 
-    function toIframeCard(htmlContent, width, height) {
-      const resetCss = `<style>
-        html, body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
-        .card { width: 100% !important; height: 100% !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
-      </style>`;
-      const modifiedHtml = htmlContent.replace('</head>', resetCss + '</head>');
-      const escapedForAttr = modifiedHtml
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;');
-      return `<iframe srcdoc="${escapedForAttr}" style="width:${width}; height:${height}; border:none; display:block; overflow:hidden; box-sizing:border-box;" scrolling="no"></iframe>`;
+    function extractCardHtml(htmlContent, isRobust, templateType) {
+      const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      let bodyContent = bodyMatch ? bodyMatch[1].trim() : htmlContent.trim();
+      
+      if (templateType === 'fleje3') {
+        const targetClass = isRobust ? 'card-robust-fleje3' : 'card-fleje3';
+        bodyContent = bodyContent.replace(/class="card"/i, `class="${targetClass}"`);
+      } else if (templateType === 'fleje2') {
+        const targetClass = isRobust ? 'card-robust-fleje2' : 'card-fleje2';
+        bodyContent = bodyContent.replace(/class="card"/i, `class="${targetClass}"`);
+      } else if (templateType === 'a4') {
+        if (isRobust) {
+          bodyContent = bodyContent.replace(/class="container"/i, 'class="page-robust-a4"');
+        } else {
+          bodyContent = bodyContent.replace(/class="card"/i, 'class="page-a4"');
+        }
+      }
+      return bodyContent;
     }
 
     if (templateName === 'a4' || templateName === 'robust_a4') {
@@ -360,9 +368,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
+      const cardBody = extractCardHtml(a4Html, isRobust, 'a4');
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        const iframeHtml = toIframeCard(a4Html, '210mm', '297mm');
-        a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0;">${iframeHtml}</div>`);
+        a4Pages.push(cardBody);
       }
     } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
       let cardHtml = loadTemplate('fleje3', isRobust ? 'ROBUST' : brandName);
@@ -387,8 +395,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
+      const cardBody = extractCardHtml(cardHtml, isRobust, 'fleje3');
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje3Cards.push(toIframeCard(cardHtml, '90mm', '74mm'));
+        fleje3Cards.push(cardBody);
       }
     } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
       let cardHtml = loadTemplate('fleje2', isRobust ? 'ROBUST' : brandName);
@@ -413,8 +422,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
+      const cardBody = extractCardHtml(cardHtml, isRobust, 'fleje2');
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje2Cards.push(toIframeCard(cardHtml, '80mm', '40mm'));
+        fleje2Cards.push(cardBody);
       }
     }
   }

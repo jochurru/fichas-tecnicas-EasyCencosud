@@ -566,7 +566,7 @@
             width: 100%;
         }
 
-        /* ESTILOS ROBUST PARA LOTES HÍBRIDOS */
+        /* ESTILOS ROBUST FLEJE 3 */
         .card-robust-fleje3 {
             width: 90mm;
             height: 74mm;
@@ -580,45 +580,510 @@
             padding: 4.5mm 5mm 4mm 5mm;
             box-sizing: border-box;
         }
-        .card-robust-fleje3 .spec-item {
+        .card-robust-fleje3 .brand-container {
+            margin-bottom: 1.5mm;
+            max-height: 8mm;
+            display: flex;
+            align-items: center;
+        }
+        .card-robust-fleje3 .brand-container img {
+            max-height: 8mm;
+            max-width: 38mm;
+            object-fit: contain;
+            display: block;
+            mix-blend-mode: screen;
+        }
+        .card-robust-fleje3 .left-content {
+            width: 49%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+            height: 100%;
+            overflow: hidden;
+        }
+        .card-robust-fleje3 .title-container {
+            margin-bottom: 1.5mm;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .card-robust-fleje3 .title-primary {
             font-size: 8.5pt;
+            font-weight: 900;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.05;
+            letter-spacing: 0.2px;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .card-robust-fleje3 .title-secondary {
+            font-size: 6.8pt;
             font-weight: 600;
             color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.08;
+            letter-spacing: 0.1px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 100%;
+            word-break: break-word;
+        }
+        .card-robust-fleje3 .highlight-pill {
+            display: var(--pill-display, inline-flex);
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 0.6mm 1.8mm;
+            font-size: 6pt;
+            font-weight: 700;
+            margin-bottom: 1.5mm;
+            width: fit-content;
+            background: transparent;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .card-robust-fleje3 .pill-text-white { color: #ffffff; }
+        .card-robust-fleje3 .pill-bolt { color: #ffffff; margin: 0 0.8mm; font-size: 5.5pt; }
+        .card-robust-fleje3 .pill-text-cyan { color: #00c3e6; font-weight: 800; }
+        .card-robust-fleje3 .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8mm;
+            margin-bottom: 1.5mm;
+            max-width: 100%;
+        }
+        .card-robust-fleje3 .spec-item {
+            font-size: 6pt;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.15;
             display: flex;
             align-items: flex-start;
-            line-height: 1.15;
-            margin-bottom: 0.5mm;
         }
         .card-robust-fleje3 .spec-bullet {
-            margin-right: 1.5mm;
-            font-size: 9pt;
+            color: #ffffff;
+            font-weight: bold;
+            margin-right: 1.2mm;
+            font-size: 7pt;
+            line-height: 1;
+        }
+        .card-robust-fleje3 .spec-text {
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-robust-fleje3 .sku-box {
+            border-top: 1px solid #ffffff;
+            border-bottom: 1px solid #ffffff;
+            padding: 1.2mm 0;
+            margin-top: auto;
+            width: 28mm;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .card-robust-fleje3 .sku-text {
+            font-size: 6.5pt;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .card-robust-fleje3 .meta-info {
+            display: flex;
+            gap: 2.5mm;
+            margin-top: 1mm;
+        }
+        .card-robust-fleje3 .meta-text {
+            font-size: 5.5pt;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        .card-robust-fleje3 .right-image {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            padding: 2mm 2mm;
+            background: transparent;
+        }
+        .card-robust-fleje3 .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: transparent;
+            transform: scale(1.08);
+            transform-origin: center;
+        }
+        .card-robust-fleje3 .warranty-seal {
+            position: absolute;
+            right: 3.5mm;
+            bottom: 3.5mm;
+            width: 16mm;
+            height: 16mm;
+            object-fit: contain;
+            display: var(--warranty-display, block);
+            z-index: 20;
         }
 
+        /* ESTILOS ROBUST FLEJE 2 */
         .card-robust-fleje2 {
             width: 80mm;
             height: 40mm;
             background: #5d6368;
-            border: 1.5px dashed #ffffff;
+            border: 1px dashed #ffffff;
             isolation: isolate;
             display: flex;
             position: relative;
             overflow: hidden;
             color: #ffffff;
-            padding: 3mm 4mm;
+            padding: 2.5mm 3.5mm;
             box-sizing: border-box;
         }
-        .card-robust-fleje2 .spec-item {
+        .card-robust-fleje2 .brand-container {
+            margin-bottom: 1.2mm;
+            max-height: 5mm;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .card-robust-fleje2 .brand-container img {
+            max-height: 5mm;
+            max-width: 24mm;
+            object-fit: contain;
+            display: block;
+            mix-blend-mode: screen;
+        }
+        .card-robust-fleje2 .left-content {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+            height: 100%;
+            overflow: hidden;
+        }
+        .card-robust-fleje2 .title-container {
+            margin-top: 0.5mm;
+            margin-bottom: 0.5mm;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .card-robust-fleje2 .title-primary {
             font-size: 6.5pt;
+            font-weight: 900;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 0.95;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-robust-fleje2 .title-secondary {
+            font-size: 5.5pt;
+            font-weight: 500;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.05;
+            margin-bottom: 0.5mm;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-robust-fleje2 .highlight-pill {
+            display: var(--pill-display, inline-flex);
+            align-items: center;
+            border: 0.8px solid rgba(255, 255, 255, 0.9);
+            border-radius: 3px;
+            padding: 0.3mm 1.2mm;
+            font-size: 4.8pt;
+            font-weight: 700;
+            margin-bottom: 0.5mm;
+            width: fit-content;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .card-robust-fleje2 .pill-text-white { color: #ffffff; }
+        .card-robust-fleje2 .pill-bolt { color: #ffffff; margin: 0 0.4mm; font-size: 4.2pt; }
+        .card-robust-fleje2 .pill-text-cyan { color: #00c3e6; font-weight: 800; }
+        .card-robust-fleje2 .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3mm;
+            margin-bottom: 0.5mm;
+            max-width: 100%;
+        }
+        .card-robust-fleje2 .spec-item {
+            font-size: 4.8pt;
             font-weight: 600;
             color: #ffffff;
+            line-height: 1.1;
             display: flex;
             align-items: flex-start;
-            line-height: 1.1;
-            margin-bottom: 0.3mm;
         }
         .card-robust-fleje2 .spec-bullet {
-            margin-right: 1mm;
-            font-size: 7pt;
+            color: #ffffff;
+            font-weight: bold;
+            margin-right: 0.8mm;
+            font-size: 5pt;
+            line-height: 1;
+        }
+        .card-robust-fleje2 .spec-text {
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-robust-fleje2 .sku-box {
+            border-top: 0.8px solid #ffffff;
+            border-bottom: 0.8px solid #ffffff;
+            padding: 0.6mm 0;
+            margin-top: auto;
+            width: 22mm;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .card-robust-fleje2 .sku-text {
+            font-size: 5pt;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .card-robust-fleje2 .meta-info {
+            display: flex;
+            gap: 1.5mm;
+            margin-top: 0.4mm;
+        }
+        .card-robust-fleje2 .meta-text {
+            font-size: 4.2pt;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        .card-robust-fleje2 .right-image {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 48%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            padding: 1mm;
+            background: transparent;
+        }
+        .card-robust-fleje2 .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: transparent;
+            transform: scale(1.05);
+            transform-origin: center;
+        }
+        .card-robust-fleje2 .warranty-seal {
+            position: absolute;
+            right: 2mm;
+            bottom: 2mm;
+            width: 9.5mm;
+            height: 9.5mm;
+            object-fit: contain;
+            display: var(--warranty-display, block);
+            z-index: 20;
+        }
+
+        /* ESTILOS ROBUST A4 */
+        .page-robust-a4 {
+            width: 210mm;
+            height: 297mm;
+            background: #5d6368;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 2px dashed rgba(255, 255, 255, 0.85);
+            isolation: isolate;
+            padding: 10mm 12mm;
+            box-sizing: border-box;
+            page-break-after: always;
+        }
+        .page-robust-a4 .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6mm;
+        }
+        .page-robust-a4 .brand-container {
+            margin-bottom: 6mm;
+            max-height: 26mm;
+            display: flex;
+            align-items: center;
+        }
+        .page-robust-a4 .brand-container img {
+            max-height: 26mm;
+            max-width: 110mm;
+            object-fit: contain;
+            display: block;
+            mix-blend-mode: screen;
+        }
+        .page-robust-a4 .title-primary {
+            font-size: 34pt;
+            font-weight: 900;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: 0.5px;
+            margin-bottom: 2mm;
+        }
+        .page-robust-a4 .title-secondary {
+            font-size: 24pt;
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.1;
+            margin-bottom: 5mm;
+        }
+        .page-robust-a4 .body-grid {
+            display: flex;
+            flex: 1;
+            margin: 4mm 0;
+            position: relative;
+            align-items: center;
+        }
+        .page-robust-a4 .specs-column {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            gap: 4mm;
+            z-index: 10;
+            overflow: visible;
+        }
+        .page-robust-a4 .highlight-pill {
+            display: var(--pill-display, flex);
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            padding: 2mm 5mm;
+            font-size: 14pt;
+            font-weight: 700;
+            width: fit-content;
+            margin-bottom: 3mm;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .page-robust-a4 .pill-text-white { color: #ffffff; }
+        .page-robust-a4 .pill-bolt { color: #ffffff; margin: 0 2mm; font-size: 13pt; }
+        .page-robust-a4 .pill-text-cyan { color: #00c3e6; font-weight: 800; }
+        .page-robust-a4 .specs-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 3.5mm;
+            max-width: 100%;
+        }
+        .page-robust-a4 .spec-item {
+            font-size: 16pt;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.2;
+            display: flex;
+            align-items: flex-start;
+        }
+        .page-robust-a4 .spec-bullet {
+            color: #ffffff;
+            font-weight: bold;
+            margin-right: 3mm;
+            font-size: 18pt;
+            line-height: 1;
+        }
+        .page-robust-a4 .spec-text {
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .page-robust-a4 .right-column {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 54%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            height: 160mm;
+        }
+        .page-robust-a4 .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transform: scale(1.18);
+            transform-origin: center;
+        }
+        .page-robust-a4 .sku-box {
+            border-top: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            padding: 3mm 0;
+            width: 80mm;
+            display: flex;
+            align-items: center;
+        }
+        .page-robust-a4 .sku-text {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        .page-robust-a4 .meta-info {
+            display: flex;
+            gap: 8mm;
+            margin-top: 3mm;
+        }
+        .page-robust-a4 .meta-text {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .page-robust-a4 .warranty-seal {
+            display: var(--warranty-display, flex);
+            position: absolute;
+            right: 8mm;
+            bottom: 8mm;
+            width: 44mm;
+            height: 44mm;
+            object-fit: contain;
+            z-index: 20;
         }
     </style>
 </head>
