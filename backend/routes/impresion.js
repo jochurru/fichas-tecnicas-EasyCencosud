@@ -146,25 +146,11 @@ router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), as
   });
 
   try {
-    // 1. Intentar descargar desde la caché de Supabase Storage
-    console.log(`[POST PDF] Buscando en caché: ${fileName}...`);
-    const { data: fileBlob, error: downloadError } = await supabaseDb.storage
-      .from('fichas-pdf')
-      .download(fileName);
-
-    if (!downloadError && fileBlob) {
-      console.log(`[POST PDF] ✓ Caché HIT para SKU: ${sku} (${selectedTemplate})`);
-      const arrayBuffer = await fileBlob.arrayBuffer();
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-      return res.send(Buffer.from(arrayBuffer));
-    }
-
-    // 2. Caché MISS: Generar PDF con Puppeteer
-    console.log(`[POST PDF] ✗ Caché MISS. Generando formato ${selectedTemplate} para SKU: ${sku}...`);
+    // Generar PDF en caliente con Puppeteer para reflejar siempre los datos y fotos más recientes
+    console.log(`[POST PDF] Generando formato ${selectedTemplate} para SKU: ${sku}...`);
     const pdfBuffer = await buildFichaPdf(sku, selectedTemplate);
 
-    // Registrar auditoría de generación del PDF (Caché MISS)
+    // Registrar auditoría de generación del PDF
     logAuditEvent(req, {
       accion: 'PDF_GENERATED',
       entidad: 'FICHA_TECNICA',
@@ -172,7 +158,7 @@ router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), as
       valores_nuevos: { template: selectedTemplate }
     });
 
-    // 3. Guardar el PDF en la caché de Supabase en segundo plano
+    // Guardar/actualizar el PDF en Storage en segundo plano
     supabaseDb.storage
       .from('fichas-pdf')
       .upload(fileName, pdfBuffer, {
@@ -181,7 +167,7 @@ router.post('/fichas/imprimir', requireAuth, validateSchema(printPostSchema), as
       })
       .then(({ error }) => {
         if (error) console.error(`[POST PDF] Error al subir caché para ${fileName}:`, error.message);
-        else console.log(`[POST PDF] Ficha ${fileName} guardada en caché.`);
+        else console.log(`[POST PDF] Ficha ${fileName} actualizada en Storage.`);
       })
       .catch(err => console.error(`[POST PDF] Error de subida en segundo plano:`, err));
 

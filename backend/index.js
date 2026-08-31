@@ -40,7 +40,7 @@ const authLimiter = rateLimit({
 
 const pdfLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutos
-  max: 30, // Límite de 30 descargas/impresiones de PDF por IP cada 5 minutos (evita saturación en Puppeteer)
+  max: 300, // Límite amplio para evitar bloqueos durante demostraciones intensivas
   message: {
     error: 'Too Many Requests',
     message: 'Has excedido el límite de generación de PDFs. Por favor, espera unos minutos antes de intentar de nuevo.'
