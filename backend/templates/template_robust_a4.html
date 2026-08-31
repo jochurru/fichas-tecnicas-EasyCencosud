@@ -110,7 +110,7 @@
         }
 
         .highlight-pill {
-            display: {{pill_display}};
+            display: var(--pill-display, flex);
             align-items: center;
             border: 2px solid rgba(255, 255, 255, 0.9);
             border-radius: 6px;
@@ -209,8 +209,11 @@
             width: 44mm;
             height: 44mm;
             object-fit: contain;
-            display: {{warranty_seal_display}};
             z-index: 20;
+        }
+
+        .warranty-seal.hidden {
+            display: none;
         }
     </style>
 </head>
@@ -255,7 +258,7 @@
                 {{meta_info_html}}
             </div>
 
-            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
+            <img class="warranty-seal {% if not warranty_seal_display %}hidden{% endif %}" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>

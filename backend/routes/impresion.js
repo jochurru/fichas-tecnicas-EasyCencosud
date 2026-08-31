@@ -60,25 +60,11 @@ router.get(
     });
 
     try {
-      // 1. Intentar descargar desde la caché de Supabase Storage
-      console.log(`[GET PDF] Buscando en caché: ${fileName}...`);
-      const { data: fileBlob, error: downloadError } = await supabaseDb.storage
-        .from('fichas-pdf')
-        .download(fileName);
-
-      if (!downloadError && fileBlob) {
-        console.log(`[GET PDF] ✓ Caché HIT para SKU: ${sku} (${template})`);
-        const arrayBuffer = await fileBlob.arrayBuffer();
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-        return res.send(Buffer.from(arrayBuffer));
-      }
-
-      // 2. Caché MISS: Generar PDF en caliente con Puppeteer
-      console.log(`[GET PDF] ✗ Caché MISS. Generando formato ${template} para SKU: ${sku}...`);
+      // Generar PDF en caliente con Puppeteer para reflejar siempre los datos y fotos más recientes
+      console.log(`[GET PDF] Generando formato ${template} para SKU: ${sku}...`);
       const pdfBuffer = await buildFichaPdf(sku, template);
 
-      // Registrar auditoría de generación del PDF (Caché MISS)
+      // Registrar auditoría de generación del PDF
       logAuditEvent(req, {
         accion: 'PDF_GENERATED',
         entidad: 'FICHA_TECNICA',
