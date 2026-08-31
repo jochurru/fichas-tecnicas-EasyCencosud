@@ -68,9 +68,14 @@ export async function getBrowser() {
 
   launchPromise = (async () => {
     try {
-      console.log('[BrowserManager] Iniciando nueva instancia de Puppeteer Chromium...');
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || (
+        process.platform === 'linux' ? '/usr/bin/chromium' : undefined
+      );
+
+      console.log('[BrowserManager] Iniciando nueva instancia de Puppeteer Chromium... executablePath:', executablePath || 'default');
       sharedBrowser = await puppeteer.launch({
         headless: true,
+        executablePath: executablePath || undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
