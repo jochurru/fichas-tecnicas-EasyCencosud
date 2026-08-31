@@ -100,10 +100,9 @@ app.use('/api', gerenciaRouter);
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('Error no manejado:', err);
-  const isDev = process.env.NODE_ENV !== 'production';
   res.status(500).json({
     error: 'Internal Server Error',
-    message: isDev ? err.message : 'Ha ocurrido un error interno. Contacte al administrador.'
+    message: err.message || 'Ha ocurrido un error interno.'
   });
 });
 
