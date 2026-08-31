@@ -102,7 +102,7 @@
 
         /* 4. BLOQUE DESTACADO (18V ⚡ BRUSHLESS) */
         .highlight-pill {
-            display: inline-flex;
+            display: var(--pill-display, inline-flex);
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 4px;
@@ -227,7 +227,7 @@
             width: 16mm;
             height: 16mm;
             object-fit: contain;
-            display: block;
+            display: var(--warranty-display, block);
             z-index: 20;
         }
     </style>
@@ -249,7 +249,7 @@
                 </div>
 
                 <!-- Bloque Destacado (18V ⚡ BRUSHLESS) -->
-                <div class="highlight-pill" style="display: {{pill_display}};">
+                <div class="highlight-pill" style="--pill-display: {{pill_display}};">
                     <span class="pill-text-white">{{destacado_val}}</span>
                     <span class="pill-bolt">⚡</span>
                     <span class="pill-text-cyan">{{destacado_lbl}}</span>
@@ -273,7 +273,7 @@
         <!-- Columna Derecha (Foto Gigante Sin Cuadro Blanco + Sello Circular de Garantía) -->
         <div class="right-content">
             <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
-            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" style="display: {{warranty_seal_display}};" />
+            <img class="warranty-seal" src="{{garantia_sello_img}}" alt="5 Años de Garantía" style="--warranty-display: {{warranty_seal_display}};" />
         </div>
     </div>
 </body>
