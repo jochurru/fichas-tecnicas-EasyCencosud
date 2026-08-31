@@ -49,16 +49,20 @@ export function releasePageSlot() {
 export async function getBrowser() {
   if (sharedBrowser) {
     try {
+      if (typeof sharedBrowser.isConnected === 'function' && !sharedBrowser.isConnected()) {
+        throw new Error('Navegador marcado como desconectado');
+      }
       await sharedBrowser.version();
       return sharedBrowser;
     } catch (err) {
-      console.warn('[BrowserManager] Navegador compartido desconectado, reanudando...', err.message);
+      console.warn('[BrowserManager] Navegador compartido desconectado o pausado por Cloud Run, reiniciando...', err.message);
       try {
         await sharedBrowser.close();
       } catch (cErr) {
         // Ignorar error al cerrar instancia muerta
       }
       sharedBrowser = null;
+      launchPromise = null;
     }
   }
 

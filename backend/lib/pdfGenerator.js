@@ -153,6 +153,7 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
+          let done = false;
           let timer = null;
           img.addEventListener('load', () => {
             if (!done) {
@@ -179,6 +180,9 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
         });
       }));
       return failed;
+    }).catch(err => {
+      console.warn('[Puppeteer] Advertencia en evaluación de imágenes:', err.message);
+      return [];
     });
 
     if (imageLoadResults && imageLoadResults.length > 0) {
@@ -462,6 +466,7 @@ export async function generatePdfBatch(items, ds = dataService) {
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
+          let done = false;
           let timer = null;
           img.addEventListener('load', () => {
             if (!done) {
@@ -488,6 +493,9 @@ export async function generatePdfBatch(items, ds = dataService) {
         });
       }));
       return failed;
+    }).catch(err => {
+      console.warn('[Puppeteer] Advertencia en evaluación de imágenes de lote:', err.message);
+      return [];
     });
 
     if (batchImageLoadResults && batchImageLoadResults.length > 0) {
