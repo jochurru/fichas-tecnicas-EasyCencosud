@@ -144,7 +144,7 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   try {
     page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: ['domcontentloaded', 'networkidle2'], timeout: 15000 });
+    await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
       width: '210mm',
       height: '297mm',
@@ -281,9 +281,16 @@ export async function generatePdfBatch(items, ds = dataService) {
 
     const mostrarSelloGarantia = esElectrico && !garantiaVal;
 
-    function extractCardHtml(htmlContent) {
-      const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      return bodyMatch ? bodyMatch[1].trim() : htmlContent.trim();
+    function toIframeCard(htmlContent, width, height) {
+      const resetCss = `<style>
+        html, body { width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+        .card { width: 100% !important; height: 100% !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+      </style>`;
+      const modifiedHtml = htmlContent.replace('</head>', resetCss + '</head>');
+      const escapedForAttr = modifiedHtml
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+      return `<iframe srcdoc="${escapedForAttr}" style="width:${width}; height:${height}; border:none; display:block; overflow:hidden; box-sizing:border-box;" scrolling="no"></iframe>`;
     }
 
     if (templateName === 'a4' || templateName === 'robust_a4') {
@@ -309,9 +316,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       a4Html = a4Html.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
 
-      const cardBody = extractCardHtml(a4Html);
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0; margin: 0; overflow: hidden;">${cardBody}</div>`);
+        const iframeHtml = toIframeCard(a4Html, '210mm', '297mm');
+        a4Pages.push(`<div class="page page-a4-wrapper" style="width:210mm; height:297mm; page-break-after:always; background: white; padding: 0;">${iframeHtml}</div>`);
       }
     } else if (templateName === 'fleje3' || templateName === 'robust_fleje3') {
       let cardHtml = loadTemplate('fleje3', isRobust ? 'ROBUST' : brandName);
@@ -336,9 +343,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
-      const cardBody = extractCardHtml(cardHtml);
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje3Cards.push(cardBody);
+        fleje3Cards.push(toIframeCard(cardHtml, '90mm', '74mm'));
       }
     } else if (templateName === 'fleje2' || templateName === 'robust_fleje2') {
       let cardHtml = loadTemplate('fleje2', isRobust ? 'ROBUST' : brandName);
@@ -363,9 +369,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{garantia\}\}/g, escapeHtml(garantiaVal || '6 Meses'));
       cardHtml = cardHtml.replace(/\{\{meta_info_html\}\}/g, metaInfoHtml);
       
-      const cardBody = extractCardHtml(cardHtml);
       for (let c = 0; c < (item.cantidad || 1); c++) {
-        fleje2Cards.push(cardBody);
+        fleje2Cards.push(toIframeCard(cardHtml, '80mm', '40mm'));
       }
     }
   }
@@ -408,7 +413,7 @@ export async function generatePdfBatch(items, ds = dataService) {
   try {
     page = await browser.newPage();
     await page.setViewport({ width: 1240, height: 1754, deviceScaleFactor: 2 });
-    await page.setContent(finalHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({
       width: '210mm',
       height: '297mm',
