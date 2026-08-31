@@ -147,17 +147,38 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
     
     // Esperar a que todas las imágenes (fotos remotas y logos) se hayan descargado por completo
-    await page.evaluate(async () => {
+    const imageLoadResults = await page.evaluate(async () => {
       const images = Array.from(document.querySelectorAll('img'));
+      const failed = [];
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-          setTimeout(resolve, 3000); // 3s límite por imagen
+          let done = false;
+          img.addEventListener('load', () => {
+            if (!done) { done = true; resolve(); }
+          }, { once: true });
+          img.addEventListener('error', () => {
+            if (!done) {
+              done = true;
+              failed.push({ src: img.src, reason: 'NETWORK_ERROR' });
+              resolve();
+            }
+          }, { once: true });
+          setTimeout(() => {
+            if (!done) {
+              done = true;
+              failed.push({ src: img.src, reason: 'TIMEOUT_3S' });
+              resolve();
+            }
+          }, 3000);
         });
       }));
+      return failed;
     });
+
+    if (imageLoadResults && imageLoadResults.length > 0) {
+      console.warn(`[Puppeteer] ⚠️ Fallo al cargar ${imageLoadResults.length} imagen(es) para SKU ${producto.sku} (${templateName}):`, imageLoadResults);
+    }
 
     const pdfBuffer = await page.pdf({
       width: '210mm',
@@ -430,17 +451,38 @@ export async function generatePdfBatch(items, ds = dataService) {
     await page.setContent(finalHtml, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
     // Esperar a que todas las imágenes del lote se hayan descargado por completo
-    await page.evaluate(async () => {
+    const batchImageLoadResults = await page.evaluate(async () => {
       const images = Array.from(document.querySelectorAll('img'));
+      const failed = [];
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-          setTimeout(resolve, 3000);
+          let done = false;
+          img.addEventListener('load', () => {
+            if (!done) { done = true; resolve(); }
+          }, { once: true });
+          img.addEventListener('error', () => {
+            if (!done) {
+              done = true;
+              failed.push({ src: img.src, reason: 'NETWORK_ERROR' });
+              resolve();
+            }
+          }, { once: true });
+          setTimeout(() => {
+            if (!done) {
+              done = true;
+              failed.push({ src: img.src, reason: 'TIMEOUT_3S' });
+              resolve();
+            }
+          }, 3000);
         });
       }));
+      return failed;
     });
+
+    if (batchImageLoadResults && batchImageLoadResults.length > 0) {
+      console.warn(`[Puppeteer] ⚠️ Fallo al cargar ${batchImageLoadResults.length} imagen(es) en el lote:`, batchImageLoadResults);
+    }
 
     const pdfBuffer = await page.pdf({
       width: '210mm',

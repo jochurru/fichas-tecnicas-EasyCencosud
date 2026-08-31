@@ -172,7 +172,12 @@ const initializeStorageBucket = async () => {
         console.log('[Startup] ★ Bucket "fichas-pdf" creado con éxito.');
       }
     } else {
-      console.log('[Startup] ✓ Bucket "fichas-pdf" verificado.');
+      const { error: updateError } = await supabaseDb.storage.updateBucket('fichas-pdf', { public: true });
+      if (updateError) {
+        console.warn('[Startup] ⚠️ No se pudo forzar visibilidad pública en "fichas-pdf":', updateError.message);
+      } else {
+        console.log('[Startup] ✓ Bucket "fichas-pdf" verificado y asegurado como público.');
+      }
     }
 
     // 2. Verificar 'imagenes-catalogo'
@@ -190,7 +195,12 @@ const initializeStorageBucket = async () => {
         console.log('[Startup] ★ Bucket "imagenes-catalogo" creado con éxito.');
       }
     } else {
-      console.log('[Startup] ✓ Bucket "imagenes-catalogo" verificado.');
+      const { error: updateError } = await supabaseDb.storage.updateBucket('imagenes-catalogo', { public: true });
+      if (updateError) {
+        console.warn('[Startup] ⚠️ No se pudo forzar visibilidad pública en "imagenes-catalogo":', updateError.message);
+      } else {
+        console.log('[Startup] ✓ Bucket "imagenes-catalogo" verificado y asegurado como público.');
+      }
     }
   } catch (err) {
     console.error('[Startup] ❌ Error al inicializar almacenamiento:', err.message);
