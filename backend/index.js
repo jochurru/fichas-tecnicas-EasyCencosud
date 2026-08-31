@@ -15,6 +15,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Habilitar trust proxy para Google Cloud Run (Load Balancer / X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // Configurar Rate Limiters
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
