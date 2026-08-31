@@ -17,7 +17,7 @@
             background: #5d6368;
             overflow: hidden;
             display: block;
-            padding: 15mm;
+            padding: 8mm;
             color: #ffffff;
         }
         
@@ -40,25 +40,25 @@
             flex-direction: column;
             justify-content: space-between;
             position: relative;
-            border: 2.5px dashed #ffffff; /* LÍNEAS PUNTEADAS EN LOS 4 COSTADOS */
+            border: 2px dashed rgba(255, 255, 255, 0.85); /* LÍNEAS PUNTEADAS MÁS ABIERTAS */
             isolation: isolate;
-            padding: 12mm 12mm;
+            padding: 10mm 12mm;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 10mm;
+            margin-bottom: 6mm;
         }
         .brand-container {
-            margin-bottom: 8mm;
-            max-height: 28mm;
+            margin-bottom: 6mm;
+            max-height: 26mm;
             display: flex;
             align-items: center;
         }
         .brand-container img, .brand-container svg {
-            max-height: 28mm;
+            max-height: 26mm;
             max-width: 110mm;
             object-fit: contain;
             display: block;
@@ -66,7 +66,7 @@
         }
         .brand-container div, .brand-container span {
             font-family: 'Orbitron', 'Montserrat', 'Arial Black', sans-serif;
-            font-size: 34pt;
+            font-size: 32pt;
             font-weight: 900;
             color: #ffffff;
             letter-spacing: 3px;
@@ -75,7 +75,7 @@
         }
         
         .title-primary {
-            font-size: 36pt;
+            font-size: 34pt;
             font-weight: 900;
             color: #ffffff;
             text-transform: uppercase;
@@ -84,68 +84,67 @@
             margin-bottom: 2mm;
         }
         .title-secondary {
-            font-size: 26pt;
-            font-weight: 500;
+            font-size: 24pt;
+            font-weight: 600;
             color: #ffffff;
             text-transform: uppercase;
             line-height: 1.1;
-            margin-bottom: 8mm;
+            margin-bottom: 5mm;
         }
 
         .body-grid {
             display: flex;
             flex: 1;
-            margin: 8mm 0;
+            margin: 4mm 0;
             position: relative;
             align-items: center;
         }
 
         .specs-column {
-            width: 46%;
+            width: 50%;
             display: flex;
             flex-direction: column;
-            gap: 8mm;
+            gap: 4mm;
             z-index: 10;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .highlight-pill {
             display: {{pill_display}};
             align-items: center;
-            border: 2.5px solid rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            padding: 3mm 8mm;
-            font-size: 18pt;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            padding: 2mm 5mm;
+            font-size: 14pt;
             font-weight: 700;
             width: fit-content;
-            margin-bottom: 6mm;
+            margin-bottom: 3mm;
             max-width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
+            box-sizing: border-box;
         }
         .pill-text-white { color: #ffffff; }
-        .pill-bolt { color: #ffffff; margin: 0 3mm; font-size: 17pt; }
+        .pill-bolt { color: #ffffff; margin: 0 2mm; font-size: 13pt; }
         .pill-text-cyan { color: #00c3e6; font-weight: 800; }
 
         .specs-list {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 6mm;
+            gap: 3.5mm;
             max-width: 100%;
         }
         .spec-item {
-            font-size: 18pt;
+            font-size: 14.5pt;
             font-weight: 600;
             color: #ffffff;
             display: flex;
             align-items: flex-start;
-            line-height: 1.35;
+            line-height: 1.25;
         }
         .spec-bullet {
             color: #ffffff;
-            font-size: 22pt;
-            margin-right: 4mm;
+            font-size: 16pt;
+            margin-right: 3mm;
             line-height: 1;
         }
 
@@ -154,13 +153,13 @@
             right: 0;
             top: 0;
             bottom: 0;
-            width: 52%;
+            width: 50%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 5;
-            padding: 3mm;
+            padding: 2mm;
         }
 
         .product-image {
