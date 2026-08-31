@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Camera, Cloud, CloudOff, Info, HelpCircle, Settings, LogOut } from 'lucide-react';
+import { Search, Camera, Info, HelpCircle, Settings, LogOut } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
@@ -202,21 +202,6 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Estado de Red */}
-            <div className="flex items-center gap-1.5 bg-red-800/40 px-2.5 py-1 rounded-full text-xs font-semibold">
-              {isOnline ? (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-easy-yellow animate-pulse" />
-                  <span className="text-red-100 text-[10px]">Cloud Conectado</span>
-                </>
-              ) : (
-                <>
-                  <CloudOff className="w-3.5 h-3.5 text-gray-300" />
-                  <span className="text-gray-300 text-[10px]">Offline</span>
-                </>
-              )}
-            </div>
-
             {/* Botón de Panel Administrativo / Bandeja */}
             {['admin', 'superadmin', 'gerente', 'subadmin', 'jefe_sector', 'coordinador', 'coordinator'].includes(userRole) && (
               <button 
