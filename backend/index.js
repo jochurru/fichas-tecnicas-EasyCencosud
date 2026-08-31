@@ -7,7 +7,7 @@ import productosRouter from './routes/productos.js';
 import impresionRouter from './routes/impresion.js';
 import catalogosRouter from './routes/catalogos.js';
 import storageRouter from './routes/storage.js';
-import { supabase, supabaseDb } from './lib/supabase.js';
+import { supabase, supabaseDb, supabaseAdmin } from './lib/supabase.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -149,8 +149,8 @@ const createDefaultUsers = async () => {
 // Asegurar que los buckets públicos existen en Supabase Storage
 const initializeStorageBucket = async () => {
   try {
-    console.log('[Startup] Verificando existencia de buckets de almacenamiento...');
-    const { data: buckets, error: listError } = await supabaseDb.storage.listBuckets();
+    console.log('[Startup] Verificando existencia de buckets de almacenamiento con privilegios de administrador...');
+    const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
     
     if (listError) {
       console.warn('[Startup] ⚠️ No se pudo listar los buckets de Supabase:', listError.message);
@@ -161,7 +161,7 @@ const initializeStorageBucket = async () => {
     const pdfExists = buckets.some(b => b.name === 'fichas-pdf');
     if (!pdfExists) {
       console.log('[Startup] El bucket "fichas-pdf" no existe. Creándolo...');
-      const { error: createError } = await supabaseDb.storage.createBucket('fichas-pdf', {
+      const { error: createError } = await supabaseAdmin.storage.createBucket('fichas-pdf', {
         public: true,
         fileSizeLimit: 1024 * 1024 * 5, // Límite de 5MB
         allowedMimeTypes: ['application/pdf']
@@ -172,7 +172,7 @@ const initializeStorageBucket = async () => {
         console.log('[Startup] ★ Bucket "fichas-pdf" creado con éxito.');
       }
     } else {
-      const { error: updateError } = await supabaseDb.storage.updateBucket('fichas-pdf', { public: true });
+      const { error: updateError } = await supabaseAdmin.storage.updateBucket('fichas-pdf', { public: true });
       if (updateError) {
         console.warn('[Startup] ⚠️ No se pudo forzar visibilidad pública en "fichas-pdf":', updateError.message);
       } else {
@@ -184,7 +184,7 @@ const initializeStorageBucket = async () => {
     const imgExists = buckets.some(b => b.name === 'imagenes-catalogo');
     if (!imgExists) {
       console.log('[Startup] El bucket "imagenes-catalogo" no existe. Creándolo...');
-      const { error: createError } = await supabaseDb.storage.createBucket('imagenes-catalogo', {
+      const { error: createError } = await supabaseAdmin.storage.createBucket('imagenes-catalogo', {
         public: true,
         fileSizeLimit: 1024 * 1024 * 10, // Límite de 10MB
         allowedMimeTypes: ['image/webp', 'image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml']
@@ -195,7 +195,7 @@ const initializeStorageBucket = async () => {
         console.log('[Startup] ★ Bucket "imagenes-catalogo" creado con éxito.');
       }
     } else {
-      const { error: updateError } = await supabaseDb.storage.updateBucket('imagenes-catalogo', { public: true });
+      const { error: updateError } = await supabaseAdmin.storage.updateBucket('imagenes-catalogo', { public: true });
       if (updateError) {
         console.warn('[Startup] ⚠️ No se pudo forzar visibilidad pública en "imagenes-catalogo":', updateError.message);
       } else {

@@ -153,18 +153,23 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
-          let done = false;
+          let timer = null;
           img.addEventListener('load', () => {
-            if (!done) { done = true; resolve(); }
+            if (!done) {
+              done = true;
+              if (timer) clearTimeout(timer);
+              resolve();
+            }
           }, { once: true });
           img.addEventListener('error', () => {
             if (!done) {
               done = true;
+              if (timer) clearTimeout(timer);
               failed.push({ src: img.src, reason: 'NETWORK_ERROR' });
               resolve();
             }
           }, { once: true });
-          setTimeout(() => {
+          timer = setTimeout(() => {
             if (!done) {
               done = true;
               failed.push({ src: img.src, reason: 'TIMEOUT_3S' });
@@ -457,18 +462,23 @@ export async function generatePdfBatch(items, ds = dataService) {
       await Promise.all(images.map(img => {
         if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise(resolve => {
-          let done = false;
+          let timer = null;
           img.addEventListener('load', () => {
-            if (!done) { done = true; resolve(); }
+            if (!done) {
+              done = true;
+              if (timer) clearTimeout(timer);
+              resolve();
+            }
           }, { once: true });
           img.addEventListener('error', () => {
             if (!done) {
               done = true;
+              if (timer) clearTimeout(timer);
               failed.push({ src: img.src, reason: 'NETWORK_ERROR' });
               resolve();
             }
           }, { once: true });
-          setTimeout(() => {
+          timer = setTimeout(() => {
             if (!done) {
               done = true;
               failed.push({ src: img.src, reason: 'TIMEOUT_3S' });
