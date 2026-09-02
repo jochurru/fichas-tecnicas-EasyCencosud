@@ -247,7 +247,7 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                     ) : (
                       <span className="font-black text-[10px] uppercase truncate text-white">{marca}</span>
                     )}
-                    <span className="text-[8px] text-gray-400 leading-none mt-0.5">SAP {sku}</span>
+                    <span className="text-[8px] text-white font-extrabold tracking-wider leading-none mt-0.5">SAP {sku}</span>
                   </div>
                 </div>
 
@@ -306,7 +306,7 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                   ) : (
                     <span className="font-black text-[8px] uppercase truncate text-white">{marca}</span>
                   )}
-                  <span className="text-[6.5px] text-gray-400 leading-none mt-0.5">SAP {sku}</span>
+                  <span className="text-[6.5px] text-white font-extrabold tracking-wider leading-none mt-0.5">SAP {sku}</span>
                 </div>
               </div>
 
