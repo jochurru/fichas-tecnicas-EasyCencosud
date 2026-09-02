@@ -56,41 +56,17 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
   const normBrand = rawBrand.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const cleanBrand = normBrand.replace(/[^a-z0-9]/g, '');
   let logoUrl = '';
-
-  // 1. Verificar si existe el archivo SVG en backend/assets/logos/
-  const localAssetsDir = path.join(process.cwd(), 'assets', 'logos');
-  const fallbackAssetsDir = path.join(__dirname, '..', '..', 'assets', 'logos');
-  const targetDir = fs.existsSync(localAssetsDir) ? localAssetsDir : fallbackAssetsDir;
-
-  let localSvgFile = null;
-  for (const slug of [cleanBrand, normBrand]) {
-    const candidate = path.join(targetDir, `${slug}.svg`);
-    if (fs.existsSync(candidate)) {
-      localSvgFile = candidate;
-      break;
-    }
-  }
-
   let headerBrandHtml = `<span class="brand-text">${escapeHtml(brandName)}</span>`;
   let logoHeight = '36px';
   if (templateName === 'a4') logoHeight = '55px';
   if (templateName === 'fleje3') logoHeight = '36px';
   if (templateName === 'fleje2') logoHeight = '22px';
 
-  if (localSvgFile) {
-    try {
-      const svgText = fs.readFileSync(localSvgFile, 'utf8');
-      const base64Svg = Buffer.from(svgText).toString('base64');
-      headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
-      return { headerBrandHtml, logoUrl: `local:${path.basename(localSvgFile)}` };
-    } catch (e) {
-      console.warn(`[BrandLogoProcessor] Error al leer SVG local ${localSvgFile}:`, e.message);
-    }
-  }
-
-  // 2. Si no hay archivo local, buscar en la base de datos o en el mapa remoto
+  // 1. PRIORIDAD 1: Buscar en la base de datos Supabase (logos configurados por el usuario)
   try {
-    const dbBrand = await dataService.getMarcaBySlug(rawBrand) || await dataService.getMarcaBySlug(normBrand);
+    const dbBrand = await dataService.getMarcaBySlug(rawBrand) || 
+                    await dataService.getMarcaBySlug(normBrand) ||
+                    await dataService.getMarcaBySlug(cleanBrand);
     if (dbBrand && dbBrand.logo_url) {
       logoUrl = dbBrand.logo_url;
     }
@@ -98,6 +74,34 @@ export async function processBrandLogo(brandName = '', templateName = 'fleje3') 
     console.warn(`[BrandLogoProcessor] Marca no hallada en DB para "${brandName}":`, dbErr.message);
   }
 
+  // 2. PRIORIDAD 2: Respaldo local de archivos SVG en backend/assets/logos/
+  if (!logoUrl) {
+    const localAssetsDir = path.join(process.cwd(), 'assets', 'logos');
+    const fallbackAssetsDir = path.join(__dirname, '..', '..', 'assets', 'logos');
+    const targetDir = fs.existsSync(localAssetsDir) ? localAssetsDir : fallbackAssetsDir;
+
+    let localSvgFile = null;
+    for (const slug of [cleanBrand, normBrand]) {
+      const candidate = path.join(targetDir, `${slug}.svg`);
+      if (fs.existsSync(candidate)) {
+        localSvgFile = candidate;
+        break;
+      }
+    }
+
+    if (localSvgFile) {
+      try {
+        const svgText = fs.readFileSync(localSvgFile, 'utf8');
+        const base64Svg = Buffer.from(svgText).toString('base64');
+        headerBrandHtml = `<img src="data:image/svg+xml;base64,${base64Svg}" alt="${escapeHtml(brandName)}" style="max-height: ${logoHeight}; max-width: 100%; object-fit: contain; display: inline-block; vertical-align: middle;" />`;
+        return { headerBrandHtml, logoUrl: `local:${path.basename(localSvgFile)}` };
+      } catch (e) {
+        console.warn(`[BrandLogoProcessor] Error al leer SVG local ${localSvgFile}:`, e.message);
+      }
+    }
+  }
+
+  // 3. PRIORIDAD 3: Respaldo de mapa remoto (Wikipedia)
   if (!logoUrl) {
     for (const key of Object.keys(brandLogoMap)) {
       const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

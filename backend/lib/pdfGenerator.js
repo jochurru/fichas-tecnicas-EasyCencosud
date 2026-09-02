@@ -339,7 +339,7 @@ export async function generatePdfBatch(items, ds = dataService) {
         if (isRobust) {
           bodyContent = bodyContent.replace(/class="container"/i, 'class="page-robust-a4"');
         } else {
-          bodyContent = bodyContent.replace(/class="card"/i, 'class="page-a4"');
+          bodyContent = `<div class="page-a4">${bodyContent}</div>`;
         }
       }
       return bodyContent;
