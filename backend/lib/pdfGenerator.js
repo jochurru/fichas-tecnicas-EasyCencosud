@@ -115,8 +115,10 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   });
 
   // Formatear lista de viñetas HTML usando la regla centralizada por plantilla
+  const maxSpecs = getMaxSpecs(templateName, bodySpecs);
+  const renderedSpecsCount = Math.min(bodySpecs.length, maxSpecs);
   const specsListHtml = formatSpecsListHtml(bodySpecs, templateName);
-  const densityClass = getDensityClass(bodySpecs.length, templateName);
+  const densityClass = getDensityClass(renderedSpecsCount, templateName);
   const titleClass = getTitleAdaptiveClass(tipoHerramientaStr);
   const selloGarantiaImg = getWarrantySealBase64();
 
@@ -333,8 +335,10 @@ export async function generatePdfBatch(items, ds = dataService) {
       const k = (s.clave || '').toLowerCase();
       return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
     });
+    const maxSpecs = getMaxSpecs(templateName, bodySpecs);
+    const renderedSpecsCount = Math.min(bodySpecs.length, maxSpecs);
     const specsListHtml = formatSpecsListHtml(bodySpecs, templateName);
-    const densityClass = getDensityClass(bodySpecs.length, templateName);
+    const densityClass = getDensityClass(renderedSpecsCount, templateName);
     const titleClass = getTitleAdaptiveClass(tipoHerramientaStr);
 
     const mostrarSelloGarantia = esElectrico && !garantiaVal;

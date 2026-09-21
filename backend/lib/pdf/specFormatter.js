@@ -121,6 +121,7 @@ export function getDensityClass(count = 0, templateName = 'fleje3') {
     return 'density-normal';
   }
   if (count <= 3) return 'density-low';
+  if (count >= 7) return 'density-high';
   return 'density-normal';
 }
 
