@@ -49,10 +49,14 @@
             page-break-after: avoid !important;
         }
 
-        /* DISEÑO DE GRILLA: FLEJE 3 (90x74mm) - 2x3 (6 por hoja) */
+        /* DISEÑO DE GRILLA: FLEJE 3 (100x70mm) - 2x3 (6 por hoja) */
         .page-fleje3 {
-            grid-template-columns: repeat(2, 90mm);
-            grid-gap: 5mm;
+            padding: 37.5mm 5mm;
+            grid-template-columns: repeat(2, 100mm);
+            column-gap: 0;
+            row-gap: 6mm;
+            justify-content: center;
+            align-content: start;
         }
 
         /* DISEÑO DE GRILLA: FLEJE 2 (80x40mm) - 2x6 (12 por hoja) */
@@ -62,21 +66,22 @@
             padding: 15mm 20mm;
         }
 
-        /* ESTILOS DE TARJETA: FLEJE 3 (90x74mm) */
+        /* ESTILOS DE TARJETA: FLEJE 3 (100x70mm) */
         .card-fleje3 {
-            width: 90mm;
-            height: 74mm;
+            width: 100mm;
+            height: 70mm;
             background: #ffffff;
             border: 1px dashed #cbd5e1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .card-fleje3 .header {
             background: #222222;
             color: #ffffff;
-            height: 17mm;
-            padding: 2.5mm 3.5mm;
+            height: 15mm;
+            padding: 1.8mm 3.2mm;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -85,7 +90,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            max-width: 60%;
+            max-width: 63%;
         }
         .card-fleje3 .header-title {
             font-family: 'Arial Black', 'Arial Bold', Impact, sans-serif;
@@ -98,12 +103,25 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            max-height: 8.5mm;
+        }
+        .card-fleje3 .header-title.title-size-short {
+            font-size: 12pt;
+            line-height: 1.02;
+        }
+        .card-fleje3 .header-title.title-size-medium {
+            font-size: 11pt;
+            line-height: 1.05;
+        }
+        .card-fleje3 .header-title.title-size-long {
+            font-size: 9.8pt;
+            line-height: 1.05;
         }
         .card-fleje3 .header-subtitle {
-            font-size: 9pt;
+            font-size: 8.8pt;
             font-weight: 700;
             color: #ffed00; /* Amarillo Easy */
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -113,11 +131,11 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            max-width: 38%;
+            max-width: 35%;
             align-items: flex-end;
         }
         .card-fleje3 .header-brand {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 800;
             text-transform: uppercase;
             color: #ffffff;
@@ -132,32 +150,50 @@
             font-weight: 800;
             color: #ffffff;
             letter-spacing: 0.5px;
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
         }
         .card-fleje3 .body-grid {
             flex: 1;
             display: flex;
-            height: 40mm;
+            height: 39.5mm;
             border-bottom: 1px solid #cbd5e1;
         }
         .card-fleje3 .specs-column {
-            width: 44%;
+            width: 46%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             border-right: 1px solid #cbd5e1;
             background: #f8fafc;
-            padding: 2.5mm 3mm;
+            padding: 1.8mm 2.5mm;
             overflow: hidden;
         }
         .card-fleje3 .specs-list {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 1.2mm;
+            gap: 0.8mm;
             width: 100%;
             margin: 0;
             padding: 0;
+        }
+        .card-fleje3 .specs-list.density-low {
+            gap: 1.4mm;
+        }
+        .card-fleje3 .specs-list.density-low .spec-item {
+            font-size: 6.8pt;
+        }
+        .card-fleje3 .specs-list.density-normal {
+            gap: 0.8mm;
+        }
+        .card-fleje3 .specs-list.density-normal .spec-item {
+            font-size: 6.5pt;
+        }
+        .card-fleje3 .specs-list.density-high {
+            gap: 0.6mm;
+        }
+        .card-fleje3 .specs-list.density-high .spec-item {
+            font-size: 6.0pt;
         }
         .card-fleje3 .spec-item {
             font-size: 6.5pt;
@@ -182,7 +218,7 @@
             overflow: hidden;
         }
         .card-fleje3 .image-column {
-            width: 56%;
+            width: 54%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -195,7 +231,7 @@
             object-fit: contain;
         }
         .card-fleje3 .footer-grid {
-            height: 14mm;
+            height: 12.5mm;
             display: flex;
             background: #f1f5f9;
         }
@@ -206,25 +242,25 @@
             justify-content: center;
             align-items: center;
             border-right: 1px solid #cbd5e1;
-            padding: 0.5mm 1mm;
+            padding: 0.4mm 1mm;
             text-align: center;
         }
         .card-fleje3 .footer-cell:last-child {
             border-right: none;
         }
         .card-fleje3 .footer-label {
-            font-size: 6pt;
+            font-size: 5.8pt;
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.2px;
-            margin-bottom: 0.2mm;
+            margin-bottom: 0.1mm;
         }
         .card-fleje3 .footer-value {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.1;
+            line-height: 1.05;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -417,8 +453,8 @@
         .page-a4 .header {
             background: #222222;
             color: #ffffff;
-            height: 58mm;
-            padding: 11mm 15mm;
+            height: 52mm;
+            padding: 8mm 15mm;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -435,17 +471,30 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            line-height: 1.1;
+            line-height: 1.08;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            max-height: 25mm;
+        }
+        .page-a4 .header-title.title-size-short {
+            font-size: 34pt;
+            line-height: 1.05;
+        }
+        .page-a4 .header-title.title-size-medium {
+            font-size: 28pt;
+            line-height: 1.08;
+        }
+        .page-a4 .header-title.title-size-long {
+            font-size: 22pt;
+            line-height: 1.12;
         }
         .page-a4 .header-subtitle {
-            font-size: 24pt;
+            font-size: 22pt;
             font-weight: 800;
             color: #ffed00; /* Amarillo Easy */
-            margin-top: 2mm;
+            margin-top: 1.5mm;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -459,7 +508,7 @@
             align-items: flex-end;
         }
         .page-a4 .header-brand {
-            font-size: 28pt;
+            font-size: 26pt;
             font-weight: 800;
             text-transform: uppercase;
             color: #ffffff;
@@ -481,32 +530,50 @@
         .page-a4 .body-grid {
             flex: 1;
             display: flex;
-            height: 170mm;
+            height: 193mm;
             border-bottom: 2px solid #cbd5e1;
         }
         
         /* Columna Izquierda (Specs) */
         .page-a4 .specs-column {
-            width: 42%;
+            width: 44%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             border-right: 2px solid #cbd5e1;
             background: #f8fafc;
-            padding: 8mm 10mm;
+            padding: 6mm 9mm;
             overflow: hidden;
         }
         .page-a4 .specs-list {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 4mm;
+            gap: 3.8mm;
             width: 100%;
             margin: 0;
             padding: 0;
         }
+        .page-a4 .specs-list.density-low {
+            gap: 5.5mm;
+        }
+        .page-a4 .specs-list.density-low .spec-item {
+            font-size: 15pt;
+        }
+        .page-a4 .specs-list.density-normal {
+            gap: 3.8mm;
+        }
+        .page-a4 .specs-list.density-normal .spec-item {
+            font-size: 13.5pt;
+        }
+        .page-a4 .specs-list.density-high {
+            gap: 2.6mm;
+        }
+        .page-a4 .specs-list.density-high .spec-item {
+            font-size: 11.8pt;
+        }
         .page-a4 .spec-item {
-            font-size: 14pt;
+            font-size: 13.5pt;
             font-weight: 600;
             color: #0f172a;
             line-height: 1.25;
@@ -517,7 +584,7 @@
             color: #e30613;
             font-weight: bold;
             margin-right: 3mm;
-            font-size: 16pt;
+            font-size: 15pt;
             line-height: 1;
         }
         .page-a4 .spec-text {
@@ -528,11 +595,11 @@
             overflow: hidden;
         }
         .page-a4 .image-column {
-            width: 58%;
+            width: 56%;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 10mm;
+            padding: 8mm;
             background: #ffffff;
         }
         .page-a4 .product-image {
@@ -543,7 +610,7 @@
 
         /* Footer Grid */
         .page-a4 .footer-grid {
-            height: 55mm;
+            height: 38mm;
             display: flex;
             background: #f1f5f9;
         }
@@ -554,25 +621,25 @@
             justify-content: center;
             align-items: center;
             border-right: 2px solid #cbd5e1;
-            padding: 4mm;
+            padding: 3mm;
             text-align: center;
         }
         .page-a4 .footer-cell:last-child {
             border-right: none;
         }
         .page-a4 .footer-label {
-            font-size: 15pt;
+            font-size: 12pt;
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1.5mm;
+            letter-spacing: 0.8px;
+            margin-bottom: 1mm;
         }
         .page-a4 .footer-value {
-            font-size: 26pt;
+            font-size: 20pt;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.2;
+            line-height: 1.15;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -587,35 +654,37 @@
             width: 100%;
         }
 
-        /* ESTILOS ROBUST FLEJE 3 */
+        /* ESTILOS ROBUST FLEJE 3 (100x70mm) */
         .card-robust-fleje3 {
-            width: 90mm;
-            height: 74mm;
+            width: 100mm;
+            height: 70mm;
             background: #5d6368;
             border: 1.5px dashed #ffffff;
             isolation: isolate;
             display: flex;
+            justify-content: space-between;
+            align-items: stretch;
             position: relative;
             overflow: hidden;
             color: #ffffff;
-            padding: 4.5mm 5mm 4mm 5mm;
+            padding: 3.2mm 3.8mm 2.8mm 3.8mm;
             box-sizing: border-box;
         }
         .card-robust-fleje3 .brand-container {
-            margin-bottom: 1.5mm;
-            max-height: 8mm;
+            margin-bottom: 1.2mm;
+            max-height: 7.5mm;
             display: flex;
             align-items: center;
         }
         .card-robust-fleje3 .brand-container img {
-            max-height: 8mm;
+            max-height: 7.5mm;
             max-width: 38mm;
             object-fit: contain;
             display: block;
             mix-blend-mode: screen;
         }
         .card-robust-fleje3 .left-content {
-            width: 49%;
+            width: 48mm;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -624,7 +693,7 @@
             overflow: hidden;
         }
         .card-robust-fleje3 .title-container {
-            margin-bottom: 1.5mm;
+            margin-bottom: 1.2mm;
             max-width: 100%;
             overflow: hidden;
         }
@@ -638,6 +707,18 @@
             white-space: normal;
             word-break: break-word;
         }
+        .card-robust-fleje3 .title-primary.title-size-short {
+            font-size: 9.5pt;
+            line-height: 1.02;
+        }
+        .card-robust-fleje3 .title-primary.title-size-medium {
+            font-size: 8.5pt;
+            line-height: 1.05;
+        }
+        .card-robust-fleje3 .title-primary.title-size-long {
+            font-size: 7.8pt;
+            line-height: 1.05;
+        }
         .card-robust-fleje3 .title-secondary {
             font-size: 6.8pt;
             font-weight: 600;
@@ -646,21 +727,25 @@
             line-height: 1.08;
             letter-spacing: 0.1px;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             max-width: 100%;
             word-break: break-word;
+        }
+        .card-robust-fleje3 .title-secondary.title-size-long {
+            font-size: 6.0pt;
+            line-height: 1.05;
         }
         .card-robust-fleje3 .highlight-pill {
             display: var(--pill-display, inline-flex);
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: 4px;
-            padding: 0.6mm 1.8mm;
-            font-size: 6pt;
+            padding: 0.5mm 1.6mm;
+            font-size: 5.8pt;
             font-weight: 700;
-            margin-bottom: 1.5mm;
+            margin-bottom: 1.2mm;
             width: fit-content;
             background: transparent;
             max-width: 100%;
@@ -674,12 +759,32 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 0.8mm;
-            margin-bottom: 1.5mm;
+            gap: 0.7mm;
+            margin-bottom: 1.2mm;
             max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .card-robust-fleje3 .specs-list.density-low {
+            gap: 1.2mm;
+        }
+        .card-robust-fleje3 .specs-list.density-low .spec-item {
+            font-size: 6.5pt;
+        }
+        .card-robust-fleje3 .specs-list.density-normal {
+            gap: 0.7mm;
+        }
+        .card-robust-fleje3 .specs-list.density-normal .spec-item {
+            font-size: 6.2pt;
+        }
+        .card-robust-fleje3 .specs-list.density-high {
+            gap: 0.5mm;
+        }
+        .card-robust-fleje3 .specs-list.density-high .spec-item {
+            font-size: 5.8pt;
         }
         .card-robust-fleje3 .spec-item {
-            font-size: 6pt;
+            font-size: 6.2pt;
             font-weight: 600;
             color: #ffffff;
             line-height: 1.15;
@@ -703,9 +808,9 @@
         .card-robust-fleje3 .sku-box {
             border-top: 1px solid #ffffff;
             border-bottom: 1px solid #ffffff;
-            padding: 1.2mm 0;
+            padding: 0.8mm 0;
             margin-top: auto;
-            width: 28mm;
+            width: 26mm;
             display: flex;
             align-items: center;
             justify-content: flex-start;
@@ -720,45 +825,41 @@
         }
         .card-robust-fleje3 .meta-info {
             display: flex;
-            gap: 2.5mm;
-            margin-top: 1mm;
+            flex-direction: column;
+            gap: 0.4mm;
+            margin-top: 0.8mm;
         }
         .card-robust-fleje3 .meta-text {
             font-size: 5.5pt;
-            font-weight: 700;
-            color: #ffffff;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1;
             text-transform: uppercase;
             letter-spacing: 0.2px;
-            white-space: nowrap;
         }
-        .card-robust-fleje3 .right-image {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 50%;
+        .card-robust-fleje3 .right-content, .card-robust-fleje3 .right-image {
+            width: 44mm;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
             z-index: 5;
-            padding: 2mm 2mm;
+            padding: 1mm;
             background: transparent;
         }
         .card-robust-fleje3 .product-image {
             max-width: 100%;
-            max-height: 100%;
+            max-height: 58mm;
             object-fit: contain;
             background: transparent;
-            transform: scale(1.08);
-            transform-origin: center;
         }
         .card-robust-fleje3 .warranty-seal {
             position: absolute;
-            right: 3.5mm;
-            bottom: 3.5mm;
-            width: 16mm;
-            height: 16mm;
+            right: 0;
+            bottom: 0;
+            width: 14mm;
+            height: 14mm;
             object-fit: contain;
             display: var(--warranty-display, block);
             z-index: 20;
@@ -951,7 +1052,7 @@
             position: relative;
             border: 2px dashed rgba(255, 255, 255, 0.85);
             isolation: isolate;
-            padding: 10mm 12mm;
+            padding: 8mm 10mm;
             box-sizing: border-box;
             page-break-after: always;
         }
@@ -959,16 +1060,16 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 6mm;
+            margin-bottom: 4mm;
         }
         .page-robust-a4 .brand-container {
-            margin-bottom: 6mm;
-            max-height: 26mm;
+            margin-bottom: 3mm;
+            max-height: 24mm;
             display: flex;
             align-items: center;
         }
         .page-robust-a4 .brand-container img {
-            max-height: 26mm;
+            max-height: 24mm;
             max-width: 110mm;
             object-fit: contain;
             display: block;
@@ -982,27 +1083,50 @@
             line-height: 1;
             letter-spacing: 0.5px;
             margin-bottom: 2mm;
+            word-break: break-word;
+        }
+        .page-robust-a4 .title-primary.title-size-short {
+            font-size: 36pt;
+            line-height: 1;
+        }
+        .page-robust-a4 .title-primary.title-size-medium {
+            font-size: 30pt;
+            line-height: 1.05;
+        }
+        .page-robust-a4 .title-primary.title-size-long {
+            font-size: 24pt;
+            line-height: 1.08;
         }
         .page-robust-a4 .title-secondary {
-            font-size: 24pt;
+            font-size: 22pt;
             font-weight: 600;
             color: #ffffff;
             text-transform: uppercase;
             line-height: 1.1;
-            margin-bottom: 5mm;
+            margin-bottom: 4mm;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+        .page-robust-a4 .title-secondary.title-size-long {
+            font-size: 18pt;
+            line-height: 1.1;
         }
         .page-robust-a4 .body-grid {
             display: flex;
             flex: 1;
             margin: 4mm 0;
             position: relative;
-            align-items: center;
+            align-items: stretch;
+            justify-content: space-between;
         }
         .page-robust-a4 .specs-column {
-            width: 50%;
+            width: 48%;
             display: flex;
             flex-direction: column;
-            gap: 4mm;
+            justify-content: flex-start;
             z-index: 10;
             overflow: visible;
         }
@@ -1015,7 +1139,7 @@
             font-size: 14pt;
             font-weight: 700;
             width: fit-content;
-            margin-bottom: 3mm;
+            margin-bottom: 4mm;
             max-width: 100%;
             box-sizing: border-box;
         }
@@ -1028,20 +1152,39 @@
             flex-direction: column;
             gap: 3.5mm;
             max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .page-robust-a4 .specs-list.density-low {
+            gap: 5mm;
+        }
+        .page-robust-a4 .specs-list.density-low .spec-item {
+            font-size: 15pt;
+        }
+        .page-robust-a4 .specs-list.density-normal {
+            gap: 3.5mm;
+        }
+        .page-robust-a4 .specs-list.density-normal .spec-item {
+            font-size: 13.5pt;
+        }
+        .page-robust-a4 .specs-list.density-high {
+            gap: 2.5mm;
+        }
+        .page-robust-a4 .specs-list.density-high .spec-item {
+            font-size: 12pt;
         }
         .page-robust-a4 .spec-item {
-            font-size: 16pt;
+            font-size: 13.5pt;
             font-weight: 600;
             color: #ffffff;
-            line-height: 1.2;
             display: flex;
             align-items: flex-start;
+            line-height: 1.25;
         }
         .page-robust-a4 .spec-bullet {
             color: #ffffff;
-            font-weight: bold;
+            font-size: 15pt;
             margin-right: 3mm;
-            font-size: 18pt;
             line-height: 1;
         }
         .page-robust-a4 .spec-text {
@@ -1052,57 +1195,56 @@
             overflow: hidden;
         }
         .page-robust-a4 .right-column {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 54%;
+            width: 50%;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4mm;
             z-index: 5;
-            height: 160mm;
         }
         .page-robust-a4 .product-image {
             max-width: 100%;
-            max-height: 100%;
+            max-height: 175mm;
             object-fit: contain;
-            transform: scale(1.18);
-            transform-origin: center;
+            background: transparent;
         }
         .page-robust-a4 .sku-box {
             border-top: 2px solid #ffffff;
             border-bottom: 2px solid #ffffff;
-            padding: 3mm 0;
-            width: 80mm;
+            padding: 2.5mm 0;
+            margin-top: auto;
+            width: 70mm;
             display: flex;
             align-items: center;
         }
         .page-robust-a4 .sku-text {
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: 700;
             color: #ffffff;
+            line-height: 1;
             letter-spacing: 1px;
         }
         .page-robust-a4 .meta-info {
             display: flex;
-            gap: 8mm;
-            margin-top: 3mm;
+            gap: 5mm;
+            margin-top: 2.5mm;
         }
         .page-robust-a4 .meta-text {
-            font-size: 14pt;
+            font-size: 11pt;
             font-weight: 700;
-            color: #ffffff;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .page-robust-a4 .warranty-seal {
             display: var(--warranty-display, flex);
             position: absolute;
-            right: 8mm;
-            bottom: 8mm;
-            width: 44mm;
-            height: 44mm;
+            right: 0;
+            bottom: 0;
+            width: 40mm;
+            height: 40mm;
             object-fit: contain;
             z-index: 20;
         }

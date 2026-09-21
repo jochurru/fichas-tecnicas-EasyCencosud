@@ -30,8 +30,8 @@
         }
 
         .card {
-            width: 90mm;
-            height: 74mm;
+            width: 100mm;
+            height: 70mm;
             background: #fff;
             border: 1.5px dashed #cbd5e1;
             display: flex;
@@ -49,8 +49,8 @@
         .header {
             background: #222222;
             color: #ffffff;
-            height: 17mm;
-            padding: 2.5mm 3.5mm;
+            height: 15mm;
+            padding: 1.8mm 3.2mm;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -59,7 +59,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            max-width: 60%;
+            max-width: 63%;
         }
         .header-title {
             font-family: 'Arial Black', 'Arial Bold', Impact, sans-serif;
@@ -72,12 +72,25 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            max-height: 8.5mm;
+        }
+        .header-title.title-size-short {
+            font-size: 12pt;
+            line-height: 1.02;
+        }
+        .header-title.title-size-medium {
+            font-size: 11pt;
+            line-height: 1.05;
+        }
+        .header-title.title-size-long {
+            font-size: 9.8pt;
+            line-height: 1.05;
         }
         .header-subtitle {
-            font-size: 9pt;
+            font-size: 8.8pt;
             font-weight: 700;
             color: #ffed00; /* Amarillo Easy */
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -87,10 +100,10 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            max-width: 38%;
+            max-width: 35%;
         }
         .header-brand {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 800;
             text-transform: uppercase;
             color: #ffffff;
@@ -105,36 +118,54 @@
             font-weight: 800;
             color: #ffffff;
             letter-spacing: 0.5px;
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
         }
 
-        /* Body Grid */
+        /* Body Grid (39.5mm) */
         .body-grid {
             flex: 1;
             display: flex;
-            height: 40mm;
+            height: 39.5mm;
             border-bottom: 1px solid #cbd5e1;
         }
         
-        /* Columna Izquierda (Specs Dinámicas) */
+        /* Columna Izquierda (Specs Dinámicas 46mm) */
         .specs-column {
-            width: 44%;
+            width: 46%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             border-right: 1px solid #cbd5e1;
             background: #f8fafc;
-            padding: 2.5mm 3mm;
+            padding: 1.8mm 2.5mm;
             overflow: hidden;
         }
         .specs-list {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 1.2mm;
+            gap: 0.8mm;
             width: 100%;
             margin: 0;
             padding: 0;
+        }
+        .specs-list.density-low {
+            gap: 1.4mm;
+        }
+        .specs-list.density-low .spec-item {
+            font-size: 6.8pt;
+        }
+        .specs-list.density-normal {
+            gap: 0.8mm;
+        }
+        .specs-list.density-normal .spec-item {
+            font-size: 6.5pt;
+        }
+        .specs-list.density-high {
+            gap: 0.6mm;
+        }
+        .specs-list.density-high .spec-item {
+            font-size: 6.0pt;
         }
         .spec-item {
             font-size: 6.5pt;
@@ -159,9 +190,9 @@
             overflow: hidden;
         }
 
-        /* Columna Derecha (Foto) */
+        /* Columna Derecha (Foto 54mm) */
         .image-column {
-            width: 56%;
+            width: 54%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -174,9 +205,9 @@
             object-fit: contain;
         }
 
-        /* Footer Grid */
+        /* Footer Grid (12.5mm) */
         .footer-grid {
-            height: 14mm;
+            height: 12.5mm;
             display: flex;
             background: #f1f5f9;
         }
@@ -187,25 +218,25 @@
             justify-content: center;
             align-items: center;
             border-right: 1px solid #cbd5e1;
-            padding: 0.5mm 1mm;
+            padding: 0.4mm 1mm;
             text-align: center;
         }
         .footer-cell:last-child {
             border-right: none;
         }
         .footer-label {
-            font-size: 6pt;
+            font-size: 5.8pt;
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.2px;
-            margin-bottom: 0.2mm;
+            margin-bottom: 0.1mm;
         }
         .footer-value {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.1;
+            line-height: 1.05;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -213,7 +244,7 @@
             max-width: 100%;
         }
 
-        /* Bottom Bar */
+        /* Bottom Bar (3mm) */
         .bottom-bar {
             height: 3mm;
             background: #e30613; /* Rojo Easy */
@@ -226,7 +257,7 @@
         <!-- Header -->
         <div class="header">
             <div class="header-left">
-                <span class="header-title">{{tipo_herramienta}}</span>
+                <span class="header-title {{title_class}}">{{tipo_herramienta}}</span>
                 <span class="header-subtitle">{{destacado}}</span>
             </div>
             <div class="header-right">
@@ -239,7 +270,7 @@
         <div class="body-grid">
             <!-- Columna Izquierda (Especificaciones Dinámicas) -->
             <div class="specs-column">
-                <ul class="specs-list">
+                <ul class="specs-list {{density_class}}">
                     {{specs_html}}
                 </ul>
             </div>

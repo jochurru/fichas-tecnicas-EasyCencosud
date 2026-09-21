@@ -4,7 +4,15 @@ import { fileURLToPath } from 'url';
 import { getBrowser, acquirePageSlot, releasePageSlot, cleanupBrowser } from './pdf/browserManager.js';
 import { loadTemplate } from './pdf/templateLoader.js';
 import { processBrandLogo } from './pdf/brandLogoProcessor.js';
-import { isElectricTool, getHighlightPill, formatSpecsListHtml, getWarrantySealBase64 } from './pdf/specFormatter.js';
+import { 
+  isElectricTool, 
+  getHighlightPill, 
+  formatSpecsListHtml, 
+  getWarrantySealBase64,
+  getMaxSpecs,
+  getDensityClass,
+  getTitleAdaptiveClass
+} from './pdf/specFormatter.js';
 import { dataService } from '../services/dataService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -106,8 +114,10 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
     return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
   });
 
-  // Formatear lista de viñetas HTML (hasta 7 especificaciones)
-  const specsListHtml = formatSpecsListHtml(bodySpecs, 7);
+  // Formatear lista de viñetas HTML usando la regla centralizada por plantilla
+  const specsListHtml = formatSpecsListHtml(bodySpecs, templateName);
+  const densityClass = getDensityClass(bodySpecs.length, templateName);
+  const titleClass = getTitleAdaptiveClass(tipoHerramientaStr);
   const selloGarantiaImg = getWarrantySealBase64();
 
   // Inyección de variables en el HTML
@@ -115,6 +125,8 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
   html = html.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
   html = html.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
   html = html.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+  html = html.replace(/\{\{title_class\}\}/g, titleClass);
+  html = html.replace(/\{\{density_class\}\}/g, densityClass);
   html = html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
   html = html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
   const mostrarSelloGarantia = esElectrico && !garantiaVal;
@@ -200,7 +212,7 @@ export async function generatePdf(ficha, templateName = 'fleje3') {
         left: '0mm'
       }
     });
-    return pdfBuffer;
+    return Buffer.from(pdfBuffer);
   } finally {
     if (page) {
       try {
@@ -321,7 +333,9 @@ export async function generatePdfBatch(items, ds = dataService) {
       const k = (s.clave || '').toLowerCase();
       return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
     });
-    const specsListHtml = formatSpecsListHtml(bodySpecs, 7);
+    const specsListHtml = formatSpecsListHtml(bodySpecs, templateName);
+    const densityClass = getDensityClass(bodySpecs.length, templateName);
+    const titleClass = getTitleAdaptiveClass(tipoHerramientaStr);
 
     const mostrarSelloGarantia = esElectrico && !garantiaVal;
 
@@ -352,6 +366,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       a4Html = a4Html.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
       a4Html = a4Html.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
       a4Html = a4Html.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+      a4Html = a4Html.replace(/\{\{title_class\}\}/g, titleClass);
+      a4Html = a4Html.replace(/\{\{density_class\}\}/g, densityClass);
       a4Html = a4Html.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       a4Html = a4Html.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       a4Html = a4Html.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
@@ -379,6 +395,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
       cardHtml = cardHtml.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
       cardHtml = cardHtml.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+      cardHtml = cardHtml.replace(/\{\{title_class\}\}/g, titleClass);
+      cardHtml = cardHtml.replace(/\{\{density_class\}\}/g, densityClass);
       cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
@@ -406,6 +424,8 @@ export async function generatePdfBatch(items, ds = dataService) {
       cardHtml = cardHtml.replace(/\{\{destacado\}\}/g, escapeHtml(destacado));
       cardHtml = cardHtml.replace(/\{\{titulo_linea1\}\}/g, escapeHtml(tituloLinea1));
       cardHtml = cardHtml.replace(/\{\{titulo_linea2\}\}/g, escapeHtml(tituloLinea2));
+      cardHtml = cardHtml.replace(/\{\{title_class\}\}/g, titleClass);
+      cardHtml = cardHtml.replace(/\{\{density_class\}\}/g, densityClass);
       cardHtml = cardHtml.replace(/\{\{destacado_val\}\}/g, escapeHtml(destacadoVal));
       cardHtml = cardHtml.replace(/\{\{destacado_lbl\}\}/g, escapeHtml(destacadoLbl));
       cardHtml = cardHtml.replace(/\{\{pill_display\}\}/g, mostrarPill ? 'inline-flex' : 'none');
@@ -523,7 +543,7 @@ export async function generatePdfBatch(items, ds = dataService) {
         left: '0mm'
       }
     });
-    return pdfBuffer;
+    return Buffer.from(pdfBuffer);
   } finally {
     if (page) {
       try {

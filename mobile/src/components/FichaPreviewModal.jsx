@@ -127,9 +127,19 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
     return !k.includes('garant') && !k.includes('origen') && !k.includes('país');
   });
 
-  // Dimensiones en pantalla y clases específicas
-  let widthClass = 'w-[340px]';
-  let heightClass = 'h-[280px]';
+  const brandLower = normBrand;
+  const words = (tipo_herramienta || '').trim().split(' ');
+  const isKitOrCombo = ['SET', 'KIT', 'COMBO'].includes((words[0] || '').toUpperCase());
+  const tituloLinea1 = isKitOrCombo ? words.slice(0, 2).join(' ') : (words[0] || 'HERRAMIENTA');
+  const tituloLinea2 = isKitOrCombo ? words.slice(2).join(' ') : words.slice(1).join(' ');
+  const mostrarPill = esElectrico && destacado;
+  const destacadoParts = (destacado || '').split(' ');
+  const destacadoVal = destacadoParts[0] || '';
+  const destacadoLbl = destacadoParts.slice(1).join(' ') || '';
+
+  // Dimensiones en pantalla y clases específicas (Fleje 3 = ratio 100/70 = 1.4286)
+  let widthClass = 'w-[350px]';
+  let heightClass = 'h-[245px]';
   if (templateName === 'a4') {
     widthClass = 'w-[320px]';
     heightClass = 'h-[450px]';
@@ -156,92 +166,82 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
         <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-gray-100/60">
           {templateName === 'fleje3' && (
             brandLower.includes('robust') ? (
-              /* ROBUST MASTER TEMPLATE PREVIEW */
-              <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-2 border-dashed border-white flex p-4 text-left relative font-sans select-none overflow-hidden justify-between`}>
-                <div className="w-[46%] flex flex-col justify-between z-10 overflow-hidden">
+              /* ROBUST MASTER TEMPLATE PREVIEW (100x70mm) */
+              <div className={`${widthClass} ${heightClass} bg-[#5d6368] text-white shadow-xl border-2 border-dashed border-white flex p-3 text-left relative font-sans select-none overflow-hidden justify-between`}>
+                <div className="w-[48%] flex flex-col justify-between z-10 overflow-hidden">
                   <div>
                     {/* Logo ROBUST de alta precisión */}
-                    <div className="mb-1.5 max-h-6 flex items-center">
+                    <div className="mb-1 max-h-5 flex items-center">
                       {logoUrl ? (
-                        <img src={logoUrl} alt={marca} className="h-5 object-contain mix-blend-screen" />
+                        <img src={logoUrl} alt="Robust" className="max-h-5 max-w-[90px] object-contain" />
                       ) : (
-                        <span className="font-black text-sm uppercase tracking-widest text-white font-mono">ROBUST</span>
+                        <span className="font-black text-xs tracking-wider uppercase text-white">ROBUST</span>
                       )}
                     </div>
 
                     {/* Título en 2 líneas */}
-                    <div className="mb-1.5 max-w-full overflow-hidden">
-                      <div className="font-black text-xs uppercase leading-none tracking-tight truncate">
-                        {['SET', 'KIT', 'COMBO'].includes((tipo_herramienta || '').split(' ')[0])
-                          ? (tipo_herramienta || '').split(' ').slice(0, 2).join(' ')
-                          : (tipo_herramienta || 'TALADRO').split(' ')[0]}
-                      </div>
-                      <div className="font-medium text-[10px] uppercase leading-tight line-clamp-2">
-                        {['SET', 'KIT', 'COMBO'].includes((tipo_herramienta || '').split(' ')[0])
-                          ? (tipo_herramienta || '').split(' ').slice(2).join(' ')
-                          : (tipo_herramienta || '').split(' ').slice(1).join(' ') || 'PERCUTOR'}
-                      </div>
+                    <div className="mb-1 leading-tight">
+                      <div className="font-black text-[10px] uppercase text-white tracking-wide truncate">{tituloLinea1}</div>
+                      {tituloLinea2 && <div className="font-bold text-[8px] uppercase text-white tracking-wide truncate">{tituloLinea2}</div>}
                     </div>
 
-                    {/* Highlight Pill (Solo si es eléctrica) */}
-                    {esElectrico && (
-                      <div className="inline-flex items-center border border-white/90 rounded px-1.5 py-0.5 text-[8px] font-bold mb-1.5">
-                        <span className="text-white">{destacado.split(' ')[0] || '18V'}</span>
-                        <span className="text-white mx-1 text-[7px]">⚡</span>
-                        <span className="text-[#00c3e6] font-extrabold">{destacado.split(' ').slice(1).join(' ') || 'BRUSHLESS'}</span>
+                    {/* Highlight Pill */}
+                    {mostrarPill && (
+                      <div className="inline-flex items-center border border-white/90 rounded px-1.5 py-0.5 text-[7px] font-bold mb-1 w-fit">
+                        <span className="text-white">{destacadoVal}</span>
+                        <span className="text-white mx-0.5">⚡</span>
+                        <span className="text-[#00c3e6] font-extrabold">{destacadoLbl}</span>
                       </div>
                     )}
-                    {/* Specs List */}
-                    <ul className="space-y-0.5 max-w-full">
-                      {bodySpecs.slice(0, 4).map((spec, i) => (
-                        <li key={i} className="text-[8.5px] font-semibold text-white flex items-start leading-tight">
-                          <span className="mr-1 text-[9px]">·</span>
-                          <span className="truncate">{spec.clave}: {spec.valor}</span>
+
+                    {/* Especificaciones */}
+                    <ul className="space-y-0.5 w-full">
+                      {bodySpecs.slice(0, 6).map((spec, i) => (
+                        <li key={i} className="text-[7px] font-medium text-white flex items-start leading-tight">
+                          <span className="text-white font-black mr-1 text-[7px] leading-none shrink-0">•</span>
+                          <span className="truncate"><strong>{spec.clave}:</strong> {spec.valor}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  {/* SKU Box Centrado entre Líneas */}
-                  <div className="border-t border-b border-white py-1.5 w-28 text-left flex items-center justify-start mt-auto">
-                    <span className="font-bold text-[11px] text-white leading-none tracking-wider">SKU: {sku}</span>
-                  </div>
-
-                  {/* Origen y Garantía Dinámicos para Robust */}
-                  {(origenVal || garantiaVal) && (
-                    <div className="text-[7.5px] font-bold text-gray-200 mt-1 flex flex-row flex-wrap gap-1.5 leading-none">
-                      {origenVal && <span>ORIGEN: {origenVal}</span>}
-                      {garantiaVal && <span>GARANTÍA: {garantiaVal}</span>}
+                  {/* Pie Inferior Izquierdo: SKU y Metadatos */}
+                  <div className="mt-auto pt-1">
+                    <div className="border-t border-b border-white py-0.5 w-fit pr-3">
+                      <span className="text-[7.5px] font-bold text-white tracking-wider">SKU: {sku}</span>
                     </div>
+                    <div className="flex flex-col gap-0.5 mt-0.5 text-[6.5px] font-bold text-white/90 uppercase tracking-wide">
+                      <span>ORIGEN: {origenVal || 'S/D'}</span>
+                      <span>GARANTÍA: {garantiaVal || (esElectrico ? '5 AÑOS' : '6 MESES')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Columna Derecha: Foto y Sello sin sobreposición */}
+                <div className="w-[48%] flex flex-col justify-center items-center relative p-1">
+                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-[85%] object-contain" />
+                  {/* Sello de Garantía dinámico */}
+                  {esElectrico && !garantiaVal && (
+                    <img
+                      src="/sello_garantia_5_anos.png"
+                      alt="5 Años de Garantía"
+                      className="absolute right-0 bottom-0 w-8 h-8 object-contain z-20"
+                    />
                   )}
                 </div>
-
-                {/* Columna Derecha con Imagen Integrada (Equilibrada sin sobreposición) */}
-                <div className="absolute right-0 top-0 bottom-0 w-[53%] flex flex-col justify-center items-center z-0 p-2">
-                  <img src={currentFotoUrl || 'https://placehold.co/200?text=Sin+Foto'} alt="Foto" className="max-w-full max-h-full object-contain scale-105 transform-gpu" />
-                </div>
-
-                {/* Sello de Garantía dinámico (Se muestra solo si es eléctrica y NO se especificó garantía explícita en el formulario) */}
-                {esElectrico && !garantiaVal && (
-                  <img
-                    src="/sello_garantia_5_anos.png"
-                    alt="5 Años de Garantía"
-                    className="absolute right-3 bottom-3 w-10 h-10 object-contain z-20"
-                  />
-                )}
               </div>
             ) : (
               /* ========================================================================= */
-              /* PLANTILLA ESTÁNDAR (Fleje 3: 90x74mm)                                    */
+              /* PLANTILLA ESTÁNDAR (Fleje 3: 100x70mm)                                   */
               /* ========================================================================= */
               <div className={`${widthClass} ${heightClass} bg-white text-gray-900 shadow-xl border border-gray-300 rounded-lg flex flex-col justify-between overflow-hidden relative font-sans select-none`}>
                 {/* Header */}
-                <div className="bg-[#222222] text-white h-[60px] px-3.5 py-2 flex justify-between items-center shrink-0">
-                  <div className="max-w-[60%] flex flex-col justify-center text-left">
+                <div className="bg-[#222222] text-white h-[52px] px-3 py-1.5 flex justify-between items-center shrink-0">
+                  <div className="max-w-[63%] flex flex-col justify-center text-left">
                     <span className="font-black text-xs uppercase leading-tight truncate">{tipo_herramienta}</span>
-                    {destacado && <span className="text-[10px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
+                    {destacado && <span className="text-[9.5px] font-bold text-[#ffed00] leading-none mt-0.5 truncate">{destacado}</span>}
                   </div>
-                  <div className="max-w-[38%] text-right flex flex-col justify-center items-end">
+                  <div className="max-w-[35%] text-right flex flex-col justify-center items-end">
                     {logoUrl && !logoFailed ? (
                       <img src={logoUrl} alt={marca} onError={() => setLogoFailed(true)} className="h-5 max-w-full object-contain" />
                     ) : (
@@ -254,39 +254,37 @@ export default function FichaPreviewModal({ sku, currentSpecs, currentFotoUrl, t
                 {/* Body Grid */}
                 <div className="flex-1 flex border-b border-[#cbd5e1] min-h-0 bg-white">
                   {/* Columna Izquierda: Viñetas rojas */}
-                  <div className="w-[48%] bg-[#f8fafc] border-r border-[#cbd5e1] p-2.5 flex flex-col justify-center overflow-hidden text-left">
-                    <ul className="space-y-1.5 w-full">
-                      {bodySpecs.slice(0, 5).map((spec, i) => (
-                        <li key={i} className="text-[8.5px] font-medium text-[#0f172a] flex items-start leading-tight">
-                          <span className="text-[#e30613] font-black mr-1 text-[9px] leading-none shrink-0">▪</span>
+                  <div className="w-[46%] bg-[#f8fafc] border-r border-[#cbd5e1] p-2 flex flex-col justify-center overflow-hidden text-left">
+                    <ul className="space-y-1 w-full">
+                      {bodySpecs.slice(0, 7).map((spec, i) => (
+                        <li key={i} className="text-[7.5px] font-medium text-[#0f172a] flex items-start leading-tight">
+                          <span className="text-[#e30613] font-black mr-1 text-[8px] leading-none shrink-0">▪</span>
                           <span className="truncate"><strong>{spec.clave}:</strong> {spec.valor}</span>
                         </li>
                       ))}
-                      {bodySpecs.length === 0 && (
-                        <li className="text-[8px] text-gray-400 italic">Sin especificaciones cargadas</li>
-                      )}
                     </ul>
                   </div>
-                  {/* Columna Derecha: Foto */}
-                  <div className="w-[52%] p-2 flex items-center justify-center bg-white">
-                    <img src={currentFotoUrl || 'https://placehold.co/100?text=Sin+Foto'} alt="Foto" className="max-h-full max-w-full object-contain" />
+
+                  {/* Columna Derecha: Foto del producto */}
+                  <div className="w-[54%] p-1.5 flex items-center justify-center bg-white">
+                    <img src={currentFotoUrl || 'https://placehold.co/150?text=Sin+Foto'} alt="Foto" className="max-h-full max-w-full object-contain" />
                   </div>
                 </div>
 
-                {/* Footer Grid (Origen y Garantía) */}
-                <div className="h-[40px] bg-[#f1f5f9] flex divide-x divide-[#cbd5e1] shrink-0">
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1">
-                    <span className="text-[7px] font-black uppercase text-[#64748b] tracking-wider">ORIGEN</span>
-                    <span className="text-[10px] font-bold text-[#0f172a] leading-tight truncate">{origenVal || 'S/D'}</span>
+                {/* Footer */}
+                <div className="h-[28px] bg-[#f1f5f9] flex divide-x divide-[#cbd5e1] text-[8px] font-bold text-gray-800 shrink-0">
+                  <div className="flex-1 flex items-center justify-center gap-1.5 text-center">
+                    <span className="text-[#64748b] font-black text-[7px]">ORIGEN:</span>
+                    <span className="text-[#0f172a] truncate">{origenVal || 'S/D'}</span>
                   </div>
-                  <div className="flex-1 flex flex-col justify-center items-center text-center p-1">
-                    <span className="text-[7px] font-black uppercase text-[#64748b] tracking-wider">GARANTÍA</span>
-                    <span className="text-[10px] font-bold text-[#0f172a] leading-tight truncate">{garantiaVal || '6 MESES'}</span>
+                  <div className="flex-1 flex items-center justify-center gap-1.5 text-center">
+                    <span className="text-[#64748b] font-black text-[7px]">GARANTÍA:</span>
+                    <span className="text-[#0f172a] truncate">{garantiaVal || '6 MESES'}</span>
                   </div>
                 </div>
 
                 {/* Bottom bar */}
-                <div className="h-[6px] bg-[#e30613] w-full shrink-0"></div>
+                <div className="h-[4px] bg-[#e30613] w-full shrink-0"></div>
               </div>
             )
           )}

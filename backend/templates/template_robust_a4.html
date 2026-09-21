@@ -82,14 +82,36 @@
             line-height: 1;
             letter-spacing: 0.5px;
             margin-bottom: 2mm;
+            word-break: break-word;
+        }
+        .title-primary.title-size-short {
+            font-size: 36pt;
+            line-height: 1;
+        }
+        .title-primary.title-size-medium {
+            font-size: 30pt;
+            line-height: 1.05;
+        }
+        .title-primary.title-size-long {
+            font-size: 24pt;
+            line-height: 1.08;
         }
         .title-secondary {
-            font-size: 24pt;
+            font-size: 22pt;
             font-weight: 600;
             color: #ffffff;
             text-transform: uppercase;
             line-height: 1.1;
-            margin-bottom: 5mm;
+            margin-bottom: 4mm;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+        .title-secondary.title-size-long {
+            font-size: 18pt;
+            line-height: 1.1;
         }
 
         .body-grid {
@@ -97,14 +119,15 @@
             flex: 1;
             margin: 4mm 0;
             position: relative;
-            align-items: center;
+            align-items: stretch;
+            justify-content: space-between;
         }
 
         .specs-column {
-            width: 50%;
+            width: 48%;
             display: flex;
             flex-direction: column;
-            gap: 4mm;
+            justify-content: flex-start;
             z-index: 10;
             overflow: visible;
         }
@@ -118,7 +141,7 @@
             font-size: 14pt;
             font-weight: 700;
             width: fit-content;
-            margin-bottom: 3mm;
+            margin-bottom: 4mm;
             max-width: 100%;
             box-sizing: border-box;
         }
@@ -132,9 +155,29 @@
             flex-direction: column;
             gap: 3.5mm;
             max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .specs-list.density-low {
+            gap: 5mm;
+        }
+        .specs-list.density-low .spec-item {
+            font-size: 15pt;
+        }
+        .specs-list.density-normal {
+            gap: 3.5mm;
+        }
+        .specs-list.density-normal .spec-item {
+            font-size: 13.5pt;
+        }
+        .specs-list.density-high {
+            gap: 2.5mm;
+        }
+        .specs-list.density-high .spec-item {
+            font-size: 12pt;
         }
         .spec-item {
-            font-size: 14.5pt;
+            font-size: 13.5pt;
             font-weight: 600;
             color: #ffffff;
             display: flex;
@@ -143,32 +186,33 @@
         }
         .spec-bullet {
             color: #ffffff;
-            font-size: 16pt;
+            font-size: 15pt;
             margin-right: 3mm;
             line-height: 1;
         }
+        .spec-text {
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
 
         .right-column {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 54%;
+            width: 50%;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4mm;
             z-index: 5;
-            padding: 2mm;
         }
 
         .product-image {
             max-width: 100%;
-            max-height: 160mm;
+            max-height: 175mm;
             object-fit: contain;
             background: transparent;
-            transform: scale(1.18);
-            transform-origin: center;
         }
 
         .sku-box {
@@ -205,10 +249,10 @@
         .warranty-seal {
             display: var(--warranty-display, flex);
             position: absolute;
-            right: 8mm;
-            bottom: 8mm;
-            width: 44mm;
-            height: 44mm;
+            right: 0;
+            bottom: 0;
+            width: 40mm;
+            height: 40mm;
             object-fit: contain;
             z-index: 20;
         }
@@ -223,8 +267,8 @@
                         {{marca}}
                     </div>
 
-                    <div class="title-primary">{{titulo_linea1}}</div>
-                    <div class="title-secondary">{{titulo_linea2}}</div>
+                    <div class="title-primary {{title_class}}">{{titulo_linea1}}</div>
+                    <div class="title-secondary {{title_class}}">{{titulo_linea2}}</div>
                 </div>
             </div>
 
@@ -236,13 +280,14 @@
                         <span class="pill-text-cyan">{{destacado_lbl}}</span>
                     </div>
 
-                    <ul class="specs-list">
+                    <ul class="specs-list {{density_class}}">
                         {{specs_html}}
                     </ul>
                 </div>
 
                 <div class="right-column">
                     <img class="product-image" src="{{foto_url}}" alt="Foto Producto" />
+                    <img class="warranty-seal" style="--warranty-display: {{warranty_seal_display}};" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
                 </div>
             </div>
         </div>
@@ -254,8 +299,6 @@
                 </div>
                 {{meta_info_html}}
             </div>
-
-            <img class="warranty-seal" style="--warranty-display: {{warranty_seal_display}};" src="{{garantia_sello_img}}" alt="5 Años de Garantía" />
         </div>
     </div>
 </body>
