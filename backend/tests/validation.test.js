@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { loginSchema, searchSchema, excelUploadSchema, suggestFichaSchema } from '../middlewares/validation.js';
+import { createUserSchema, loginSchema, searchSchema, excelUploadSchema, suggestFichaSchema } from '../middlewares/validation.js';
 
 describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
   describe('loginSchema', () => {
@@ -65,6 +65,26 @@ describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
       });
 
       assert.deepEqual(Object.keys(parsed).sort(), ['especificaciones', 'sku']);
+    });
+  });
+
+  describe('createUserSchema', () => {
+    const baseUser = {
+      email: 'nuevo.usuario@easy.com.ar',
+      nombre: 'Nuevo Usuario',
+      sector_id: 1
+    };
+
+    test('acepte solamente roles asignables dentro de la cascada', () => {
+      for (const rol of ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador']) {
+        assert.doesNotThrow(() => createUserSchema.parse({ ...baseUser, rol }));
+      }
+    });
+
+    test('rechace roles de sistema o desconocidos', () => {
+      for (const rol of ['superadmin', 'admin', 'owner']) {
+        assert.throws(() => createUserSchema.parse({ ...baseUser, rol }));
+      }
     });
   });
 });

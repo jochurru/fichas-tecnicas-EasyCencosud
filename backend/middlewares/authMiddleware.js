@@ -1,4 +1,5 @@
 import { supabase, supabaseDb } from '../lib/supabase.js';
+import { normalizeRole } from '../lib/rolePolicy.js';
 
 /**
  * Middleware para requerir autenticación de Supabase Auth.
@@ -81,7 +82,7 @@ export async function requireAuth(req, res, next) {
       }
     }
 
-    user.role = role;
+    user.role = normalizeRole(role);
     user.sector_id = sectorId;
 
     // Inyectar el usuario en la request para controladores posteriores
@@ -105,7 +106,10 @@ export function requireRoles(allowedRoles) {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    if (req.user.role === 'superadmin' || allowedRoles.includes(req.user.role)) {
+    const userRole = normalizeRole(req.user.role);
+    const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
+    if (userRole === 'superadmin' || normalizedAllowedRoles.includes(userRole)) {
+      req.user.role = userRole;
       return next();
     }
     return res.status(403).json({
@@ -122,6 +126,7 @@ export const ROLE_HIERARCHY = {
   superadmin: 6,
   gerente: 5,
   subadmin: 4,
+  admin: 4,
   jefe_sector: 3,
   coordinador: 2,
   operador: 1
@@ -133,8 +138,8 @@ export const ROLE_HIERARCHY = {
 export function requireMinRole(minRole) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const userLevel = ROLE_HIERARCHY[req.user.role] || 0;
-    const requiredLevel = ROLE_HIERARCHY[minRole] || 99;
+    const userLevel = ROLE_HIERARCHY[normalizeRole(req.user.role)] || 0;
+    const requiredLevel = ROLE_HIERARCHY[normalizeRole(minRole)] || 99;
     if (userLevel >= requiredLevel) return next();
     return res.status(403).json({ 
       error: 'Forbidden', 

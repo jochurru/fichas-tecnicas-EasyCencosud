@@ -5,6 +5,16 @@ import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabase, supabaseDb, supabaseAdmin } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { getAllowedSectorsForUser } from '../config/storeBlocks.js';
+import { validateSchema, createUserSchema } from '../middlewares/validation.js';
+import {
+  PASSWORD_RESET_ROLES,
+  USER_MANAGER_ROLES,
+  canCreateRole,
+  canManageRole,
+  getCreatableRoles,
+  getStoredRoleVariants,
+  normalizeRole
+} from '../lib/rolePolicy.js';
 
 const router = Router();
 
@@ -27,9 +37,9 @@ function generateTempPassword() {
 /**
  * @route   GET /api/admin/usuarios/validar-email
  * @desc    Valida si un email ya existe y sugiere variaciones si está ocupado
- * @access  Privado (Jefes, Subadmin, Gerente)
+ * @access  Privado (Jefaturas y roles superiores)
  */
-router.get('/admin/usuarios/validar-email', requireAuth, async (req, res, next) => {
+router.get('/admin/usuarios/validar-email', requireAuth, requireRoles(USER_MANAGER_ROLES), async (req, res, next) => {
   const { email } = req.query;
   if (!email) {
     return res.status(400).json({ error: 'El parámetro email es requerido.' });
@@ -65,11 +75,15 @@ router.get('/admin/usuarios/validar-email', requireAuth, async (req, res, next) 
  * @desc    Lista los usuarios (los Jefes solo ven hacia abajo: coordinadores y vendedores de su bloque)
  * @access  Privado
  */
-router.get('/admin/usuarios', requireAuth, async (req, res, next) => {
+router.get('/admin/usuarios', requireAuth, requireRoles(USER_MANAGER_ROLES), async (req, res, next) => {
   try {
-    const userRole = req.user.role || 'operador';
+    const userRole = normalizeRole(req.user.role || 'operador');
+    const visibleRoles = getStoredRoleVariants(getCreatableRoles(userRole));
 
-    let query = supabaseDb.from('profiles').select('*, sectores(nombre)');
+    let query = supabaseDb
+      .from('profiles')
+      .select('id, email, nombre, rol, sector_id, activo, must_change_password, created_at, updated_at, sectores(nombre)')
+      .in('rol', visibleRoles);
 
     // Si es Jefe de Sector: solo ve roles subordinados (coordinador y vendedor) de sus sectores
     if (userRole === 'jefe_sector') {
@@ -78,9 +92,6 @@ router.get('/admin/usuarios', requireAuth, async (req, res, next) => {
       if (allowedSectors.length > 0) {
         query = query.in('sector_id', allowedSectors);
       }
-    } else if (userRole === 'coordinador' || userRole === 'operador') {
-      // Un coordinador u operador no lista usuarios
-      return res.json([]);
     }
 
     const { data: users, error } = await query.order('created_at', { ascending: false });
@@ -95,9 +106,9 @@ router.get('/admin/usuarios', requireAuth, async (req, res, next) => {
 /**
  * @route   POST /api/admin/usuarios
  * @desc    Crea un nuevo usuario en Supabase Auth y profiles con contraseña temporal
- * @access  Privado (Jefes, Subadmin, Gerente)
+ * @access  Privado (Jefaturas y roles superiores, en cascada descendente)
  */
-router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector']), async (req, res, next) => {
+router.post('/admin/usuarios', requireAuth, requireRoles(USER_MANAGER_ROLES), validateSchema(createUserSchema), async (req, res, next) => {
   const { email, nombre, rol, sector_id } = req.body;
 
   if (!email || !nombre || !rol) {
@@ -107,13 +118,20 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
   const cleanEmail = email.trim().toLowerCase();
   const tempPassword = generateTempPassword();
   const targetSector = sector_id || req.user.sector_id || 1;
+  const actorRole = normalizeRole(req.user.role);
+  const targetRole = normalizeRole(rol);
 
   try {
+    if (!canCreateRole(actorRole, targetRole)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        code: 'ROLE_NOT_ALLOWED',
+        message: 'No tenés permisos para crear un usuario con ese nivel jerárquico.'
+      });
+    }
+
     // Si es Jefe de Sector, solo puede crear coordinadores o vendedores dentro de su bloque asignado
-    if (req.user.role === 'jefe_sector') {
-      if (!['coordinador', 'operador'].includes(rol)) {
-        return res.status(403).json({ error: 'Como Jefe de Sector solo podés dar de alta cuentas de Coordinadores y Vendedores.' });
-      }
+    if (actorRole === 'jefe_sector') {
       const allowedSectors = getAllowedSectorsForUser(req.user);
       if (!allowedSectors.includes(Number(targetSector))) {
         return res.status(403).json({ 
@@ -138,7 +156,7 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
       email: cleanEmail,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { nombre, rol }
+      user_metadata: { nombre, rol: targetRole }
     });
 
     if (authErr) {
@@ -154,7 +172,7 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
         id: userId,
         email: cleanEmail,
         nombre: nombre.trim(),
-        rol: rol,
+        rol: targetRole,
         sector_id: targetSector,
         must_change_password: true
       })
@@ -171,7 +189,7 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
       accion: 'CREATE_USER',
       entidad: 'USUARIO',
       entidad_id: userId,
-      valores_nuevos: { email: cleanEmail, rol, sector_id: targetSector }
+      valores_nuevos: { email: cleanEmail, rol: targetRole, sector_id: targetSector }
     });
 
     return res.status(201).json({
@@ -189,21 +207,31 @@ router.post('/admin/usuarios', requireAuth, requireRoles(['gerente', 'subadmin',
 
 /**
  * @route   POST /api/admin/usuarios/:id/reset-temp-password
- * @desc    Regenera la clave temporal para un usuario que olvidó su clave previa al primer login
- * @access  Privado (Jefes, Subadmin, Gerente)
+ * @desc    Regenera una clave temporal y obliga al usuario a cambiarla en el siguiente ingreso
+ * @access  Privado (Subadmin y roles superiores)
  */
-router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector']), async (req, res, next) => {
+router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles(PASSWORD_RESET_ROLES), async (req, res, next) => {
   const { id } = req.params;
   const userRole = req.user.role || 'operador';
   const tempPassword = generateTempPassword();
 
   try {
-    // Si es Jefe de Sector, verificar que el usuario destino sea estrictamente subordinado
-    if (userRole === 'jefe_sector') {
-      const { data: targetUser } = await supabaseDb.from('profiles').select('rol, sector_id').eq('id', id).maybeSingle();
-      if (!targetUser || ['gerente', 'subadmin', 'jefe_sector', 'admin', 'superadmin'].includes(targetUser.rol)) {
-        return res.status(403).json({ error: 'No tenés permisos para resetear la contraseña de un superior o par jerárquico.' });
-      }
+    const { data: targetUser, error: targetError } = await supabaseDb
+      .from('profiles')
+      .select('rol, sector_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (targetError) throw targetError;
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+    if (!canManageRole(userRole, targetUser.rol)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        code: 'ROLE_NOT_ALLOWED',
+        message: 'No tenés permisos para resetear la contraseña de un superior o par jerárquico.'
+      });
     }
     // Actualizar clave en Supabase Auth
     const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(id, {
@@ -245,9 +273,9 @@ router.post('/admin/usuarios/:id/reset-temp-password', requireAuth, requireRoles
 /**
  * @route   PATCH /api/admin/usuarios/:id/status
  * @desc    Activa o desactiva un usuario (Baja lógica)
- * @access  Privado (Gerente y Subadmin)
+ * @access  Privado (Subadmin y roles superiores)
  */
-router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(['gerente', 'subadmin']), async (req, res, next) => {
+router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(PASSWORD_RESET_ROLES), async (req, res, next) => {
   const { id } = req.params;
   const { activo } = req.body;
   const callerRole = req.user?.role || 'operador';
@@ -257,11 +285,12 @@ router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(['gerente',
   }
 
   try {
-    const { data: targetUser } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    const { data: targetUser, error: targetError } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    if (targetError) throw targetError;
     if (!targetUser) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
     }
-    if (['superadmin', 'gerente'].includes(targetUser.rol) && callerRole !== 'superadmin') {
+    if (!canManageRole(callerRole, targetUser.rol)) {
       return res.status(403).json({ error: 'Forbidden', message: 'No tenés permisos para modificar el estado de un superior o par directivo.' });
     }
 
@@ -289,9 +318,9 @@ router.patch('/admin/usuarios/:id/status', requireAuth, requireRoles(['gerente',
 /**
  * @route   DELETE /api/admin/usuarios/:id
  * @desc    Elimina definitivamente un usuario (Baja física)
- * @access  Privado Exclusivo (Gerente y Subadmin)
+ * @access  Privado (Subadmin y roles superiores)
  */
-router.delete('/admin/usuarios/:id', requireAuth, requireRoles(['gerente', 'subadmin']), async (req, res, next) => {
+router.delete('/admin/usuarios/:id', requireAuth, requireRoles(PASSWORD_RESET_ROLES), async (req, res, next) => {
   const { id } = req.params;
   const callerRole = req.user?.role || 'operador';
 
@@ -300,11 +329,12 @@ router.delete('/admin/usuarios/:id', requireAuth, requireRoles(['gerente', 'suba
   }
 
   try {
-    const { data: targetUser } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    const { data: targetUser, error: targetError } = await supabaseDb.from('profiles').select('rol').eq('id', id).maybeSingle();
+    if (targetError) throw targetError;
     if (!targetUser) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
     }
-    if (['superadmin', 'gerente'].includes(targetUser.rol) && callerRole !== 'superadmin') {
+    if (!canManageRole(callerRole, targetUser.rol)) {
       return res.status(403).json({ error: 'Forbidden', message: 'No tenés permisos para eliminar a un superior o par directivo.' });
     }
 

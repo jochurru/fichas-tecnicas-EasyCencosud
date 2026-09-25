@@ -172,6 +172,13 @@ export const suggestFichaSchema = z.object({
   ).min(1, 'Debe proponer al menos una especificación técnica.').max(50, 'La propuesta supera el máximo de 50 especificaciones.')
 });
 
+export const createUserSchema = z.object({
+  email: z.string().trim().email('El formato del correo es inválido.').max(255),
+  nombre: z.string().trim().min(2, 'El nombre es obligatorio.').max(120),
+  rol: z.enum(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador']),
+  sector_id: z.coerce.number().int().positive().optional()
+});
+
 // 4. Esquemas: Impresión (GET & POST)
 export const printGetParamsSchema = z.object({
   sku: z.string()

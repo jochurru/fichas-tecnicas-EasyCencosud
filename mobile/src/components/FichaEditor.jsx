@@ -203,7 +203,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         })
       });
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         if (onTokenExpired) {
           onTokenExpired();
         } else {
@@ -297,7 +297,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         body: JSON.stringify(payload)
       });
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         if (onTokenExpired) {
           onTokenExpired();
         } else {

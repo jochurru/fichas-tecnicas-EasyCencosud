@@ -3,7 +3,16 @@ import assert from 'node:assert/strict';
 import { requireMinRole, requireRoles, ROLE_HIERARCHY } from '../middlewares/authMiddleware.js';
 import { getAllowedSectorsForUser, STORE_BLOCKS } from '../config/storeBlocks.js';
 import { buildSuggestionRejectionUpdate, buildTechnicalSuggestion } from '../lib/fichaWorkflow.js';
-import { canEditOfficialFicha, canManageImages, isOperatorRole } from '../lib/rolePolicy.js';
+import {
+  canCreateRole,
+  canEditOfficialFicha,
+  canManageImages,
+  canManageRole,
+  canResetPasswords,
+  getCreatableRoles,
+  isOperatorRole,
+  normalizeRole
+} from '../lib/rolePolicy.js';
 
 function createResponse() {
   return {
@@ -149,8 +158,36 @@ test('rechazar una sugerencia no genera cambios sobre foto, logo, EAN ni plantil
   assert.equal('logo_url' in update, false);
 });
 
+test('la creacion de usuarios respeta la cascada jerarquica', () => {
+  assert.deepEqual(getCreatableRoles('jefe_sector'), ['coordinador', 'operador']);
+  assert.deepEqual(getCreatableRoles('subadmin'), ['jefe_sector', 'coordinador', 'operador']);
+  assert.deepEqual(getCreatableRoles('gerente'), ['subadmin', 'jefe_sector', 'coordinador', 'operador']);
+  assert.deepEqual(getCreatableRoles('superadmin'), ['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador']);
+
+  assert.equal(canCreateRole('subadmin', 'gerente'), false);
+  assert.equal(canCreateRole('subadmin', 'subadmin'), false);
+  assert.equal(canCreateRole('subadmin', 'jefe_sector'), true);
+});
+
+test('solo subadministracion y niveles superiores pueden resetear claves inferiores', () => {
+  for (const role of ['subadmin', 'admin', 'gerente', 'superadmin']) {
+    assert.equal(canResetPasswords(role), true);
+  }
+  for (const role of ['jefe_sector', 'coordinador', 'operador']) {
+    assert.equal(canResetPasswords(role), false);
+  }
+
+  assert.equal(canManageRole('subadmin', 'jefe_sector'), true);
+  assert.equal(canManageRole('subadmin', 'subadmin'), false);
+  assert.equal(canManageRole('subadmin', 'gerente'), false);
+  assert.equal(canManageRole('superadmin', 'rol_desconocido'), false);
+});
+
+test('los roles legacy se normalizan sin ampliar permisos', () => {
+  assert.equal(normalizeRole('operator'), 'operador');
+  assert.equal(normalizeRole('coordinator'), 'coordinador');
+  assert.equal(canCreateRole('coordinator', 'operador'), false);
+});
+
 test.todo('P0: una cuenta con activo=false debe ser rechazada por requireAuth');
 test.todo('P0: un coordinador no puede consultar, aprobar ni rechazar fichas de otro sector');
-test.todo('P0: un subadmin no puede crear usuarios con un rol superior al propio');
-test.todo('P0: un jefe no puede resetear usuarios subordinados de otro bloque');
-test.todo('P0: roles legacy en ingles no deben ampliar permisos por error');

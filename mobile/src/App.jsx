@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Camera, Info, HelpCircle, Settings, LogOut, FileText, ExternalLink, Share2, CheckCircle2, X } from 'lucide-react';
+import { Search, Camera, Info, HelpCircle, Settings, LogOut, FileText, ExternalLink, Share2, CheckCircle2, X, Clock3 } from 'lucide-react';
 import Scanner from './components/Scanner';
 import FichaEditor from './components/FichaEditor';
 import AdminPanel from './components/AdminPanel';
@@ -8,6 +8,7 @@ import PrintQueueDrawer from './components/PrintQueueDrawer';
 import ForcePasswordChangeModal from './components/ForcePasswordChangeModal';
 import { API_BASE_URL } from './config';
 import { saveProduct, getProduct } from './lib/indexedDb';
+import { getJwtExpirationMs, isJwtExpired } from './utils/session';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('userToken') || null);
@@ -26,6 +27,10 @@ export default function App() {
   const [error, setError] = useState('');
   const [productData, setProductData] = useState(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(() => {
+    const storedToken = localStorage.getItem('userToken');
+    return Boolean(storedToken && isJwtExpired(storedToken));
+  });
   
   // Conexión activa real (basada en el estado del navegador)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -61,6 +66,41 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!token) {
+      setSessionExpired(false);
+      return undefined;
+    }
+
+    const checkExpiration = () => {
+      if (isJwtExpired(token)) {
+        setSessionExpired(true);
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') checkExpiration();
+    };
+
+    checkExpiration();
+    const expirationMs = getJwtExpirationMs(token);
+    const remainingMs = expirationMs === null ? 0 : Math.max(0, expirationMs - Date.now());
+    const expirationTimer = window.setTimeout(
+      checkExpiration,
+      Math.min(remainingMs + 250, 2_147_000_000)
+    );
+    const safetyInterval = window.setInterval(checkExpiration, 30_000);
+
+    window.addEventListener('focus', checkExpiration);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearTimeout(expirationTimer);
+      window.clearInterval(safetyInterval);
+      window.removeEventListener('focus', checkExpiration);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [token]);
+
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userEmail');
@@ -74,22 +114,14 @@ export default function App() {
     setProductData(null);
     setSearchTerm('');
     setIsAdminOpen(false);
+    setSessionExpired(false);
   };
 
   const handleTokenExpiration = () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userNombre');
-    localStorage.removeItem('userMustChangePassword');
-    setToken(null);
-    setUserEmail('');
-    setUserRole('operator');
-    setCurrentUser(null);
-    setProductData(null);
-    setSearchTerm('');
+    setLoading(false);
+    setActiveScanner(false);
     setIsAdminOpen(false);
-    alert('Tu sesión ha expirado por motivos de seguridad. Por favor, inicia sesión nuevamente.');
+    setSessionExpired(true);
   };
 
   // Buscar producto por SKU o EAN
@@ -129,7 +161,7 @@ export default function App() {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         handleTokenExpiration();
         return;
       }
@@ -182,6 +214,7 @@ export default function App() {
       <WelcomeLogin 
         onLoginSuccess={(newToken, user) => {
           setToken(newToken);
+          setSessionExpired(false);
           setUserEmail(user.email);
           setCurrentUser(user);
           if (user.role) {
@@ -189,6 +222,30 @@ export default function App() {
           }
         }} 
       />
+    );
+  }
+
+  if (sessionExpired) {
+    return (
+      <div className="fixed inset-0 z-[10000] bg-slate-950 flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-labelledby="session-expired-title">
+        <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-2xl p-6 text-center">
+          <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+            <Clock3 className="w-6 h-6" />
+          </div>
+          <h2 id="session-expired-title" className="mt-4 text-lg font-extrabold text-slate-900">Tu sesión finalizó</h2>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            Por seguridad, el acceso venció. Volvé a iniciar sesión para continuar trabajando.
+          </p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            autoFocus
+            className="mt-5 w-full bg-easy-red hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Volver a iniciar sesión
+          </button>
+        </div>
+      </div>
     );
   }
 

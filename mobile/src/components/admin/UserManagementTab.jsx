@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Key, Lock, Trash2, Power, CheckCircle, AlertTriangle, Copy, Shield } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import {
+  ROLE_LABELS,
+  canManageRole,
+  canResetPasswords,
+  getCreatableRoles,
+  normalizeRole
+} from '../../utils/rolePolicy';
 
 export default function UserManagementTab({ currentUser }) {
   const [users, setUsers] = useState([]);
@@ -16,8 +23,11 @@ export default function UserManagementTab({ currentUser }) {
   const [creating, setCreating] = useState(false);
   const [createdResult, setCreatedResult] = useState(null);
 
-  const canManage = ['gerente', 'subadmin', 'jefe_sector'].includes(currentUser?.role);
-  const canDelete = ['gerente', 'subadmin'].includes(currentUser?.role);
+  const currentRole = normalizeRole(currentUser?.role);
+  const creatableRoles = getCreatableRoles(currentRole);
+  const canManage = creatableRoles.length > 0;
+  const canDelete = ['gerente', 'subadmin', 'admin', 'superadmin'].includes(currentRole);
+  const canReset = canResetPasswords(currentRole);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -84,7 +94,7 @@ export default function UserManagementTab({ currentUser }) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al crear usuario.');
+      if (!res.ok) throw new Error(data.message || data.error || 'Error al crear usuario.');
 
       setCreatedResult(data);
       fetchUsers();
@@ -104,7 +114,7 @@ export default function UserManagementTab({ currentUser }) {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al resetear la clave.');
+      if (!res.ok) throw new Error(data.message || data.error || 'Error al resetear la clave.');
       alert(`✅ Nueva Clave Temporal: ${data.tempPassword}`);
       fetchUsers();
     } catch (err) {
@@ -163,19 +173,27 @@ export default function UserManagementTab({ currentUser }) {
           <h4 className="font-black text-slate-800 text-sm sm:text-base flex items-center gap-2">
             <Users className="w-5 h-5 text-red-600 shrink-0" />
             <span>
-              {currentUser?.role === 'jefe_sector' 
+              {currentRole === 'jefe_sector'
                 ? 'Personal a Cargo (Coordinadores y Vendedores)' 
                 : 'Usuarios de la Tienda'}
             </span>
           </h4>
           <p className="text-xs text-slate-500 mt-0.5">
-            {currentUser?.role === 'jefe_sector'
-              ? 'Alta de personal y reseteo de claves para los empleados de tu bloque.'
+            {currentRole === 'jefe_sector'
+              ? 'Alta de coordinadores y operadores dentro de tu bloque asignado.'
               : 'Alta de personal, asignación de roles y control de credenciales temporales.'}
           </p>
         </div>
         <button
-          onClick={() => { setIsModalOpen(true); setCreatedResult(null); setEmailInput(''); setNombreInput(''); }}
+          onClick={() => {
+            setIsModalOpen(true);
+            setCreatedResult(null);
+            setEmailInput('');
+            setNombreInput('');
+            setEmailCheckMsg(null);
+            setError(null);
+            setRolInput(creatableRoles[creatableRoles.length - 1] || 'operador');
+          }}
           className="w-full sm:w-auto justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 transition active:scale-98 shrink-0"
         >
           <UserPlus className="w-4 h-4" />
@@ -206,8 +224,7 @@ export default function UserManagementTab({ currentUser }) {
           {/* Vista Mobile (Tarjetas) */}
           <div className="block sm:hidden space-y-3">
             {users.map((u) => {
-              const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
-              const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
+              const canResetThisUser = canReset && canManageRole(currentRole, u.rol);
 
               return (
                 <div key={u.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
@@ -235,7 +252,7 @@ export default function UserManagementTab({ currentUser }) {
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {u.must_change_password && canResetThisUser && (
+                      {canResetThisUser && (
                         <button
                           onClick={() => handleResetTempPassword(u.id)}
                           title="Ver / Regenerar Clave Temporal"
@@ -285,8 +302,7 @@ export default function UserManagementTab({ currentUser }) {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {users.map((u) => {
-                    const isSubordinate = ['coordinador', 'operador', 'operator'].includes(u.rol);
-                    const canResetThisUser = ['gerente', 'subadmin'].includes(currentUser?.role) || (currentUser?.role === 'jefe_sector' && isSubordinate);
+                    const canResetThisUser = canReset && canManageRole(currentRole, u.rol);
 
                     return (
                       <tr key={u.id} className="hover:bg-slate-50/50 transition">
@@ -311,7 +327,7 @@ export default function UserManagementTab({ currentUser }) {
                           )}
                         </td>
                         <td className="p-3.5 text-right space-x-1 whitespace-nowrap">
-                          {u.must_change_password && canResetThisUser && (
+                          {canResetThisUser && (
                             <button
                               onClick={() => handleResetTempPassword(u.id)}
                               title="Ver / Regenerar Clave Temporal"
@@ -431,15 +447,9 @@ export default function UserManagementTab({ currentUser }) {
                     onChange={(e) => setRolInput(e.target.value)}
                     className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500/20 focus:outline-none bg-white font-bold text-slate-700"
                   >
-                    <option value="operador">Operador / Vendedor de Salón</option>
-                    <option value="coordinador">Coordinador de Sector</option>
-                    {['gerente', 'subadmin'].includes(currentUser?.role) && (
-                      <>
-                        <option value="jefe_sector">Jefe de Sector</option>
-                        <option value="subadmin">Subadministrador</option>
-                        <option value="gerente">Gerente de Tienda</option>
-                      </>
-                    )}
+                    {creatableRoles.map((role) => (
+                      <option key={role} value={role}>{ROLE_LABELS[role] || role}</option>
+                    ))}
                   </select>
                 </div>
 
