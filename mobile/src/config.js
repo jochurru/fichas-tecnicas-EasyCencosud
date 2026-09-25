@@ -4,5 +4,5 @@ const isLocal = typeof window !== 'undefined' && (window.location.hostname === '
 export const API_BASE_URL = import.meta.env.VITE_API_URL || (
   isLocal
     ? '/api'
-    : 'https://fichas-tecnicas-easycencosud-686548224349.us-central1.run.app/api'
+    : 'https://fichas-tecnicas-easycencosud-621245810832.us-central1.run.app/api'
 );
