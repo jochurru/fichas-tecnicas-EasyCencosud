@@ -12,7 +12,7 @@ import { supabase, supabaseDb, supabaseAdmin } from './lib/supabase.js';
 // Cargar variables de entorno
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Habilitar trust proxy para Google Cloud Run (Load Balancer / X-Forwarded-For)
@@ -211,11 +211,14 @@ const initializeStorageBucket = async () => {
 };
 
 // Iniciar servidor
-app.listen(PORT, () => {
+export const server = app.listen(PORT, () => {
   console.log(`Servidor de Fichas Técnicas corriendo en http://localhost:${PORT}`);
   console.log(`- Health Check: http://localhost:${PORT}/health`);
-  
-  // Ejecutar verificación de administrador, operador y almacenamiento
-  createDefaultUsers();
-  initializeStorageBucket();
+
+  // Los tests HTTP levantan el servidor con clientes simulados y nunca deben
+  // crear usuarios ni modificar buckets remotos.
+  if (process.env.SKIP_STARTUP_INIT !== 'true') {
+    createDefaultUsers();
+    initializeStorageBucket();
+  }
 });

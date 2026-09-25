@@ -4,8 +4,11 @@ import { extractSpecifications } from '../lib/geminiExtractor.js';
 import { fetchEasyProductImage } from '../lib/easyFetcher.js';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
-import { validateSchema, searchSchema, approveFichaSchema } from '../middlewares/validation.js';
+import { validateSchema, searchSchema, approveFichaSchema, suggestFichaSchema } from '../middlewares/validation.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
+import { getAllowedSectorsForUser, resolveSectorIdFromProduct } from '../config/storeBlocks.js';
+import { buildTechnicalSuggestion } from '../lib/fichaWorkflow.js';
+import { OFFICIAL_EDITOR_ROLES, OPERATOR_ROLES } from '../lib/rolePolicy.js';
 
 const router = Router();
 
@@ -228,15 +231,98 @@ router.get('/producto/:identificador', requireAuth, validateSchema(searchSchema,
 });
 
 /**
- * @route   POST /api/fichas/aprobar
- * @desc    Aprueba (o envía a revisión) una ficha técnica editada por el usuario.
+ * @route   POST /api/fichas/sugerir
+ * @desc    Registra una sugerencia técnica del operador sin modificar la ficha oficial.
  */
-router.post('/fichas/aprobar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador', 'admin', 'superadmin', 'operator', 'coordinator']), validateSchema(approveFichaSchema), async (req, res, next) => {
+router.post('/fichas/sugerir', requireAuth, requireRoles(OPERATOR_ROLES), validateSchema(suggestFichaSchema), async (req, res, next) => {
+  const { sku, especificaciones } = req.body;
+
+  try {
+    const [producto, existingFicha] = await Promise.all([
+      dataService.getProductoBySku(sku),
+      dataService.getFichaBySku(sku)
+    ]);
+
+    if (!producto || !existingFicha) {
+      return res.status(404).json({
+        error: 'Ficha técnica no encontrada',
+        message: 'La ficha debe existir antes de enviar una sugerencia.'
+      });
+    }
+
+    const productSectorId = Number(existingFicha.sector_id || resolveSectorIdFromProduct(producto));
+    const allowedSectors = getAllowedSectorsForUser(req.user);
+    if (allowedSectors.length > 0 && !allowedSectors.includes(productSectorId)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'No podés sugerir cambios para productos fuera de tu bloque asignado.'
+      });
+    }
+
+    const officialSpecs = existingFicha.especificaciones_json || {};
+    const proposal = buildTechnicalSuggestion(officialSpecs, especificaciones);
+    const previousState = existingFicha.estado === 'PENDIENTE_VALIDACION'
+      ? (existingFicha.estado_previo || 'APROBADA')
+      : (existingFicha.estado || 'APROBADA');
+
+    const { data: updatedFicha, error } = await supabaseDb
+      .from('fichas_tecnicas')
+      .update({
+        especificaciones_propuestas_json: proposal,
+        propuesto_por: req.user.email,
+        propuesto_at: new Date().toISOString(),
+        estado_previo: previousState,
+        estado: 'PENDIENTE_VALIDACION',
+        sector_id: productSectorId,
+        observaciones_revision: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('sku', sku)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    logAuditEvent(req, {
+      accion: 'TECHNICAL_SUGGESTION_SUBMITTED',
+      entidad: 'FICHA_TECNICA',
+      sku,
+      valores_anteriores: officialSpecs,
+      valores_nuevos: proposal,
+      resultado: 'SUCCESS'
+    });
+
+    return res.status(202).json({
+      message: 'Sugerencia técnica enviada para revisión. La ficha oficial no fue modificada.',
+      ficha_tecnica: updatedFicha
+    });
+  } catch (error) {
+    console.error('[Sugerencias] Error al registrar propuesta técnica:', error.message);
+    const migrationPending = error.code === 'PGRST204'
+      || error.code === '42703'
+      || String(error.message || '').includes('especificaciones_propuestas_json');
+
+    if (migrationPending) {
+      return res.status(503).json({
+        error: 'Flujo de sugerencias pendiente de habilitación.',
+        message: 'Falta aplicar la migración de sugerencias técnicas en este entorno.'
+      });
+    }
+    return res.status(500).json({
+      error: 'No se pudo registrar la sugerencia técnica.',
+      message: 'La propuesta no fue guardada. La ficha oficial permanece sin cambios.'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/fichas/aprobar
+ * @desc    Modifica directamente una ficha oficial. No disponible para operadores.
+ */
+router.post('/fichas/aprobar', requireAuth, requireRoles(OFFICIAL_EDITOR_ROLES), validateSchema(approveFichaSchema), async (req, res, next) => {
   const { sku, especificaciones_json, foto_url, template_preferido, eans, estado } = req.body;
   const verfiedEmail = req.user.email;
-  const userRole = req.user.role || 'operador';
-  const isOperador = userRole === 'operador' || userRole === 'operator';
-  const targetEstado = isOperador ? 'PENDIENTE_VALIDACION' : (estado || 'APROBADA');
+  const targetEstado = estado || 'APROBADA';
 
   try {
     // 1. Obtener la ficha técnica actual antes de modificar (para auditoría)
@@ -342,7 +428,7 @@ router.post('/fichas/aprobar', requireAuth, requireRoles(['gerente', 'subadmin',
       resultado: 'SUCCESS'
     });
 
-    console.log(`[AUDIT] Ficha técnica para SKU ${sku} APROBADA por el operador: ${verfiedEmail}`);
+    console.log(`[AUDIT] Ficha técnica para SKU ${sku} actualizada por ${verfiedEmail}`);
 
     return res.json({
       message: 'Ficha técnica aprobada y consolidada exitosamente.',

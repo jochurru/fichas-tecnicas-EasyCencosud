@@ -158,6 +158,20 @@ export const approveFichaSchema = z.object({
   ]).optional().default('APROBADA')
 });
 
+export const suggestFichaSchema = z.object({
+  sku: z.string()
+    .trim()
+    .min(1, 'El SKU es obligatorio.')
+    .regex(/^[a-zA-Z0-9-]+$/, 'El SKU debe ser alfanumérico limpio.'),
+  especificaciones: z.array(
+    z.object({
+      clave: z.string().trim().min(1, 'La clave del atributo no puede estar vacía.').max(100),
+      valor: z.string().trim().min(1, 'El valor del atributo no puede estar vacío.').max(500),
+      fecha_validacion: z.string().trim().optional()
+    })
+  ).min(1, 'Debe proponer al menos una especificación técnica.').max(50, 'La propuesta supera el máximo de 50 especificaciones.')
+});
+
 // 4. Esquemas: Impresión (GET & POST)
 export const printGetParamsSchema = z.object({
   sku: z.string()

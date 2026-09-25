@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:security": "node --test tests/securityRegression.test.js tests/httpSecurity.test.js"
   },
   "keywords": [],
   "author": "",

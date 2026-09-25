@@ -5,6 +5,7 @@ import { supabaseDb } from '../lib/supabase.js';
 import { dataService } from '../services/dataService.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
 import { STORE_BLOCKS } from '../config/storeBlocks.js';
+import { IMAGE_MANAGER_ROLES } from '../lib/rolePolicy.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const router = Router();
  * @route   POST /api/upload/imagen
  * @desc    Sube una imagen de producto o de marca a Supabase Storage y actualiza la base de datos.
  */
-router.post('/upload/imagen', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'operador', 'admin', 'superadmin', 'operator', 'coordinator']), validateSchema(uploadImageSchema), async (req, res, next) => {
+router.post('/upload/imagen', requireAuth, requireRoles(IMAGE_MANAGER_ROLES), validateSchema(uploadImageSchema), async (req, res, next) => {
   const { tipo, id, fileBase64, nombre } = req.body;
 
   try {

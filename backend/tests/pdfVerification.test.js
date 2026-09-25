@@ -106,7 +106,9 @@ test('3. Producto Stanley con 7 especificaciones (fleje3, fleje2, a4)', async ()
   fs.writeFileSync(path.join(scratchDir, 'test3_stanley7_a4.pdf'), pdfA4);
 });
 
-test('4 & 5. Verificación de Invalidación de Caché en Supabase y Audit Logs', { skip: !process.env.SUPABASE_URL }, async () => {
+test('4 & 5. Verificación de Invalidación de Caché en Supabase y Audit Logs', {
+  skip: process.env.RUN_SUPABASE_INTEGRATION_TESTS !== 'true'
+}, async () => {
   const testSku = '1293475';
   const fakeFileName = `${testSku}_fleje3.pdf`;
 

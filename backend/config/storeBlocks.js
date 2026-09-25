@@ -90,8 +90,10 @@ export function getAllowedSectorsForUser(user) {
     return block ? block.sector_ids : STORE_BLOCKS[0].sector_ids;
   }
 
-  // Coordinador y Operador: heredan el bloque de su equipo
-  const block = STORE_BLOCKS.find(b => b.id === Number(user.bloque_id)) || STORE_BLOCKS[0];
+  // Coordinador y Operador: heredan el bloque explícito o el bloque de su sector.
+  const block = STORE_BLOCKS.find(b => b.id === Number(user.bloque_id))
+    || STORE_BLOCKS.find(b => b.sector_ids.includes(Number(user.sector_id)))
+    || STORE_BLOCKS[0];
   return block.sector_ids;
 }
 

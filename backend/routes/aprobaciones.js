@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { requireAuth, requireRoles } from '../middlewares/authMiddleware.js';
 import { supabaseDb } from '../lib/supabase.js';
 import { logAuditEvent } from '../lib/auditLogger.js';
-import { deleteStorageFileByUrl } from '../lib/storageHelper.js';
 import { getAllowedSectorsForUser } from '../config/storeBlocks.js';
+import { buildSuggestionRejectionUpdate } from '../lib/fichaWorkflow.js';
+import { OFFICIAL_EDITOR_ROLES } from '../lib/rolePolicy.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ const router = Router();
  * @desc    Obtiene la lista de fichas en borrador o pendientes de validación
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
+router.get('/aprobaciones/pendientes', requireAuth, requireRoles(OFFICIAL_EDITOR_ROLES), async (req, res, next) => {
   try {
     const userRole = req.user.role || 'operador';
     const { sector_id } = req.query;
@@ -26,7 +27,14 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
     if (['jefe_sector', 'coordinador', 'coordinator'].includes(userRole)) {
       const allowedSectors = getAllowedSectorsForUser(req.user);
       if (sector_id) {
-        query = query.eq('sector_id', parseInt(sector_id, 10));
+        const requestedSector = parseInt(sector_id, 10);
+        if (!allowedSectors.includes(requestedSector)) {
+          return res.status(403).json({
+            error: 'Forbidden',
+            message: 'No podés consultar aprobaciones de otro bloque.'
+          });
+        }
+        query = query.eq('sector_id', requestedSector);
       } else if (allowedSectors.length > 0) {
         query = query.in('sector_id', allowedSectors);
       }
@@ -37,7 +45,13 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
     const { data: fichas, error } = await query.order('updated_at', { ascending: false });
 
     if (error) throw error;
-    return res.json(fichas || []);
+    const pending = (fichas || []).map((ficha) => ({
+      ...ficha,
+      especificaciones_oficiales_json: ficha.especificaciones_json,
+      especificaciones_json: ficha.especificaciones_propuestas_json || ficha.especificaciones_json
+    }));
+
+    return res.json(pending);
   } catch (err) {
     next(err);
   }
@@ -48,26 +62,42 @@ router.get('/aprobaciones/pendientes', requireAuth, requireRoles(['gerente', 'su
  * @desc    Aprueba y publica oficialmente una ficha técnica borrador
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
+router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(OFFICIAL_EDITOR_ROLES), async (req, res, next) => {
   const { id } = req.params;
-  const { foto_url, especificaciones, observaciones } = req.body;
+  const { foto_url, especificaciones, observaciones, template_preferido } = req.body;
 
   try {
-    // 1. Obtener la ficha técnica actual antes de modificar para verificar la foto previa
+    // La ficha oficial permanece intacta hasta este punto.
     const { data: existingFicha } = await supabaseDb
       .from('fichas_tecnicas')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    // 2. Si la foto asignada cambia y existía una foto previa en Supabase Storage, eliminar la foto vieja para mantener 1 sola foto por SKU
-    if (existingFicha && existingFicha.foto_url && foto_url && existingFicha.foto_url !== foto_url) {
-      console.log(`[Aprobaciones] Eliminando foto obsoleta anterior de la ficha ${existingFicha.sku}...`);
-      await deleteStorageFileByUrl(existingFicha.foto_url);
+    if (!existingFicha) {
+      return res.status(404).json({ error: 'Ficha técnica no encontrada.' });
+    }
+
+    const allowedSectors = getAllowedSectorsForUser(req.user);
+    if (existingFicha.sector_id && !allowedSectors.includes(Number(existingFicha.sector_id))) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'No podés aprobar fichas de otro bloque.'
+      });
+    }
+
+    const approvedSpecs = especificaciones || existingFicha.especificaciones_propuestas_json;
+    if (!approvedSpecs) {
+      return res.status(400).json({ error: 'La ficha no contiene una propuesta técnica para aprobar.' });
     }
 
     const updates = {
       estado: 'APROBADA',
+      especificaciones_json: approvedSpecs,
+      especificaciones_propuestas_json: null,
+      propuesto_por: null,
+      propuesto_at: null,
+      estado_previo: null,
       aprobado_por: req.user.id,
       observaciones_revision: observaciones || null,
       updated_at: new Date().toISOString()
@@ -76,8 +106,8 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
     if (foto_url) {
       updates.foto_url = foto_url;
     }
-    if (especificaciones) {
-      updates.especificaciones_json = especificaciones;
+    if (template_preferido) {
+      updates.template_preferido = template_preferido;
     }
 
     const { data: ficha, error } = await supabaseDb
@@ -89,11 +119,39 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
 
     if (error) throw error;
 
+    const { data: lastHist } = await supabaseDb
+      .from('fichas_historial')
+      .select('version')
+      .eq('sku', existingFicha.sku)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    await supabaseDb.from('fichas_historial').insert([{
+      sku: existingFicha.sku,
+      version: lastHist ? lastHist.version + 1 : 1,
+      especificaciones_json: approvedSpecs,
+      foto_url: updates.foto_url || existingFicha.foto_url,
+      origen_cambio: 'APROBACION_COORDINADOR',
+      modificado_por: req.user.email
+    }]);
+
+    const cacheFiles = [
+      `${existingFicha.sku}_a4.pdf`,
+      `${existingFicha.sku}_fleje3.pdf`,
+      `${existingFicha.sku}_fleje2.pdf`,
+      `${existingFicha.sku}_robust_a4.pdf`,
+      `${existingFicha.sku}_robust_fleje3.pdf`,
+      `${existingFicha.sku}_robust_fleje2.pdf`
+    ];
+    await supabaseDb.storage.from('fichas-pdf').remove(cacheFiles);
+
     logAuditEvent(req, {
       accion: 'APPROVE_FICHA',
       entidad: 'FICHA_TECNICA',
-      entidad_id: id,
-      valores_nuevos: { estado: 'APROBADA', aprobado_por: req.user.id }
+      sku: existingFicha.sku,
+      valores_anteriores: existingFicha.especificaciones_json,
+      valores_nuevos: approvedSpecs
     });
 
     return res.json({
@@ -108,10 +166,10 @@ router.post('/aprobaciones/:id/aprobar', requireAuth, requireRoles(['gerente', '
 
 /**
  * @route   POST /api/aprobaciones/:id/rechazar
- * @desc    Devuelve una ficha borrador con observaciones y elimina imágenes de prueba rechazadas
+ * @desc    Rechaza una sugerencia técnica sin modificar datos ni imágenes oficiales.
  * @access  Privado (Coordinadores, Jefes de Sector, Subadmins, Gerente)
  */
-router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 'subadmin', 'jefe_sector', 'coordinador', 'admin', 'superadmin', 'coordinator']), async (req, res, next) => {
+router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(OFFICIAL_EDITOR_ROLES), async (req, res, next) => {
   const { id } = req.params;
   const { observaciones } = req.body;
 
@@ -120,27 +178,27 @@ router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 
   }
 
   try {
-    // 1. Obtener la ficha actual antes de rechazar
     const { data: existingFicha } = await supabaseDb
       .from('fichas_tecnicas')
       .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    // 2. Si la propuesta rechazada incluye una foto cargada en Supabase Storage, eliminarla para no dejar archivos basura
-    if (existingFicha && existingFicha.foto_url) {
-      console.log(`[Aprobaciones] Destruyendo foto propuesta de borrador rechazado: ${existingFicha.foto_url}...`);
-      await deleteStorageFileByUrl(existingFicha.foto_url);
+    if (!existingFicha) {
+      return res.status(404).json({ error: 'Ficha técnica no encontrada.' });
+    }
+
+    const allowedSectors = getAllowedSectorsForUser(req.user);
+    if (existingFicha.sector_id && !allowedSectors.includes(Number(existingFicha.sector_id))) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'No podés rechazar fichas de otro bloque.'
+      });
     }
 
     const { data: ficha, error } = await supabaseDb
       .from('fichas_tecnicas')
-      .update({
-        estado: 'OBSERVADA',
-        foto_url: null, // Restablecer foto vacía al rechazar propuesta no válida
-        observaciones_revision: observaciones.trim(),
-        updated_at: new Date().toISOString()
-      })
+      .update(buildSuggestionRejectionUpdate(observaciones, existingFicha.estado_previo || 'APROBADA'))
       .eq('id', id)
       .select()
       .single();
@@ -150,8 +208,9 @@ router.post('/aprobaciones/:id/rechazar', requireAuth, requireRoles(['gerente', 
     logAuditEvent(req, {
       accion: 'REJECT_FICHA',
       entidad: 'FICHA_TECNICA',
-      entidad_id: id,
-      valores_nuevos: { estado: 'rechazado', observaciones: observaciones.trim() }
+      sku: existingFicha.sku,
+      valores_anteriores: existingFicha.especificaciones_propuestas_json,
+      valores_nuevos: { estado: existingFicha.estado_previo || 'APROBADA', observaciones: observaciones.trim() }
     });
 
     return res.json({

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, CheckCircle, XCircle, Upload, AlertTriangle, FileText, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Sparkles, Layers, Award, Filter } from 'lucide-react';
+import { Inbox, CheckCircle, AlertTriangle, Image as ImageIcon, Eye, User, Calendar, Tag, ShieldCheck, Award, Filter, ArrowRight, Plus, Minus, Pencil } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import { STORE_BLOCKS, ALL_SECTORS, getSectorName, getBlockBySectorId } from '../../config/storeBlocks';
+import { compareTechnicalSpecs, getTechnicalSpecs } from '../../utils/specDiff';
 
 export default function PendingApprovalsInbox({ user }) {
   const [fichas, setFichas] = useState([]);
@@ -227,6 +228,13 @@ export default function PendingApprovalsInbox({ user }) {
     return fSector === Number(selectedSector) || (Number(selectedSector) === 45 && fSector === 1);
   });
 
+  const selectedSpecDiff = selectedFicha
+    ? compareTechnicalSpecs(
+        getTechnicalSpecs(selectedFicha.especificaciones_oficiales_json),
+        editableSpecs
+      )
+    : null;
+
   if (!isBossOrAbove) {
     return (
       <div className="p-8 text-center text-slate-500 font-sans">
@@ -247,7 +255,7 @@ export default function PendingApprovalsInbox({ user }) {
             <span>Bandeja de Pendientes — {userBlock.nombre}</span>
           </h4>
           <p className="text-xs text-slate-500 mt-0.5">
-            Fichas enviadas por vendedores de tu bloque que requieren validación técnica y foto oficial antes de ser impresas.
+            Sugerencias técnicas enviadas por operadores de tu bloque para revisión y aprobación.
           </p>
         </div>
         
@@ -315,9 +323,9 @@ export default function PendingApprovalsInbox({ user }) {
         </div>
       )}
 
-      {/* Lista de Fichas Enviadas por Vendedores */}
+      {/* Lista de sugerencias enviadas por operadores */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando solicitudes de vendedores...</div>
+        <div className="py-12 text-center text-slate-400 text-xs font-medium">Cargando sugerencias de operadores...</div>
       ) : filteredFichas.length === 0 ? (
         <div className="bg-slate-50 p-8 rounded-2xl border border-dashed border-slate-200 text-center">
           <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
@@ -333,7 +341,11 @@ export default function PendingApprovalsInbox({ user }) {
             const marca = specData.marca || f.marca || 'GENERICA';
             const tipoHerramienta = specData.tipo_herramienta || f.tipo_herramienta || f.nombre || 'Herramienta';
             const specsList = Array.isArray(specData.especificaciones) ? specData.especificaciones : [];
-            const emisor = f.aprobado_por || f.creado_por || 'vendedor.herramientas@easy.com.ar';
+            const specDiff = compareTechnicalSpecs(
+              getTechnicalSpecs(f.especificaciones_oficiales_json),
+              specsList
+            );
+            const emisor = f.propuesto_por || f.creado_por || 'Usuario no identificado';
             const sectorNombre = getSectorName(f.sector_id);
 
             return (
@@ -347,7 +359,7 @@ export default function PendingApprovalsInbox({ user }) {
                           : 'bg-purple-100 text-purple-800 border border-purple-200'
                       }`}>
                         {f.estado === 'PENDIENTE_VALIDACION' || f.estado === 'pendiente_revision'
-                          ? '⌛ Revisión Vendedor' 
+                          ? 'Revisión operador'
                           : '🤖 Borrador IA'}
                       </span>
                       <span className="text-[10px] font-extrabold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
@@ -368,19 +380,33 @@ export default function PendingApprovalsInbox({ user }) {
                     <span>Enviado por: <strong className="text-slate-700">{emisor}</strong></span>
                   </div>
 
-                  {/* Previsualización de Especificaciones */}
+                  {/* Resumen de cambios frente a la ficha oficial */}
                   <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-                      Especificaciones ({specsList.length}):
-                    </span>
-                    {specsList.slice(0, 3).map((spec, i) => (
-                      <div key={i} className="truncate text-slate-700 font-medium">
-                        <strong className="font-bold text-slate-900">{spec.clave}:</strong> {spec.valor}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        Cambios propuestos ({specDiff.changes.length})
+                      </span>
+                      <div className="flex items-center gap-1 text-[9px] font-bold">
+                        {specDiff.modified.length > 0 && <span className="text-amber-700">{specDiff.modified.length} modificados</span>}
+                        {specDiff.added.length > 0 && <span className="text-emerald-700">+{specDiff.added.length}</span>}
+                        {specDiff.removed.length > 0 && <span className="text-red-700">-{specDiff.removed.length}</span>}
+                      </div>
+                    </div>
+                    {specDiff.changes.slice(0, 3).map((change, i) => (
+                      <div key={`${change.type}-${change.key}-${i}`} className="flex items-center gap-1.5 min-w-0 text-slate-700 font-medium">
+                        <strong className="font-bold text-slate-900 truncate">{change.key}:</strong>
+                        {change.before !== null && <span className="text-slate-400 line-through truncate">{change.before}</span>}
+                        {change.before !== null && change.after !== null && <ArrowRight className="w-3 h-3 shrink-0 text-slate-400" />}
+                        {change.after !== null && <span className="text-slate-800 truncate">{change.after}</span>}
+                        {change.type === 'removed' && <span className="text-red-700">Se elimina</span>}
                       </div>
                     ))}
-                    {specsList.length > 3 && (
+                    {specDiff.changes.length === 0 && (
+                      <div className="text-[11px] text-slate-500">No se detectaron diferencias con la ficha oficial.</div>
+                    )}
+                    {specDiff.changes.length > 3 && (
                       <div className="text-[10px] text-slate-400 font-bold italic pt-1">
-                        + {specsList.length - 3} atributos adicionales...
+                        + {specDiff.changes.length - 3} cambios adicionales...
                       </div>
                     )}
                   </div>
@@ -433,7 +459,7 @@ export default function PendingApprovalsInbox({ user }) {
                   <span className="text-slate-400 font-medium block text-[11px]">Enviado por el usuario:</span>
                   <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5 mt-0.5">
                     <User className="w-4 h-4 text-red-600" />
-                    {selectedFicha.aprobado_por || selectedFicha.creado_por || 'vendedor.herramientas@easy.com.ar'}
+                    {selectedFicha.propuesto_por || selectedFicha.creado_por || 'Usuario no identificado'}
                   </span>
                 </div>
 
@@ -567,6 +593,62 @@ export default function PendingApprovalsInbox({ user }) {
                 );
               })()}
 
+              {/* Comparación contra la ficha oficial */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <h5 className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                    <ArrowRight className="w-4 h-4 text-red-600" />
+                    <span>Cambios frente a la ficha oficial</span>
+                  </h5>
+                  <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                    <span className="px-2 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded">{selectedSpecDiff.modified.length} modificados</span>
+                    <span className="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded">{selectedSpecDiff.added.length} agregados</span>
+                    <span className="px-2 py-1 bg-red-50 text-red-800 border border-red-200 rounded">{selectedSpecDiff.removed.length} eliminados</span>
+                  </div>
+                </div>
+
+                {selectedSpecDiff.changes.length === 0 ? (
+                  <div className="py-3 text-center text-xs text-slate-500">La propuesta coincide con la ficha oficial.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedSpecDiff.changes.map((change, index) => {
+                      const styles = {
+                        modified: { label: 'Modificado', icon: Pencil, badge: 'bg-amber-50 text-amber-800 border-amber-200' },
+                        added: { label: 'Agregado', icon: Plus, badge: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+                        removed: { label: 'Eliminado', icon: Minus, badge: 'bg-red-50 text-red-800 border-red-200' }
+                      }[change.type];
+                      const StatusIcon = styles.icon;
+
+                      return (
+                        <div key={`${change.type}-${change.key}-${index}`} className="border border-slate-200 rounded-lg overflow-hidden">
+                          <div className="px-3 py-2 bg-slate-50 flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-900 break-words">{change.key}</span>
+                            <span className={`px-2 py-0.5 rounded border text-[9px] font-black uppercase flex items-center gap-1 shrink-0 ${styles.badge}`}>
+                              <StatusIcon className="w-3 h-3" /> {styles.label}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-stretch">
+                            <div className="p-3 min-w-0">
+                              <span className="block text-[9px] font-bold uppercase text-slate-400 mb-1">Valor anterior</span>
+                              <span className={`text-xs break-words ${change.before === null ? 'text-slate-400 italic' : 'text-slate-700'}`}>
+                                {change.before === null ? 'No existía' : change.before}
+                              </span>
+                            </div>
+                            <div className="hidden sm:flex items-center text-slate-300"><ArrowRight className="w-4 h-4" /></div>
+                            <div className="p-3 min-w-0 bg-slate-50/50">
+                              <span className="block text-[9px] font-bold uppercase text-slate-400 mb-1">Valor propuesto</span>
+                              <span className={`text-xs font-bold break-words ${change.after === null ? 'text-red-700 italic' : 'text-slate-900'}`}>
+                                {change.after === null ? 'Eliminar este dato' : change.after}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {/* Tabla Editable de Todas las Especificaciones */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
@@ -609,17 +691,13 @@ export default function PendingApprovalsInbox({ user }) {
                 </div>
               </div>
 
-              {/* Alerta de Sanitización de Fotos */}
-              <div className="bg-amber-50/90 border border-amber-200 p-3.5 rounded-xl text-amber-900 text-xs font-medium space-y-1.5 shadow-sm">
-                <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Política de Almacenamiento Limpio (1 Foto por SKU):</span>
+              <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-xl text-blue-900 text-xs font-medium shadow-sm">
+                <div className="font-bold flex items-center gap-1.5 text-blue-800">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>La solicitud contiene únicamente cambios de datos técnicos.</span>
                 </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  • <strong>Al Aprobar:</strong> La foto seleccionada será la única versión oficial activa. Si existía una foto anterior en el servidor, se eliminará permanentemente.
-                </p>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  • <strong>Al Devolver:</strong> Si rechazas la propuesta, la foto subida por el vendedor se borrará automáticamente del servidor para evitar archivos basura o no deseados.
+                <p className="text-[11px] text-blue-700 leading-relaxed mt-1">
+                  Aprobar publica las especificaciones revisadas. Devolver conserva intactas la ficha, la foto, el logo, los EAN y la plantilla oficiales.
                 </p>
               </div>
 

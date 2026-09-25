@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { loginSchema, searchSchema, excelUploadSchema } from '../middlewares/validation.js';
+import { loginSchema, searchSchema, excelUploadSchema, suggestFichaSchema } from '../middlewares/validation.js';
 
 describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
   describe('loginSchema', () => {
@@ -40,6 +40,31 @@ describe('Pruebas Unitarias: validation.js (Zod Schemas)', () => {
       // Cabecera ZIP en base64 = 'UEsDBBQ...'
       const validZipBase64 = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,UEsDBBQAAAAIAAA=';
       assert.doesNotThrow(() => excelUploadSchema.parse({ fileBase64: validZipBase64 }));
+    });
+  });
+
+  describe('suggestFichaSchema', () => {
+    test('acepte solamente SKU y especificaciones tecnicas', () => {
+      const parsed = suggestFichaSchema.parse({
+        sku: '1450167',
+        especificaciones: [{ clave: 'Potencia', valor: '650 W' }]
+      });
+
+      assert.equal(parsed.sku, '1450167');
+      assert.equal(parsed.especificaciones.length, 1);
+    });
+
+    test('elimine campos protegidos enviados por un operador', () => {
+      const parsed = suggestFichaSchema.parse({
+        sku: '1450167',
+        especificaciones: [{ clave: 'Potencia', valor: '650 W' }],
+        foto_url: 'https://attacker.example/foto.webp',
+        eans: ['123'],
+        template_preferido: 3,
+        estado: 'APROBADA'
+      });
+
+      assert.deepEqual(Object.keys(parsed).sort(), ['especificaciones', 'sku']);
     });
   });
 });

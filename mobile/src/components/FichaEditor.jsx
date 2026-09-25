@@ -19,8 +19,9 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
   const isOffline = data?.origen === 'local_offline';
   // Roles y Permisos de Tienda
   const isOperador = userRole === 'operador' || userRole === 'operator';
-  const canUploadPhoto = true; // El vendedor puede proponer/subir la foto que será revisada por el encargado
-  const canEdit = true; // Todos los empleados pueden sugerir correcciones y editar especificaciones
+  const canManageCatalog = !isOperador;
+  const canUploadPhoto = canManageCatalog;
+  const canEdit = true;
   const isReadOnly = false;
 
   // Estados locales del formulario
@@ -265,23 +266,29 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
       (spec) => spec.clave.trim() !== '' || spec.valor.trim() !== ''
     );
 
-    const payload = {
-      sku: producto.sku,
-      especificaciones_json: {
-        marca,
-        tipo_herramienta: tipoHerramienta,
-        especificaciones: cleanSpecs,
-        sugerencia_busqueda_imagen: sugerenciaImagen
-      },
-      foto_url: fotoUrl.trim() || null,
-      template_preferido: templatePreferido,
-      aprobado_por: aprobadoPor,
-      eans: eans.filter(Boolean),
-      estado: estado // Enviar el estado seleccionado en el editor
-    };
+    const payload = isOperador
+      ? {
+          sku: producto.sku,
+          especificaciones: cleanSpecs
+        }
+      : {
+          sku: producto.sku,
+          especificaciones_json: {
+            marca,
+            tipo_herramienta: tipoHerramienta,
+            especificaciones: cleanSpecs,
+            sugerencia_busqueda_imagen: sugerenciaImagen
+          },
+          foto_url: fotoUrl.trim() || null,
+          template_preferido: templatePreferido,
+          aprobado_por: aprobadoPor,
+          eans: eans.filter(Boolean),
+          estado
+        };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/fichas/aprobar`, {
+      const endpoint = isOperador ? '/fichas/sugerir' : '/fichas/aprobar';
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,9 +314,11 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
         throw new Error(result.error || 'Error al guardar la ficha');
       }
 
-      setSuccessMsg(isOperador ? '¡Ficha enviada a la bandeja de revisión del encargado!' : 'Ficha técnica aprobada y guardada con éxito.');
+      setSuccessMsg(isOperador
+        ? 'Sugerencia enviada. La ficha oficial no cambió y queda pendiente de revisión.'
+        : 'Ficha técnica aprobada y guardada con éxito.');
       setTimeout(() => {
-        onSaveSuccess(result.ficha_tecnica, eans.filter(Boolean));
+        onSaveSuccess(result.ficha_tecnica, producto.eans || eans.filter(Boolean));
       }, 1500);
 
     } catch (err) {
@@ -396,7 +405,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
               <input
                 type="text"
                 required
-                disabled={loading || isReadOnly || isOffline}
+                disabled={loading || isReadOnly || isOffline || isOperador}
                 value={marca}
                 onChange={(e) => setMarca(e.target.value)}
                 placeholder="Ej. Stanley, Bosch"
@@ -408,7 +417,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
               <input
                 type="text"
                 required
-                disabled={loading || isReadOnly || isOffline}
+                disabled={loading || isReadOnly || isOffline || isOperador}
                 value={tipoHerramienta}
                 onChange={(e) => setTipoHerramienta(e.target.value)}
                 placeholder="Ej. Taladro, Caja Grapas"
@@ -418,7 +427,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
           </div>
 
           {/* Caja Destacada: Gestor de Logotipo de Marca P1.21 */}
-          {canEdit && !isOffline && (() => {
+          {canManageCatalog && !isOffline && (() => {
             const cleanBrandSlug = marca.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '');
             const currentBrandObj = brandsList.find(b => b.slug === cleanBrandSlug);
             const brandLogoMap = {
@@ -543,7 +552,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
               {eans.map((code, index) => (
                 <span key={index} className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 transition-colors">
                   <span>{code}</span>
-                  {canEdit && (
+                  {canManageCatalog && (
                     <button
                       type="button"
                       onClick={() => setEans(eans.filter((_, i) => i !== index))}
@@ -560,7 +569,7 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
             </div>
 
             {/* Input y Botón Scanner */}
-            {canEdit && (
+            {canManageCatalog && (
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input
@@ -610,15 +619,31 @@ export default function FichaEditor({ data, token, userEmail, userRole, onSaveSu
             )}
           </div>
 
-          <ImageUploadSection
-            sku={producto.sku}
-            fotoUrl={fotoUrl}
-            setFotoUrl={setFotoUrl}
-            sugerenciaImagen={sugerenciaImagen}
-            setErrorMsg={setErrorMsg}
-            setSuccessMsg={setSuccessMsg}
-            token={token}
-          />
+          {canUploadPhoto ? (
+            <ImageUploadSection
+              sku={producto.sku}
+              fotoUrl={fotoUrl}
+              setFotoUrl={setFotoUrl}
+              sugerenciaImagen={sugerenciaImagen}
+              setErrorMsg={setErrorMsg}
+              setSuccessMsg={setSuccessMsg}
+              token={token}
+            />
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+              {fotoUrl ? (
+                <img src={fotoUrl} alt="Foto oficial" className="w-14 h-14 object-contain bg-white border border-gray-200 rounded-lg p-1" />
+              ) : (
+                <div className="w-14 h-14 bg-white border border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                  <Image className="w-5 h-5 text-gray-300" />
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-bold text-gray-700">Foto oficial de producto</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Sólo coordinadores y niveles superiores pueden cambiar imágenes.</p>
+              </div>
+            </div>
+          )}
 
           <SpecsEditorList
             especificaciones={especificaciones}
