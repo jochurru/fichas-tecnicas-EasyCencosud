@@ -1,147 +1,320 @@
-# Fichas Técnicas Easy Cencosud (Góndolas & Salón de Ventas)
+# Sistema de Fichas Técnicas y Cartelería de Producto
 
-Aplicación web móvil corporativa (PWA) diseñada para optimizar los procesos de búsqueda, validación, edición y generación en PDF de fichas técnicas de productos y cartelas de góndola (flejes) para las tiendas **Easy** del grupo **Cencosud**.
+Aplicación web orientada a la **gestión, edición, validación y generación de fichas técnicas de producto y cartelería para punto de venta**.
 
----
+La solución fue desarrollada como una PWA con arquitectura desacoplada, soporte móvil, funcionamiento offline, generación automatizada de PDFs, procesamiento de imágenes, control de roles e importación masiva de datos.
 
-## 🏗️ Arquitectura de la Solución
-
-El sistema sigue una arquitectura desacoplada moderna y 100% serverless, ideal para optimizar costos de infraestructura y escalar de forma transparente ante picos de demanda en los locales comerciales.
-
-```mermaid
-graph TD
-    Client[Frontend: React PWA + Tailwind + Vite] -- "HTTPS / JWT" --> API[Backend: Node.js + Express en Google Cloud Run]
-    API -- "Supabase Client (Bypass RLS)" --> DB[(PostgreSQL en Supabase)]
-    API -- "Puppeteer (Headless Chrome)" --> PDF[Generación de PDF en Caliente]
-    API -- "Caché de PDFs" --> Bucket[Supabase Storage: fichas-pdf]
-    API -- "Imágenes y Logos (WebP)" --> CatalogBucket[Supabase Storage: imagenes-catalogo]
-    SSO[Azure AD / Entra ID] -.-> Login[Ingreso SSO-Ready / Supabase Auth]
-```
-
-### Componentes de la Arquitectura
-1.  **Frontend (React Client - Firebase Hosting):**
-    *   Compilado como una **PWA (Progressive Web App)** con soporte offline mediante Service Workers.
-    *   Utiliza la API `HTML5 IndexedDB` local en el celular para almacenar las búsquedas exitosas, mantener la cola de impresión temporal y permitir la visualización offline de fichas en zonas ciegas de Wi-Fi del salón.
-2.  **Backend (API Server - Google Cloud Run):**
-    *   Una API REST desarrollada en Node.js y Express empaquetada en un contenedor Docker.
-    *   Realiza procesamiento de compresión en caliente mediante Canvas a formato WebP para fotos de productos y marcas subidas por operadores autorizados.
-    *   Utiliza Puppeteer (Headless Chrome) para la renderización matemática exacta de los PDFs a partir de plantillas HTML y CSS diseñadas a escala real de impresión (`A4`, `90x74mm` y `80x40mm`), garantizando alineación de estilos entre páginas en impresiones masivas.
-3.  **Repositorio de Medios y CDN (Supabase Storage):**
-    *   `fichas-pdf`: Implementa una estrategia *Cache-Aside* para evitar la saturación de CPU que provoca levantar múltiples procesos Chrome. Las descargas de PDFs pre-generados se sirven de manera directa en `<50ms`.
-    *   `imagenes-catalogo`: Contenedor público para almacenar fotos de productos (indexadas por SKU) y logotipos de marcas comerciales (indexadas por slug) cargadas de forma dinámica.
-4.  **Capa de Datos y Autenticación (Supabase PostgreSQL):**
-    *   Almacena las especificaciones de SAP, las fichas aprobadas locales, la tabla dinámica de `marcas` y los mapeos de códigos de barra (EAN).
-    *   Autenticación integrada via JWT para control de accesos.
+El objetivo del proyecto es reducir tareas manuales, estandarizar la información técnica de producto y agilizar la preparación de material listo para impresión.
 
 ---
 
-## 🌟 Características Principales
+## 🚀 Funcionalidades principales
 
-*   **Buscador Multimodal:** Permite escanear códigos de barra directamente con la cámara del celular del operador (librería `html5-qrcode`) o escribir manualmente el SKU/EAN.
-*   **Enriquecimiento con Gemini AI:** Si el producto consultado existe en SAP pero no tiene ficha técnica creada, el backend invoca a Gemini Pro en tiempo real para estructurar las especificaciones técnicas del texto del producto de SAP de manera estructurada en JSON.
-*   **Gestión Dinámica de Logos e Imágenes:** Los administradores y coordinadores pueden arrastrar y cargar fotos de productos o marcas directamente desde la pantalla de edición del producto. Las imágenes se procesan localmente vía Canvas en WebP para ahorrar ancho de banda y almacenamiento antes de ser subidas a Supabase Storage.
-*   **Auditoría y Alertas de Calidad (Completitud):** Evaluador inteligente en tiempo real que mide la completitud de la ficha (SKU 15%, EAN 15%, Marca 10%, Logo 5%, Foto 20%, Descripción 15%, Especificaciones 20%) y alerta al operador sobre inconsistencias como la falta de código de barras o logotipo corporativo no registrado.
-*   **Cola de Impresión Avanzada (Batch Printing):** Permite encolar múltiples fichas en IndexedDB local, previsualizarlas en lote, vaciar la cola con feedback háptico suave (`vibrate`) y generar un único PDF de impresión A4 continuo con estilos unificados y paginación homogénea.
-*   **Diseño e Impresión Centrada (Anti-Recortes):** Todas las plantillas se generan en tamaño A4 con guías punteadas de corte y márgenes seguros de `15mm` para evitar que los rodillos de las impresoras físicas recorten logotipos o textos.
-*   **Control de Roles de 3 Niveles (RBAC):**
-    *   *Administrador:* Acceso a carga masiva SAP y configuraciones generales de marcas y catálogos.
-    *   *Coordinador de Cartelería:* Permisos para editar atributos, cargar fotos y marcas, y aprobar fichas técnicas locales.
-    *   *Operador de Pasillo:* Búsqueda, visualización y envío a impresión rápida (sin privilegios de edición).
-*   **Carga Asíncrona SAP:** Ingestión de planillas Excel de SAP procesadas en segundo plano con una barra de progreso dinámico en tiempo real para evitar caídas por timeouts.
+- Búsqueda de productos por código interno o EAN
+- Escaneo de códigos de barras desde dispositivos móviles
+- Creación y edición de fichas técnicas
+- Gestión de especificaciones técnicas
+- Carga y procesamiento de imágenes de producto
+- Gestión de logos y marcas
+- Generación automática de PDFs
+- Soporte para diferentes formatos de impresión
+- Cola de impresión para múltiples fichas
+- Importación masiva de datos desde archivos Excel
+- Control de calidad y completitud de información
+- Gestión de usuarios mediante roles
+- Soporte offline mediante PWA e IndexedDB
+- Integración de IA para estructuración de información técnica
 
 ---
 
-## 🛠️ Tecnologías y Dependencias
+## 🛠️ Stack tecnológico
 
 ### Frontend
-*   **Vite + React (JS):** Entorno de ejecución rápido y empaquetado.
-*   **Tailwind CSS:** Diseño UI móvil responsivo siguiendo el branding corporativo de Easy.
-*   **Vite-Plugin-PWA:** Generación de Service Workers para soporte offline.
-*   **Lucide-React:** Set de iconos vectoriales.
-*   **HTML5 QR Code:** Escaneo de códigos de barra desde el navegador móvil.
+
+![React](https://img.shields.io/badge/-React-61DAFB?style=flat&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/-TailwindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white)
+
+- React
+- Vite
+- Tailwind CSS
+- Progressive Web App
+- IndexedDB
+- HTML5 QR Code
+- Lucide React
 
 ### Backend
-*   **Node.js + Express:** API Servidora robusta y ligera.
-*   **Puppeteer:** Compilación exacta de HTML a formato PDF PDF/A-1a.
-*   **Supabase JS Client:** Comunicación con la base de datos PostgreSQL, Supabase Auth y Storage.
-*   **XLSX (SheetJS):** Lectura veloz de reportes de logística SAP en formato Excel.
-*   **Helmet & Express Rate Limit:** Protección contra inundaciones de red, inyecciones de código y fuerza bruta.
+
+![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/-Express-000000?style=flat&logo=express&logoColor=white)
+![Supabase](https://img.shields.io/badge/-Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white)
+
+- Node.js
+- Express
+- Puppeteer
+- Supabase
+- PostgreSQL
+- Supabase Storage
+- XLSX / SheetJS
+- Helmet
+- Express Rate Limit
+
+### Cloud e infraestructura
+
+- Google Cloud Run
+- Firebase Hosting
+- Docker
+- Google Cloud Build
+- Supabase
 
 ---
 
-## 📁 Estructura del Repositorio
+## 🧱 Arquitectura
 
-## 📁 Estructura Modularizada del Repositorio
+La solución está dividida en frontend, backend y servicios externos.
+
+```text
+Usuario
+   │
+   ▼
+React PWA
+   │
+   ▼
+API REST Node.js / Express
+   │
+   ├── Base de datos PostgreSQL
+   ├── Almacenamiento de imágenes
+   ├── Generación de PDFs
+   ├── Importación de datos
+   └── Servicios de IA
+```
+
+Esta separación permite mantener desacoplada la interfaz, la lógica de negocio y la persistencia de datos.
+
+---
+
+## 📱 Progressive Web App
+
+El frontend fue diseñado como una PWA orientada principalmente al uso desde dispositivos móviles.
+
+Entre sus características se incluyen:
+
+- instalación desde navegador;
+- soporte offline;
+- almacenamiento local mediante IndexedDB;
+- lectura de códigos de barras desde cámara;
+- cola temporal de impresión;
+- recuperación de búsquedas recientes;
+- interfaz responsive.
+
+---
+
+## 🔎 Búsqueda y escaneo de productos
+
+Los productos pueden localizarse mediante:
+
+- código interno;
+- EAN;
+- escaneo de código de barras desde la cámara del dispositivo.
+
+El objetivo es reducir el tiempo necesario para localizar información de producto durante tareas operativas.
+
+---
+
+## ✏️ Editor de fichas
+
+El sistema permite editar y completar información técnica del producto desde una interfaz estructurada.
+
+Incluye:
+
+- descripción;
+- especificaciones técnicas;
+- marca;
+- códigos de identificación;
+- imagen de producto;
+- logo de marca;
+- atributos técnicos dinámicos.
+
+Las especificaciones pueden agregarse, eliminarse y reorganizarse desde el editor.
+
+---
+
+## 🤖 Integración de IA
+
+El backend incluye una integración con modelos de IA para ayudar a estructurar información técnica cuando los datos disponibles no se encuentran normalizados.
+
+El flujo permite transformar descripciones de producto en información estructurada que posteriormente puede ser revisada y editada antes de su utilización.
+
+La IA funciona como herramienta de asistencia y no reemplaza la validación del usuario.
+
+---
+
+## 🖼️ Gestión de imágenes
+
+Las imágenes pueden cargarse desde la interfaz y procesarse antes de su almacenamiento.
+
+El sistema contempla:
+
+- imágenes de producto;
+- logotipos de marca;
+- conversión y optimización de archivos;
+- almacenamiento centralizado;
+- reutilización de recursos existentes.
+
+Esto evita duplicaciones innecesarias y mejora los tiempos de carga.
+
+---
+
+## 📄 Generación de PDFs
+
+Uno de los componentes principales del proyecto es el motor de generación de PDFs.
+
+El backend utiliza Puppeteer para renderizar plantillas HTML y CSS diseñadas específicamente para impresión.
+
+Se contemplan distintos formatos de salida, incluyendo:
+
+- fichas tamaño A4;
+- fichas compactas;
+- formatos de cartelería;
+- generación individual;
+- impresión en lote.
+
+Las plantillas incluyen márgenes y áreas de seguridad para mejorar el resultado en impresión física.
+
+---
+
+## 🖨️ Impresión por lotes
+
+El sistema permite agregar múltiples productos a una cola de impresión.
+
+La cola utiliza almacenamiento local para mantener temporalmente los productos seleccionados y generar posteriormente un único archivo PDF con múltiples fichas.
+
+Esto reduce tareas repetitivas y agiliza procesos de impresión masiva.
+
+---
+
+## 📊 Calidad de datos
+
+La aplicación incorpora reglas para evaluar el nivel de completitud de cada ficha.
+
+Se consideran elementos como:
+
+- códigos de producto;
+- códigos EAN;
+- marca;
+- imagen;
+- descripción;
+- especificaciones técnicas.
+
+El objetivo es identificar información incompleta antes de generar el material final.
+
+---
+
+## 👥 Control de acceso
+
+El sistema utiliza control de acceso basado en roles.
+
+De forma general, los perfiles permiten separar funciones de:
+
+- administración;
+- edición y validación;
+- consulta e impresión.
+
+Esto permite limitar operaciones sensibles según el nivel de acceso del usuario.
+
+---
+
+## 📥 Importación de datos
+
+La solución permite incorporar catálogos mediante archivos Excel.
+
+El backend procesa los archivos y normaliza la información antes de incorporarla al sistema.
+
+Este mecanismo permite actualizar grandes volúmenes de productos sin necesidad de carga manual individual.
+
+---
+
+## 📁 Estructura del repositorio
 
 ```text
 ├── backend/
-│   ├── assets/
-│   │   └── sello_garantia_5_anos.png   # Imagen oficial del sello de 5 Años de Garantía
 │   ├── lib/
-│   │   ├── pdf/                        # 🧩 Módulos especializados del Generador de PDFs
-│   │   │   ├── browserManager.js       # Singleton de Puppeteer Browser y reconexión activa
-│   │   │   ├── templateLoader.js       # Resolutor de plantillas HTML (flejes, A4 y Robust)
-│   │   │   ├── brandLogoProcessor.js   # Búsqueda DB/Storage, inversión SVG y escalado dinámico
-│   │   │   └── specFormatter.js        # Detección eléctrica, pill 18V y sello oficial
-│   │   ├── pdfGenerator.js             # Fachada ligera de generación de PDFs (<170 líneas)
-│   │   ├── dataQuality.js              # Algoritmo de medición de completitud
-│   │   ├── easyFetcher.js              # Extracción de catálogo público
-│   │   ├── geminiExtractor.js          # Integración con Google Gemini AI Pro
-│   │   └── supabase.js                 # Clientes Supabase Auth & Storage
+│   │   ├── pdf/
+│   │   ├── dataQuality.js
+│   │   ├── geminiExtractor.js
+│   │   └── supabase.js
 │   ├── middlewares/
-│   │   └── authMiddleware.js           # Validación JWT y control RBAC (Admin/Coord/Op)
 │   ├── routes/
-│   │   ├── catalogos.js                # Ingesta SAP, EANs y tareas asíncronas
-│   │   ├── impresion.js                # Descarga y caché de PDFs
-│   │   ├── productos.js                # Búsqueda, edición y aprobación de fichas
-│   │   └── storage.js                  # Carga de marcas y subida WebP
-│   ├── templates/                      # Plantillas HTML físicas real-scale
-│   │   ├── template_robust_a4.html     # Plantilla A4 máster Robust
-│   │   ├── template_robust_fleje_3.html# Plantilla Fleje 3 máster Robust (90x74mm)
-│   │   ├── template_robust_fleje_2.html# Plantilla Fleje 2 máster Robust (80x40mm)
-│   │   ├── template_standard_a4.html   # Plantilla A4 estándar
-│   │   └── template_fleje_*.html       # Plantillas estándar de cartelería
-│   └── index.js                        # Servidor Express de producción
-└── mobile/
-    ├── public/
-    │   └── sello_garantia_5_anos.png   # Recurso estático del sello oficial de garantía
-    └── src/
-        ├── components/
-        │   ├── admin/                  # 🧩 Módulos del Panel Administrativo
-        │   │   ├── CatalogImportTab.jsx# Pestaña de Ingesta Excel SAP y progreso
-        │   │   ├── EanImportTab.jsx    # Pestaña de Mapeo de Códigos EAN
-        │   │   ├── QualityMetricsTab.jsx # Pestaña de Analítica de Calidad
-        │   │   └── DynamicBrandsTab.jsx# Pestaña de Catálogo Dinámico de Marcas
-        │   ├── editor/                 # 🧩 Módulos del Editor de Fichas
-        │   │   ├── SpecsEditorList.jsx # Formulario dinámico de especificaciones
-        │   │   └── ImageUploadSection.jsx # Compresión WebP en Canvas y vista previa
-        │   ├── AdminPanel.jsx          # Modal contenedor ligero del panel admin (<220 líneas)
-        │   ├── FichaEditor.jsx         # Orquestador del editor de producto
-        │   ├── FichaPreviewModal.jsx   # Vista previa modal interactiva
-        │   └── PrintQueueDrawer.jsx    # Cola de impresión batch en IndexedDB
+│   ├── templates/
+│   └── index.js
+│
+├── mobile/
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       │   ├── admin/
+│       │   └── editor/
+│       ├── lib/
+│       ├── App.jsx
+│       └── main.jsx
+│
+├── etl/
+├── supabase/
+├── cloudbuild.yaml
+└── README.md
 ```
 
 ---
 
-## 👩‍💻 Guía para Desarrolladores y Mantenibilidad
+## 🧩 Modularización
 
-El código ha sido refactorizado aplicando **Single Responsibility Principle (SRP)** y documentado exhaustivamente con **JSDoc**:
+El proyecto fue organizado separando responsabilidades en distintos módulos.
 
-1. **Modificar el motor de PDFs**:
-   - Para ajustar Puppeteer o agregar argumentos de Chromium, editar [`backend/lib/pdf/browserManager.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/browserManager.js).
-   - Para cambiar lógica de logos, SVGs o colores corporativos, editar [`backend/lib/pdf/brandLogoProcessor.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/brandLogoProcessor.js).
-   - Para modificar reglas de productos eléctricos o pills destacados, editar [`backend/lib/pdf/specFormatter.js`](file:///c:/Users/Jonatan%20Churruarin/Desktop/Proyecto%20Fichas/backend/lib/pdf/specFormatter.js).
-2. **Modificar el Panel de Administración**:
-   - Cada pestaña se encuentra totalmente desacoplada dentro de `mobile/src/components/admin/`. Se pueden agregar nuevas pestañas importándolas directamente en `AdminPanel.jsx`.
-3. **Estándares de Documentación**:
-   - Todas las funciones exportadas cuentan con firmas JSDoc indicando `@param`, `@returns` y descripción de excepciones `@throws`.
+El motor de generación de PDFs, por ejemplo, divide funcionalidades como:
 
-    │   │   ├── Scanner.jsx     # Escáner móvil integrado para cámara
-    │   │   └── WelcomeLogin.jsx # Login corporativo / SSO-Ready
-    │   ├── lib/
-    │   │   └── indexedDb.js    # Capa de base de datos offline local del navegador
-    │   ├── App.jsx             # Orquestador del flujo principal y estado offline
-    │   └── main.jsx
-    ├── vite.config.js          # Configuración de Vite, proxy local y PWA
-    └── package.json
-```
+- administración del navegador headless;
+- carga de plantillas;
+- procesamiento de logos;
+- formateo de especificaciones;
+- generación final del documento.
+
+Del mismo modo, la interfaz administrativa y el editor de fichas se encuentran divididos en componentes independientes.
+
+---
+
+## 🔐 Seguridad
+
+El proyecto contempla distintas medidas de seguridad:
+
+- validación de autenticación;
+- control de roles;
+- protección de endpoints;
+- configuración CORS;
+- limitación de solicitudes;
+- separación entre frontend y backend;
+- variables de entorno para credenciales;
+- políticas de acceso a base de datos y almacenamiento.
+
+Los datos sensibles y credenciales no se incluyen en el repositorio.
+
+---
+
+## 📌 Estado del proyecto
+
+Proyecto funcional en evolución.
+
+El sistema fue desarrollado a partir de una necesidad operativa concreta: reducir tareas manuales relacionadas con la preparación, validación y generación de información técnica de productos.
+
+Actualmente funciona como una solución integral que combina desarrollo web, automatización, gestión de datos, generación documental y herramientas de IA.
+
+---
+
+## 👨‍💻 Autor
+
+**Jonatan Churruarin**
+
+LinkedIn:  
+https://www.linkedin.com/in/jonatan-churruarin/
+
+GitHub:  
+https://github.com/jochurru
